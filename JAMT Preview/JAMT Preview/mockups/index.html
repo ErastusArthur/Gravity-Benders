@@ -1,0 +1,1233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JAMT Base Mockup</title>
+<style>
+  :root {
+    --bg: #05070d;
+    --panel: #0f1524;
+    --panel-2: #161e33;
+    --line: #26314f;
+    --text: #e6ebf5;
+    --muted: #8f9bb8;
+    --power: #f5c542;
+    --good: #5ee08a;
+    --warn: #ffb547;
+    --bad: #ff5a5a;
+    --rad: #ff6b8b;
+    --accent: #7aa2ff;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 16px; margin: 0; letter-spacing: .04em; text-transform: uppercase; }
+  h1 small { color: var(--muted); font-weight: 500; margin-left: 6px; text-transform: none; letter-spacing: 0; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chip { padding: 4px 10px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); font-size: 12.5px; white-space: nowrap; font-family: var(--mono); }
+  .chip.dark { background: #141838; border-color: #3b4590; }
+  .chip.storm { background: #4a1525; border-color: var(--rad); color: #ffd0da; animation: pulse 1s infinite alternate; }
+  .chip.forecast { border-color: var(--warn); color: #ffe2b0; }
+  @keyframes pulse { to { box-shadow: 0 0 12px var(--rad); } }
+  button { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: #4b5a8a; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.primary { background: #2a5bd7; border-color: #3d6ff0; font-weight: 600; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 6px 10px; font-size: 13px; }
+  .seg button[aria-pressed="true"] { background: #2a3a6a; }
+
+  .hud { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 14px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .meter label { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .meter label b { color: var(--text); font-family: var(--mono); font-weight: 600; font-size: 12px; text-align: right; }
+  .bar { height: 8px; background: #0a0f1c; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; width: 50%; transition: width .5s ease, background .3s; }
+  .extras { display: flex; gap: 14px; align-items: center; font-size: 12.5px; color: var(--muted); }
+  .extras b { color: var(--text); font-family: var(--mono); }
+  .crates { display: flex; gap: 3px; }
+  .crate { width: 12px; height: 12px; border-radius: 2px; background: #6b5434; border: 1px solid #a5824e; }
+  .crate.empty { background: transparent; border-style: dashed; border-color: #4a4f63; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 16px; padding: 16px; }
+  .stage { align-self: start; position: relative; background: #000; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  #view3d { position: relative; aspect-ratio: 16 / 10; }
+  #view3d canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  #labels3d { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .lbl3d { position: absolute; left: 0; top: 0; pointer-events: auto; padding: 4px 10px; border-radius: 999px; background: rgba(8,12,24,.85);
+    border: 1px solid #5a6ea8; color: #fff; font-size: 12.5px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+  .lbl3d:hover, .lbl3d.selected { border-color: #fff; background: #2a5bd7; }
+  .lbl3d.visited::after { content: " ✓"; color: var(--good); }
+  .lbl3d.base { background: #1d2a4f; border-color: var(--accent); }
+  .lbl3d.info { pointer-events: none; font-weight: 500; font-size: 11px; color: #c9d1e6; border-color: #33405f; background: rgba(8,12,24,.6); padding: 2px 8px; }
+  .stage-note { position: absolute; left: 10px; bottom: 8px; font-size: 11px; color: #8e99b6; background: rgba(5,7,13,.75); padding: 3px 7px; border-radius: 6px; max-width: calc(100% - 20px); }
+  .stormfx { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 140px rgba(255,60,90,.6); opacity: 0; transition: opacity .6s; }
+  .stormfx.on { opacity: 1; }
+  .loading3d { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 14px; }
+  svg#map, svg#interior { display: block; width: 100%; height: auto; }
+
+  /* photo map sites */
+  .site { cursor: pointer; }
+  .site .ring { fill: rgba(255,255,255,.06); stroke: #cfd8ff; stroke-width: 2.5; }
+  .site:hover .ring, .site.selected .ring { stroke: #fff; stroke-width: 3.5; fill: rgba(122,162,255,.25); }
+  .site .label { fill: #fff; font-size: 19px; font-weight: 600; paint-order: stroke; stroke: #05070d; stroke-width: 4px; pointer-events: none; }
+  .site.visited .ring { stroke: var(--good); }
+  .site:focus, #base2d:focus { outline: none; }
+  .site:focus-visible .ring { stroke: var(--warn); stroke-width: 4; }
+  #base2d { cursor: pointer; }
+  .route { fill: none; stroke: #9fb4ff; stroke-width: 4; stroke-dasharray: 8 7; opacity: 0; }
+  .route.show { opacity: .9; animation: march 1s linear infinite; }
+  @keyframes march { to { stroke-dashoffset: -15; } }
+
+  /* interior schematic */
+  .room { cursor: pointer; }
+  .room .hull { stroke: #cfd5de; stroke-width: 12; filter: url(#sh); transition: stroke .2s; }
+  .deco { pointer-events: none; }
+  .scr rect { fill: #062626; stroke: #2bd4c0; stroke-width: 1.5; }
+  .scrtxt text { fill: #7ff5e4; font: 600 11px Consolas, monospace; }
+  .sign rect { fill: #0d1322; stroke: #3c4b72; opacity: .9; }
+  .sign text { fill: #dfe7ff; font: 700 11px Consolas, monospace; letter-spacing: .06em; text-anchor: middle; }
+  .room .inner { fill: none; stroke: #25375c; stroke-width: 1.5; }
+  .room:hover .hull { stroke: #eef2f8; }
+  .room.selected .hull { stroke: #7aa2ff; }
+  .room:focus { outline: none; }
+  .room:focus-visible .hull { stroke: var(--warn); }
+  .room.alert .hull { stroke: var(--rad); animation: pulseStroke .8s infinite alternate; }
+  @keyframes pulseStroke { to { stroke-width: 8; } }
+  .sch { font-family: var(--mono); pointer-events: none; }
+  .sch.code { fill: #dbe4ff; font-size: 17px; font-weight: 700; letter-spacing: .06em; }
+  .sch.name { fill: #7f8db0; font-size: 11.5px; letter-spacing: .12em; }
+  .sch.read { fill: #9fe3b4; font-size: 12.5px; }
+  .eq { fill: #121c33; stroke: #3a4f7c; stroke-width: 1.2; }
+  .corridor { fill: #0b1222; stroke: #34497a; stroke-width: 2; }
+
+  aside { display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .card h2 { font-size: 16px; margin: 0 0 4px; }
+  .card p { margin: 6px 0; color: #c9d1e6; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .costs { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 5px; }
+  .costs li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 10px; background: var(--panel-2); border-radius: 6px; font-size: 13.5px; }
+  .costs li span:last-child { font-family: var(--mono); font-size: 12.5px; text-align: right; }
+  .costs .neg { color: var(--bad); font-weight: 600; }
+  .costs .pos { color: var(--good); font-weight: 600; }
+  .costs .head { background: transparent; padding: 6px 2px 0; font-weight: 700; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nasa { font-size: 12px; color: var(--muted); border-top: 1px dashed var(--line); margin-top: 10px; padding-top: 8px; }
+  .nasa b { color: #aab6d6; }
+  .log { max-height: 200px; overflow: auto; font-size: 12.5px; display: grid; gap: 2px; }
+  .log div { padding: 4px 0; border-bottom: 1px solid #1a2236; color: #c2cbe0; }
+  .log div b { font-family: var(--mono); color: var(--muted); font-weight: 500; }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .modal-bg.open { display: flex; }
+  .modal { max-width: 500px; width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .modal h2 { margin: 0 0 6px; }
+  .modal .from { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+
+  .ending { position: fixed; inset: 0; z-index: 20; display: none; overflow: auto; background: radial-gradient(ellipse at top, #1b2550, #05070d 70%); }
+  .ending.open { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 520px); justify-content: center; align-items: center; gap: 32px; padding: 24px 16px; }
+  .ending .art { position: relative; }
+  .ending img { display: block; width: 100%; max-height: calc(100vh - 48px); object-fit: contain; border-radius: 14px; border: 1px solid var(--line); }
+  .ending .tag { position: absolute; left: 10px; bottom: 10px; background: rgba(5,7,13,.85); font-size: 12px; padding: 4px 8px; border-radius: 6px; color: #c9d1e6; }
+  .ending .fallback { display: none; min-height: 300px; align-items: center; justify-content: center; text-align: center; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); padding: 16px; }
+  .ending .art.missing img { display: none; }
+  .ending .art.missing .fallback { display: flex; }
+  .ending .kicker { font-size: 12px; color: var(--good); text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+  .ending h2 { font-size: 32px; line-height: 1.15; margin: 6px 0 10px; }
+  .ending p { color: #c9d1e6; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 16px 0; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 21px; font-family: var(--mono); }
+  .stat span { font-size: 12px; color: var(--muted); }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    .hud { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .extras { grid-column: 1 / -1; }
+    #view3d { aspect-ratio: 4 / 5; }
+    .ending.open { grid-template-columns: 1fr; align-items: start; }
+    .ending img { max-height: 55vh; object-fit: cover; object-position: top; }
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+
+<header>
+  <h1>Shackleton Base <small>Lunar south pole · 30-day surface mission</small></h1>
+  <div class="chips">
+    <span class="chip" id="whereChip">On the surface</span>
+    <span class="chip" id="dayChip">Day 1 / 30</span>
+    <span class="chip" id="lightChip">Sunlit</span>
+    <span class="chip storm" id="stormChip" hidden>☢ Solar particle storm</span>
+    <span class="chip forecast" id="forecastChip" hidden></span>
+    <span class="seg" role="group" aria-label="Surface view">
+      <button id="v3dBtn" aria-pressed="true">3D</button><button id="vPhotoBtn" aria-pressed="false">Photo map</button>
+    </span>
+    <span class="seg" role="group" aria-label="Detail level">
+      <button id="cadetBtn" aria-pressed="true">Cadet</button><button id="specBtn" aria-pressed="false">Specialist</button>
+    </span>
+    <button id="stormBtn" title="Demo control">Storm today (demo)</button>
+  </div>
+</header>
+
+<section class="hud" aria-label="Base status">
+  <div class="meter"><label><span id="lblP"></span><b id="valP"></b></label><div class="bar"><i id="barP"></i></div></div>
+  <div class="meter"><label><span id="lblL"></span><b id="valL"></b></label><div class="bar"><i id="barL"></i></div></div>
+  <div class="meter"><label><span id="lblS"></span><b id="valS"></b></label><div class="bar"><i id="barS"></i></div></div>
+  <div class="meter"><label><span id="lblR"></span><b id="valR"></b></label><div class="bar"><i id="barR"></i></div></div>
+  <div class="extras">
+    <span>Spare parts</span><span class="crates" id="crates"></span>
+    <span>Science <b id="valSci"></b></span>
+  </div>
+</section>
+
+<main>
+  <div class="stage" id="stage">
+    <!-- 3D view -->
+    <div id="view3d">
+      <div class="loading3d" id="loading3d">Loading 3D terrain…</div>
+      <div id="labels3d"></div>
+    </div>
+
+    <!-- Photo map (real NASA image) -->
+    <svg id="map" viewBox="0 60 1024 900" style="display:none" role="img" aria-label="NASA image of Shackleton crater with the base and four places to explore">
+      <image href="assets/shackleton_print.jpg" x="0" y="0" width="1024" height="1024"/>
+      <g id="routes2d"></g>
+      <rect id="dark2d" x="0" y="0" width="1024" height="1024" fill="#030616" opacity="0" style="transition: opacity .6s"/>
+      <g id="base2d" transform="translate(770 735)" tabindex="0" role="button" aria-label="Enter the base">
+        <circle r="26" fill="#1d2a4f" stroke="#7aa2ff" stroke-width="4"/>
+        <rect x="-13" y="-7" width="26" height="14" rx="7" fill="#dfe6f5"/>
+        <text y="52" text-anchor="middle" fill="#fff" font-size="19" font-weight="700" style="paint-order:stroke;stroke:#05070d;stroke-width:4px">Base</text>
+      </g>
+      <g id="sites2d"></g>
+      <g id="rover2d" opacity="0"><circle r="12" fill="#ffd166" stroke="#05070d" stroke-width="3"/></g>
+    </svg>
+
+    <!-- Base interior: illustrated top-down view (original art, drawn in code) -->
+    <svg id="interior" viewBox="0 0 1200 800" style="display:none" role="img" aria-label="Top-down view inside the base: six modules joined by tunnels">
+      <defs>
+        <filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000" flood-opacity=".55"/></filter>
+        <filter id="shs" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity=".4"/></filter>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+        <pattern id="ground" width="60" height="60" patternUnits="userSpaceOnUse">
+          <rect width="60" height="60" fill="#46433e"/>
+          <circle cx="8" cy="12" r="3" fill="#3a3834"/><circle cx="40" cy="8" r="1.6" fill="#57534c"/>
+          <circle cx="27" cy="34" r="5" fill="#3d3a36"/><circle cx="27" cy="33" r="4" fill="#4b4843"/>
+          <circle cx="50" cy="45" r="2" fill="#38352f"/><circle cx="12" cy="50" r="1.2" fill="#5b5750"/>
+        </pattern>
+        <pattern id="tiles" width="28" height="28" patternUnits="userSpaceOnUse">
+          <rect width="28" height="28" fill="#cfd4db"/><path d="M28 0H0V28" fill="none" stroke="#b6bcc6" stroke-width="1.2"/>
+        </pattern>
+        <pattern id="berm" width="18" height="18" patternUnits="userSpaceOnUse">
+          <rect width="18" height="18" fill="#5c554a"/><circle cx="5" cy="5" r="3" fill="#6d6557"/><circle cx="13" cy="12" r="2.2" fill="#4c463d"/>
+        </pattern>
+        <pattern id="hazard" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="16" height="16" fill="#f2b632"/><rect width="8" height="16" fill="#1b1b1b"/>
+        </pattern>
+        <radialGradient id="lamp"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+        <radialGradient id="ovenGlow"><stop offset="0" stop-color="#ffb347" stop-opacity=".9"/><stop offset="1" stop-color="#ff6a00" stop-opacity="0"/></radialGradient>
+        <radialGradient id="ledGlow"><stop offset="0" stop-color="#ff4fd8" stop-opacity=".45"/><stop offset="1" stop-color="#ff4fd8" stop-opacity="0"/></radialGradient>
+        <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f3f6"/><stop offset="1" stop-color="#b9c0ca"/></linearGradient>
+        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#d9534f"/></marker>
+      </defs>
+
+      <!-- lunar ground outside the modules -->
+      <rect width="1200" height="800" fill="url(#ground)"/>
+      <rect width="1200" height="800" fill="#000" opacity=".15"/>
+
+      <!-- storm-shelter regolith berm -->
+      <rect x="812" y="522" width="336" height="236" rx="110" fill="url(#berm)" filter="url(#sh)"/>
+
+      <!-- tunnels (drawn first, modules sit on top) -->
+      <g fill="url(#tiles)" stroke="#cfd5de" stroke-width="8" filter="url(#sh)">
+        <rect x="278" y="236" width="44" height="168"/><rect x="278" y="396" width="44" height="168"/>
+        <rect x="278" y="378" width="136" height="44"/>
+        <rect x="878" y="236" width="44" height="168"/><rect x="878" y="396" width="44" height="168"/>
+        <rect x="786" y="378" width="136" height="44"/>
+        <rect x="578" y="496" width="44" height="108"/>
+      </g>
+
+      <!-- clickable module hulls -->
+      <g class="room" data-room="greenhouse" tabindex="0" role="button" aria-label="Greenhouse module"><rect class="hull" x="80" y="70" width="280" height="176" rx="88" fill="url(#tiles)"/></g>
+      <g class="room" data-room="power" tabindex="0" role="button" aria-label="Power and life support module"><rect class="hull" x="840" y="70" width="280" height="176" rx="88" fill="url(#tiles)"/></g>
+      <g class="room" data-room="hub" tabindex="0" role="button" aria-label="Crew habitat module"><rect class="hull" x="400" y="286" width="400" height="220" rx="110" fill="url(#tiles)"/></g>
+      <g class="room" data-room="workshop" tabindex="0" role="button" aria-label="Workshop module"><rect class="hull" x="80" y="554" width="280" height="176" rx="88" fill="url(#tiles)"/></g>
+      <g class="room" data-room="shelter" tabindex="0" role="button" aria-label="Storm shelter module"><rect class="hull" x="840" y="554" width="280" height="176" rx="88" fill="url(#tiles)"/></g>
+      <g class="room" data-room="airlock" tabindex="0" role="button" aria-label="Airlock: go back outside"><rect class="hull" x="526" y="596" width="148" height="176" rx="60" fill="url(#tiles)"/></g>
+
+      <!-- everything below is decoration: clicks pass through to the hulls -->
+      <g class="deco">
+        <!-- floor colour zones -->
+        <rect x="140" y="98" width="190" height="120" rx="14" fill="#3f8f6a" opacity=".22"/>
+        <rect x="470" y="360" width="190" height="76" rx="14" fill="#3b8f8a" opacity=".3"/>
+        <rect x="878" y="98" width="190" height="120" rx="14" fill="#c9a43b" opacity=".16"/>
+        <rect x="878" y="580" width="200" height="124" rx="14" fill="#b84a4a" opacity=".14"/>
+
+        <!-- doorways with hazard edges -->
+        <g fill="url(#tiles)">
+          <rect x="282" y="232" width="36" height="22"/><rect x="282" y="546" width="36" height="22"/>
+          <rect x="882" y="232" width="36" height="22"/><rect x="882" y="546" width="36" height="22"/>
+          <rect x="392" y="382" width="22" height="36"/><rect x="786" y="382" width="22" height="36"/>
+          <rect x="582" y="494" width="36" height="20"/><rect x="582" y="590" width="36" height="20"/>
+        </g>
+        <g fill="url(#hazard)">
+          <rect x="282" y="232" width="36" height="5"/><rect x="282" y="563" width="36" height="5"/>
+          <rect x="882" y="232" width="36" height="5"/><rect x="882" y="563" width="36" height="5"/>
+          <rect x="392" y="382" width="5" height="36"/><rect x="803" y="382" width="5" height="36"/>
+          <rect x="582" y="605" width="36" height="5"/>
+        </g>
+
+        <!-- red guide lines from the airlock to every module -->
+        <g fill="none" stroke="#d9534f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".85">
+          <path d="M600 712V470H440V400H300V150" stroke-dasharray="18 10" marker-end="url(#arrow)"/>
+          <path d="M300 400V640" stroke-dasharray="18 10" marker-end="url(#arrow)"/>
+          <path d="M600 470H760V400H900V150" stroke-dasharray="18 10" marker-end="url(#arrow)"/>
+          <path d="M900 400V640" stroke-dasharray="18 10" marker-end="url(#arrow)"/>
+        </g>
+
+        <!-- ceiling lights -->
+        <g fill="url(#lamp)">
+          <ellipse cx="220" cy="158" rx="110" ry="70"/><ellipse cx="980" cy="158" rx="110" ry="70"/>
+          <ellipse cx="520" cy="396" rx="110" ry="80"/><ellipse cx="690" cy="396" rx="110" ry="80"/>
+          <ellipse cx="220" cy="642" rx="110" ry="70"/><ellipse cx="980" cy="642" rx="110" ry="70"/>
+          <ellipse cx="600" cy="684" rx="60" ry="70"/>
+        </g>
+
+        <!-- ===== GRN-1 greenhouse ===== -->
+        <rect id="ledGlowZone" x="120" y="96" width="200" height="124" rx="20" fill="url(#ledGlow)" opacity="0"/>
+        <g filter="url(#shs)">
+          <rect x="118" y="104" width="196" height="26" rx="4" fill="#2b3138"/>
+          <rect x="118" y="146" width="196" height="26" rx="4" fill="#2b3138"/>
+          <rect x="118" y="188" width="196" height="26" rx="4" fill="#2b3138"/>
+        </g>
+        <g id="trays"></g>
+        <g class="led-bars" stroke-width="3" stroke-linecap="round">
+          <line class="led" x1="124" y1="101" x2="308" y2="101"/>
+          <line class="led" x1="124" y1="143" x2="308" y2="143"/>
+          <line class="led" x1="124" y1="185" x2="308" y2="185"/>
+        </g>
+        <circle cx="336" cy="158" r="13" fill="#3a8fd1" stroke="#cfe6ff" stroke-width="2" filter="url(#shs)"/>
+        <text x="336" y="162" text-anchor="middle" font-size="9" fill="#fff" font-family="Consolas, monospace">H₂O</text>
+
+        <!-- ===== PWR-1 power & life support ===== -->
+        <rect x="870" y="100" width="164" height="70" rx="6" fill="#1f252d" stroke="#59616d" stroke-width="2" filter="url(#shs)"/>
+        <g id="cells"></g>
+        <g filter="url(#shs)">
+          <rect x="1048" y="98" width="52" height="42" rx="5" fill="url(#metal)" stroke="#8e97a4"/>
+          <rect x="1048" y="148" width="52" height="42" rx="5" fill="url(#metal)" stroke="#8e97a4"/>
+        </g>
+        <text x="1074" y="123" text-anchor="middle" font-size="11" font-weight="700" fill="#2b3a52" font-family="Consolas, monospace">OGA</text>
+        <text x="1074" y="173" text-anchor="middle" font-size="11" font-weight="700" fill="#2b3a52" font-family="Consolas, monospace">WRS</text>
+        <circle cx="1092" cy="106" r="3" fill="#5ee08a"/><circle cx="1092" cy="156" r="3" fill="#5ee08a"/>
+        <path d="M1034 120H1048M1034 160H1048" stroke="#f5c542" stroke-width="3"/>
+
+        <!-- ===== HAB-1 crew quarters ===== -->
+        <g filter="url(#shs)">
+          <rect x="452" y="300" width="60" height="50" rx="5" fill="#e8ebef" stroke="#98a2b1"/>
+          <rect x="522" y="300" width="60" height="50" rx="5" fill="#e8ebef" stroke="#98a2b1"/>
+          <rect x="618" y="300" width="60" height="50" rx="5" fill="#e8ebef" stroke="#98a2b1"/>
+          <rect x="688" y="300" width="60" height="50" rx="5" fill="#e8ebef" stroke="#98a2b1"/>
+        </g>
+        <g fill="#3b8f8a">
+          <rect x="458" y="318" width="48" height="26" rx="3"/><rect x="528" y="318" width="48" height="26" rx="3"/>
+          <rect x="624" y="318" width="48" height="26" rx="3"/><rect x="694" y="318" width="48" height="26" rx="3"/>
+        </g>
+        <g fill="#fff"><rect x="466" y="305" width="32" height="10" rx="4"/><rect x="536" y="305" width="32" height="10" rx="4"/><rect x="632" y="305" width="32" height="10" rx="4"/><rect x="702" y="305" width="32" height="10" rx="4"/></g>
+        <g font-size="10" fill="#5b6576" font-family="Consolas, monospace" text-anchor="middle"><text x="482" y="360">1</text><text x="552" y="360">2</text><text x="648" y="360">3</text><text x="718" y="360">4</text></g>
+        <!-- galley table -->
+        <g filter="url(#shs)">
+          <rect x="488" y="386" width="22" height="16" rx="4" fill="#6b7686"/><rect x="530" y="386" width="22" height="16" rx="4" fill="#6b7686"/>
+          <rect x="488" y="446" width="22" height="16" rx="4" fill="#6b7686"/><rect x="530" y="446" width="22" height="16" rx="4" fill="#6b7686"/>
+          <rect x="478" y="402" width="84" height="44" rx="12" fill="url(#metal)" stroke="#98a2b1"/>
+        </g>
+        <circle cx="505" cy="424" r="6" fill="#fff" stroke="#aab"/><circle cx="535" cy="424" r="6" fill="#fff" stroke="#aab"/>
+        <!-- exercise treadmill -->
+        <rect x="640" y="398" width="84" height="40" rx="6" fill="#262b33" stroke="#59616d" filter="url(#shs)"/>
+        <g stroke="#3d444f" stroke-width="2"><line x1="650" y1="406" x2="650" y2="430"/><line x1="662" y1="406" x2="662" y2="430"/><line x1="674" y1="406" x2="674" y2="430"/><line x1="686" y1="406" x2="686" y2="430"/><line x1="698" y1="406" x2="698" y2="430"/></g>
+        <rect x="716" y="402" width="6" height="32" rx="2" fill="#7aa2ff"/>
+        <!-- small thick windows (no big glass on the Moon) -->
+        <g stroke="#9aa3b0" stroke-width="3" fill="#03050b">
+          <circle cx="430" cy="396" r="11"/><circle cx="770" cy="396" r="11"/>
+        </g>
+        <g fill="#fff"><circle cx="427" cy="392" r="1"/><circle cx="433" cy="399" r=".8"/><circle cx="772" cy="393" r="1"/><circle cx="767" cy="400" r=".8"/></g>
+
+        <!-- ===== WKS-1 workshop ===== -->
+        <g filter="url(#shs)">
+          <rect x="112" y="580" width="140" height="34" rx="4" fill="url(#metal)" stroke="#98a2b1"/>
+          <rect x="264" y="578" width="54" height="50" rx="5" fill="#2b3138" stroke="#59616d"/>
+          <rect x="262" y="640" width="64" height="54" rx="6" fill="#3a3f47" stroke="#59616d"/>
+        </g>
+        <rect x="272" y="588" width="34" height="30" rx="3" fill="#13181f"/><circle cx="289" cy="603" r="6" fill="#5ee08a" opacity=".8"/>
+        <circle cx="294" cy="667" r="26" fill="url(#ovenGlow)"/><rect x="274" y="652" width="40" height="30" rx="4" fill="none" stroke="#ffb347" stroke-width="2"/>
+        <g stroke="#59616d" stroke-width="3" stroke-linecap="round"><line x1="128" y1="590" x2="150" y2="604"/><line x1="170" y1="588" x2="170" y2="606"/><circle cx="210" cy="597" r="7" fill="none"/></g>
+        <rect x="108" y="638" width="136" height="32" rx="4" fill="#2b3138" opacity=".6"/>
+        <g id="spares"></g>
+
+        <!-- ===== SHL-1 storm shelter ===== -->
+        <g filter="url(#shs)">
+          <rect x="880" y="578" width="40" height="44" rx="8" fill="#55606f"/><rect x="930" y="578" width="40" height="44" rx="8" fill="#55606f"/>
+          <rect x="980" y="578" width="40" height="44" rx="8" fill="#55606f"/><rect x="1030" y="578" width="40" height="44" rx="8" fill="#55606f"/>
+        </g>
+        <g fill="#2f7fc4" opacity=".85" filter="url(#shs)">
+          <rect x="880" y="636" width="56" height="24" rx="8"/><rect x="946" y="636" width="56" height="24" rx="8"/><rect x="1012" y="636" width="58" height="24" rx="8"/>
+        </g>
+        <text x="975" y="652" text-anchor="middle" font-size="9" fill="#e6f2ff" font-family="Consolas, monospace">WATER WALL</text>
+        <circle id="shelterLamp" cx="1090" cy="600" r="8" fill="#5ee08a"/>
+
+        <!-- ===== AL-1 airlock ===== -->
+        <rect x="550" y="624" width="100" height="60" rx="6" fill="#9aa1ab" opacity=".55"/>
+        <g stroke="#7d848e" stroke-width="2"><line x1="560" y1="634" x2="640" y2="634"/><line x1="560" y1="646" x2="640" y2="646"/><line x1="560" y1="658" x2="640" y2="658"/><line x1="560" y1="670" x2="640" y2="670"/></g>
+        <!-- two spacesuits docked in suitports on the back wall -->
+        <g filter="url(#shs)">
+          <ellipse cx="572" cy="724" rx="20" ry="26" fill="#f2f2ee" stroke="#b9bfc8"/><circle cx="572" cy="704" r="11" fill="#e8b84a" stroke="#f2f2ee" stroke-width="3"/>
+          <ellipse cx="628" cy="724" rx="20" ry="26" fill="#f2f2ee" stroke="#b9bfc8"/><circle cx="628" cy="704" r="11" fill="#e8b84a" stroke="#f2f2ee" stroke-width="3"/>
+        </g>
+        <rect x="560" y="758" width="80" height="8" fill="url(#hazard)"/>
+
+        <!-- wall screens with live readouts -->
+        <g class="scr">
+          <rect x="138" y="222" width="168" height="18" rx="3"/>
+          <rect x="870" y="198" width="234" height="18" rx="3"/>
+          <rect x="520" y="474" width="160" height="18" rx="3"/>
+          <rect x="108" y="700" width="170" height="18" rx="3"/>
+          <rect x="880" y="700" width="200" height="18" rx="3"/>
+        </g>
+        <g class="scrtxt">
+          <text x="146" y="235" id="grnRead"></text>
+          <text x="878" y="211" id="pwrRead"></text>
+          <text x="528" y="487" id="habRead"></text>
+          <text x="116" y="713" id="wksRead"></text>
+          <text x="888" y="713" id="shlRead"></text>
+        </g>
+
+        <!-- signs on the ground -->
+        <g class="sign">
+          <rect x="140" y="36" width="160" height="24" rx="5"/><text x="220" y="53">GRN-1 · GREENHOUSE</text>
+          <rect x="900" y="36" width="160" height="24" rx="5"/><text x="980" y="53">PWR-1 · POWER &amp; AIR</text>
+          <rect x="520" y="252" width="160" height="24" rx="5"/><text x="600" y="269">HAB-1 · CREW QUARTERS</text>
+          <rect x="140" y="744" width="160" height="24" rx="5"/><text x="220" y="761">WKS-1 · WORKSHOP</text>
+          <rect x="900" y="766" width="160" height="24" rx="5"/><text x="980" y="783">SHL-1 · STORM SHELTER</text>
+          <rect x="684" y="700" width="104" height="24" rx="5"/><text x="736" y="717">AL-1 · AIRLOCK</text>
+        </g>
+        <text class="sch name" x="20" y="24">SHACKLETON BASE · TOP-DOWN · MODULES ENLARGED</text>
+        <text class="sch name" x="1180" y="24" text-anchor="end" id="schClock">DAY 01 · EXT SUNLIT</text>
+      </g>
+    </svg>
+
+    <div class="stormfx" id="stormfx"></div>
+    <span class="stage-note" id="stageNote"></span>
+  </div>
+
+  <aside>
+    <div class="card" id="details"></div>
+    <div class="card">
+      <h2 style="font-size:14px">Mission log</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </aside>
+</main>
+
+<div class="ending" id="ending" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+  <div class="art" id="endArt">
+    <img src="assets/luna-prime.jpg" alt="An imagined future lunar town with glass-dome greenhouses, habitats and launch pads"
+         onerror="this.parentElement.classList.add('missing')">
+    <span class="tag">Imagined future · AI concept art, not NASA data</span>
+    <div class="fallback"><div>Save the Luna Prime picture as<br><code>mockups/assets/luna-prime.jpg</code><br>to show it here.</div></div>
+  </div>
+  <div>
+    <div class="kicker" id="endKicker">Mission complete</div>
+    <h2 id="endTitle">Your base was the first step</h2>
+    <p id="endText"></p>
+    <div class="stats" id="endStats"></div>
+    <p class="muted">The real plan: NASA's Artemis program aims to land astronauts near the Moon's south pole, the same region as Shackleton crater. The town in the picture is imagined, but the problems you solved are real.</p>
+    <div class="actions"><button class="primary" id="againBtn">Play again</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <div class="from">Mission Control debrief</div>
+    <h2 id="modalTitle"></h2>
+    <p id="modalBody"></p>
+    <div class="actions"><button class="primary" id="restartBtn">Try the mission again</button></div>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+//  REAL-WORLD NUMBERS (see REALISM_NOTES.md for sources)
+// =====================================================================
+const CREW = 4;
+const MISSION_DAYS = 30;               // Artemis "base camp" stays are planned to be weeks long
+const SCI_GOAL = 35;
+const DOSE_LIMIT = 250;                // mSv · NASA 30-day short-term limit (blood-forming organs, 250 mGy-Eq)
+const BAT_MAX = 300;                   // kWh battery bank
+const O2_REF = 80, H2O_REF = 600;      // kg O2 / L water that count as a "full" reserve
+const KW = { fission: 10, solar: 20, mast: 5, load: 12, lowLoad: 8, greenhouse: 3, shelter: 1 };
+const O2_PER_PERSON = 0.84;            // kg O2 per crew member per day (NASA BVAD)
+const H2O_PER_KG_O2 = 1.125;           // electrolysis: 1.125 kg water -> 1 kg O2
+const H2O_LOSS = 0.3;                  // L/day net loss after ~98% water recovery (ISS level)
+const GCR_SURFACE = 1.37;              // mSv/day on the lunar surface (Chang'e 4 LND measurement)
+const STORM = { outside: 100, shelter: 2 };   // mSv for one day of a large solar particle event
+const GH = { o2: 0.25, days: 28, sci: 5 };    // small plant module; lettuce took ~28-33 days in Veggie
+const DARK_DAYS = [6, 7, 8, 15, 16, 17, 18, 24, 25];  // rim sites are sunlit most of the time, with short dark spells
+const STORM_DAYS = [11, 22];
+
+const SITES = [
+  { id: 'rim', name: 'Rim Lookout', km: 4, kWh: 10, o2: 1.0, h2o: 8, sci: 8, part: 0, x: 170, y: 545,
+    cadet: 'A high spot on the edge of the giant crater. Two astronauts walk the rim and collect rock samples.',
+    specialist: '6 h EVA, 2 crew, unpressurised rover. Rim sampling of ancient highland material; slopes ~15°.',
+    nasa: 'LRO’s LOLA laser altimeter mapped the Shackleton rim to metre-scale detail.' },
+  { id: 'ice', name: 'Cold Trap Crater', km: 6, kWh: 60, o2: 0, h2o: 0, h2oGain: 80, sci: 6, part: 0, robotic: true, x: 880, y: 365,
+    cadet: 'A small crater that never sees the Sun. It is colder than −230 °C! Too cold for people, so we send a robot to dig up ice.',
+    specialist: 'Robotic traverse into a permanently shadowed region (~40 K). Heaters dominate the energy budget. Extract ~80 kg water ice.',
+    nasa: 'LRO’s Diviner measured temperatures near 40 K in shadowed polar craters; LCROSS found water ice in one in 2009.' },
+  { id: 'ridge', name: 'Connecting Ridge', km: 9, kWh: 15, o2: 1.2, h2o: 10, sci: 3, part: -1, oneTime: true, x: 430, y: 118,
+    cadet: 'This ridge gets sunlight almost all the time. Build a solar mast up here so the base gets power during dark spells!',
+    specialist: 'Install a 5 kW vertical solar mast on a near-continuously lit ridge. Uses one spare part. Provides power during base dark spells.',
+    nasa: 'LRO illumination maps show ridges near Shackleton lit over 80% of the year.' },
+  { id: 'boulders', name: 'Boulder Field', km: 7, kWh: 12, o2: 1.0, h2o: 8, sci: 14, part: -1, x: 290, y: 830,
+    cadet: 'Big rocks that tell the Moon’s story. Sharp rocks will damage a rover wheel, so you need a spare part.',
+    specialist: '6 h EVA among large ejecta blocks. High-value samples. Wheel damage expected: one spare part.',
+    nasa: 'LRO’s Narrow Angle Camera images individual boulders; Curiosity’s wheels were torn by sharp Mars rocks.' }
+];
+
+// =====================================================================
+//  STATE
+// =====================================================================
+let state;
+function freshState() {
+  return { day: 1, bat: 220, o2: 60, h2o: 500, S: 60, R: 0, K: 3, sci: 0, mast: false,
+    gh: { on: false, grow: 0 }, harvests: 0, visits: {}, blackout: 0, extraStorms: [],
+    mode: 'cadet', surface: '3d', view: 'surface', room: null, selected: null, busy: false };
+}
+const isDark = d => DARK_DAYS.includes(d);
+const isStorm = d => STORM_DAYS.includes(d) || state.extraStorms.includes(d);
+const habDoseRate = () => GCR_SURFACE * (0.6 - 0.3 * state.S / 100);        // regolith cover cuts the dose
+const habStormDose = () => 30 * (1.2 - state.S / 100);
+const lifePct = () => Math.max(0, Math.min(100, Math.min(state.o2 / O2_REF, state.h2o / H2O_REF) * 100));
+
+// =====================================================================
+//  ONE DAY OF SIMULATION
+// =====================================================================
+function simulateDay(o = {}) {
+  const d = state.day, dark = isDark(d), storm = isStorm(d);
+  // power
+  const gen = KW.fission + (dark ? (state.mast ? KW.mast : 0) : KW.solar);
+  let load = o.lowPower ? KW.lowLoad : KW.load;
+  if (state.gh.on) load += KW.greenhouse;
+  if (o.shelter) load += KW.shelter;
+  state.bat = Math.min(BAT_MAX, state.bat + (gen - load) * 24 - (o.kWh || 0));
+  const out = state.bat <= 0;
+  if (out) state.bat = 0;
+  state.blackout = out ? state.blackout + 1 : 0;
+  // oxygen + water (OGA splits water into O2)
+  const need = CREW * O2_PER_PERSON;
+  const made = out ? 0 : need * (o.lowPower ? 0.5 : 1);
+  state.o2 += made - need - (o.o2 || 0) + (state.gh.on && !out ? GH.o2 : 0);
+  state.h2o += -H2O_LOSS - made * H2O_PER_KG_O2 - (o.h2o || 0) + (o.h2oGain || 0);
+  // radiation (highest-exposed crew member)
+  let dose;
+  if (storm) dose = o.shelter ? STORM.shelter : (o.crewOut ? STORM.outside : habStormDose());
+  else dose = o.shelter ? habDoseRate() * 0.5 : habDoseRate() + (o.crewOut ? (GCR_SURFACE - habDoseRate()) * 6 / 24 : 0);
+  state.R += dose;
+  // greenhouse
+  if (state.gh.on) {
+    if (out) { if (state.gh.grow) log('Power failed: the plants died. Growth reset.'); state.gh.grow = 0; }
+    else if (++state.gh.grow >= GH.days) { state.harvests++; state.sci += GH.sci; state.gh.grow = 0; log(`Lettuce harvest! Fresh food for the crew and plant data: +${GH.sci} science.`); }
+  }
+  if (out) log('⚠ Battery empty: oxygen generator stopped. Crew is breathing from the reserve tank.');
+  state.day++;
+  if (isStorm(state.day)) log(`⚠ Space weather alert: solar particle storm expected on Day ${state.day}. Keep the crew under shielding.`);
+  if (isDark(state.day) && !isDark(state.day - 1)) log('◐ Dark spell starting: the Sun is behind the terrain. Solar arrays will make no power.');
+  if (!isDark(state.day) && isDark(state.day - 1)) log('☀ Sunlight is back on the solar arrays.');
+}
+
+// =====================================================================
+//  TRIPS
+// =====================================================================
+const visitFactor = s => [1, .5, 0][Math.min(state.visits[s.id] || 0, 2)];
+function tripPlan(s) {
+  const dark = isDark(state.day), storm = isStorm(state.day), f = visitFactor(s);
+  return {
+    kWh: s.kWh + (dark ? 20 : 0), o2: s.o2, h2o: s.h2o, h2oGain: s.h2oGain ? Math.round(s.h2oGain * f) : 0,
+    part: s.part, sci: Math.round(s.sci * f),
+    dose: s.robotic ? 0 : (storm ? STORM.outside : (GCR_SURFACE - habDoseRate()) * 6 / 24),
+    dark, storm, done: s.oneTime ? state.mast : f === 0
+  };
+}
+function go(s) {
+  const p = tripPlan(s);
+  state.busy = true; render();
+  animator(s.id, () => {
+    state.K += p.part;
+    state.sci += p.sci;
+    state.visits[s.id] = (state.visits[s.id] || 0) + 1;
+    if (s.oneTime) state.mast = true;
+    log(`${s.robotic ? 'Robot' : 'Crew'} returned from ${s.name}. +${p.sci} science${p.h2oGain ? `, +${p.h2oGain} L water` : ''}${p.part ? ', used 1 spare part' : ''}${s.oneTime ? ', solar mast installed' : ''}.${p.storm && !s.robotic ? ' The crew was caught outside in the storm!' : ''}`);
+    simulateDay({ kWh: p.kWh, o2: p.o2, h2o: p.h2o, h2oGain: p.h2oGain, crewOut: !s.robotic });
+    state.busy = false; state.selected = null;
+    after();
+  });
+}
+
+// =====================================================================
+//  ROOMS
+// =====================================================================
+const ROOM_ACT = {
+  wait() { log('The crew worked inside the habitat.'); simulateDay(); after(); },
+  ghToggle() {
+    state.gh.on = !state.gh.on;
+    if (!state.gh.on) state.gh.grow = 0;
+    log(state.gh.on ? 'Grow lights on (3 kW). The plants need steady power for 28 days.' : 'Grow lights off. The plants stopped growing.');
+    render();
+  },
+  lowPower() { log('Base ran in low-power mode: heaters down, oxygen generator at half speed.'); simulateDay({ lowPower: true }); after(); },
+  bags() { state.S = Math.min(100, state.S + 10); log('Crew piled regolith bags on the habitat. Shielding +10%.'); simulateDay({ kWh: 15, crewOut: true }); after(); },
+  sinter() { state.S = Math.min(100, state.S + 20); log('Sintered regolith bricks and added them to the shield. Shielding +20%.'); simulateDay({ kWh: 80 }); after(); },
+  shelter() {
+    log(isStorm(state.day) ? 'Crew sheltered under 2 m of regolith. The storm passed with almost no extra dose.' : 'Crew spent the day in the shelter. No storm came, so that power was spent for little gain.');
+    simulateDay({ shelter: true }); after();
+  },
+  exit() { state.view = 'surface'; state.room = null; log('Crew suited up and went outside.'); render(); }
+};
+function enterBase() { if (state.busy) return; state.view = 'base'; state.room = 'hub'; state.selected = null; log('Entered the base.'); render(); }
+
+// =====================================================================
+//  UI HELPERS
+// =====================================================================
+const $ = id => document.getElementById(id);
+const spec = () => state.mode === 'specialist';
+const LABELS = {
+  cadet: { P: 'Power', L: 'Air & water', S: 'Shielding', R: 'Crew radiation' },
+  specialist: { P: 'Battery', L: 'Reserves', S: 'Regolith shielding', R: 'Crew dose (max)' }
+};
+const colorFor = (v, invert) => { const x = invert ? 100 - v : v; return x > 60 ? 'var(--good)' : x > 30 ? 'var(--warn)' : 'var(--bad)'; };
+const word = v => v > 70 ? 'Lots' : v > 40 ? 'Okay' : v > 15 ? 'Low' : 'Very low!';
+const dots = n => '●'.repeat(Math.max(1, Math.min(5, n)));
+const row = (label, value, good) => `<li><span>${label}</span><span class="${good ? 'pos' : 'neg'}">${value}</span></li>`;
+const head = t => `<li class="head"><span>${t}</span><span></span></li>`;
+function log(msg) { const d = document.createElement('div'); d.innerHTML = `<b>D${String(state.day).padStart(2, '0')}</b> `; d.append(msg); $('log').prepend(d); }
+const netKW = () => KW.fission + (isDark(state.day) ? (state.mast ? KW.mast : 0) : KW.solar) - KW.load - (state.gh.on ? KW.greenhouse : 0);
+
+// =====================================================================
+//  RENDER
+// =====================================================================
+let animator = animate2D;
+function render() {
+  const L = LABELS[state.mode];
+  const pct = { P: state.bat / BAT_MAX * 100, L: lifePct(), S: state.S, R: state.R / DOSE_LIMIT * 100 };
+  $('lblP').textContent = '⚡ ' + L.P; $('lblL').textContent = '🫁 ' + L.L; $('lblS').textContent = '🛡 ' + L.S; $('lblR').textContent = '☢ ' + L.R;
+  $('valP').textContent = spec() ? `${Math.round(state.bat)}/${BAT_MAX} kWh` : word(pct.P);
+  $('valL').textContent = spec() ? `O₂ ${state.o2.toFixed(0)} kg · H₂O ${state.h2o.toFixed(0)} L` : word(pct.L);
+  $('valS').textContent = spec() ? `${state.S}%` : word(pct.S);
+  $('valR').textContent = spec() ? `${state.R.toFixed(1)}/${DOSE_LIMIT} mSv` : (pct.R < 30 ? 'Safe' : pct.R < 60 ? 'Careful' : 'Danger!');
+  for (const k of ['P', 'L', 'S']) { $('bar' + k).style.width = pct[k] + '%'; $('bar' + k).style.background = colorFor(pct[k]); }
+  $('barR').style.width = Math.min(100, pct.R) + '%'; $('barR').style.background = colorFor(pct.R, true);
+  $('crates').innerHTML = Array.from({ length: 5 }, (_, i) => `<span class="crate ${i < state.K ? '' : 'empty'}"></span>`).join('');
+  $('valSci').textContent = `${state.sci}/${SCI_GOAL}`;
+
+  const dark = isDark(state.day), storm = isStorm(state.day), inside = state.view === 'base';
+  $('dayChip').textContent = `Day ${Math.min(state.day, MISSION_DAYS)} / ${MISSION_DAYS}`;
+  $('lightChip').textContent = dark ? '◐ Dark spell' : '☀ Sunlit';
+  $('lightChip').classList.toggle('dark', dark);
+  $('stormChip').hidden = !storm;
+  const fc = !storm && isStorm(state.day + 1);
+  $('forecastChip').hidden = !fc; if (fc) $('forecastChip').textContent = `⚠ Storm forecast: Day ${state.day + 1}`;
+  $('whereChip').textContent = inside ? 'Inside the base' : 'On the surface';
+  $('cadetBtn').setAttribute('aria-pressed', !spec()); $('specBtn').setAttribute('aria-pressed', spec());
+  const use3d = state.surface === '3d' && window.JAMT3D;
+  $('v3dBtn').setAttribute('aria-pressed', state.surface === '3d'); $('vPhotoBtn').setAttribute('aria-pressed', state.surface === 'photo');
+  $('view3d').style.display = !inside && state.surface === '3d' ? 'block' : 'none';
+  $('map').style.display = !inside && state.surface === 'photo' ? 'block' : 'none';
+  $('interior').style.display = inside ? 'block' : 'none';
+  $('stormfx').classList.toggle('on', storm);
+  $('stageNote').style.display = inside ? 'none' : '';
+  $('stageNote').textContent = inside ? ''
+    : state.surface === 'photo' ? 'Image: NASA Scientific Visualization Studio / Ernie Wright · LRO LOLA elevation data'
+    : '3D terrain modelled on Shackleton (21 km wide, ~4 km deep), lit by a low polar Sun. Base enlarged so you can see it. Drag to look around.';
+  animator = use3d ? window.JAMT3D.animate : animate2D;
+
+  render2D(); renderInterior();
+  if (window.JAMT3D) window.JAMT3D.update(state);
+  renderDetails();
+}
+
+function render2D() {
+  $('dark2d').setAttribute('opacity', isDark(state.day) ? .4 : 0);
+  for (const s of SITES) {
+    siteEls[s.id].classList.toggle('selected', state.selected === s.id);
+    siteEls[s.id].classList.toggle('visited', !!state.visits[s.id]);
+    routes2d[s.id].classList.toggle('show', state.selected === s.id);
+  }
+}
+
+function renderInterior() {
+  const dark = isDark(state.day), storm = isStorm(state.day);
+  $('schClock').textContent = `DAY ${String(Math.min(state.day, MISSION_DAYS)).padStart(2, '0')} · EXT ${dark ? 'DARK' : 'SUNLIT'}${storm ? ' · SOLAR STORM' : ''}`;
+  document.querySelectorAll('.room').forEach(r => {
+    r.classList.toggle('selected', state.room === r.dataset.room);
+    r.classList.toggle('alert', r.dataset.room === 'shelter' && storm);
+  });
+  // greenhouse: 3 racks x 7 plants that grow with the days of steady power
+  const g = state.gh.on ? state.gh.grow / GH.days : 0;
+  let t = '';
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 7; c++) {
+    const cx = 132 + c * 28, cy = 117 + r * 42;
+    if (state.gh.on) {
+      const rad = 3 + 8 * g;
+      t += `<circle cx="${cx}" cy="${cy}" r="${rad + 1.5}" fill="#2f7a45"/><circle cx="${cx - rad * .3}" cy="${cy - rad * .3}" r="${rad * .6}" fill="#6fcf72"/>`;
+    } else t += `<circle cx="${cx}" cy="${cy}" r="3" fill="#5a4a3a"/>`;
+  }
+  $('trays').innerHTML = t;
+  document.querySelectorAll('.led').forEach(l => l.setAttribute('stroke', state.gh.on ? '#ff4fd8' : '#4a3046'));
+  $('ledGlowZone').setAttribute('opacity', state.gh.on ? 1 : 0);
+  $('grnRead').textContent = state.gh.on ? `LED 3.0 kW · DAY ${state.gh.grow}/${GH.days}` : 'GROW LIGHTS OFF';
+  // battery rack
+  const lit = Math.round(state.bat / BAT_MAX * 10);
+  let c = '';
+  for (let i = 0; i < 10; i++) {
+    const on = i < lit, col = lit > 3 ? '#4fbf74' : '#e05252';
+    c += `<rect x="${878 + i * 15.4}" y="108" width="11" height="54" rx="2" fill="${on ? col : '#121820'}" stroke="#3b434f"/>`;
+    if (on) c += `<rect x="${880 + i * 15.4}" y="110" width="3" height="50" rx="1" fill="#fff" opacity=".25"/>`;
+  }
+  $('cells').innerHTML = c;
+  const n = netKW();
+  $('pwrRead').textContent = `BATT ${Math.round(state.bat)}/${BAT_MAX} kWh · NET ${n >= 0 ? '+' : ''}${n} kW`;
+  $('habRead').textContent = `O₂ ${state.o2.toFixed(0)} kg · H₂O ${state.h2o.toFixed(0)} L`;
+  // spare-part crates on the workshop shelf
+  let sp = '';
+  for (let i = 0; i < 5; i++) {
+    const x = 114 + i * 26, has = i < state.K;
+    sp += has
+      ? `<rect x="${x}" y="642" width="22" height="24" rx="2" fill="#a07a43" stroke="#d1a866"/><line x1="${x}" y1="654" x2="${x + 22}" y2="654" stroke="#6e5129"/>`
+      : `<rect x="${x}" y="642" width="22" height="24" rx="2" fill="none" stroke="#7b8494" stroke-dasharray="3 3"/>`;
+  }
+  $('spares').innerHTML = sp;
+  $('wksRead').textContent = `SPARES ${state.K}/5 · SHIELD ${state.S}%`;
+  $('shlRead').textContent = storm ? 'SOLAR STORM · TAKE SHELTER' : 'REGOLITH COVER ~2 m';
+  $('shelterLamp').setAttribute('fill', storm ? '#ff4d6d' : '#5ee08a');
+}
+
+function renderDetails() {
+  const box = $('details');
+  if (state.view === 'base') return renderRoom(box);
+  const s = SITES.find(x => x.id === state.selected);
+  if (!s) {
+    box.innerHTML = `<h2>Plan the next day</h2>
+      <p>Tap a place to see what a trip would cost, or tap <b>Base</b> to go inside.</p>
+      <p class="muted">Every trip takes a full day. Dark spells and solar storms make some days a bad time to go out.</p>
+      <div class="actions"><button id="enterBtn" class="primary" ${state.busy ? 'disabled' : ''}>Go inside the base</button>
+      <button id="stayBtn" ${state.busy ? 'disabled' : ''}>Stay inside for 1 day</button></div>`;
+    $('enterBtn').onclick = enterBase; $('stayBtn').onclick = ROOM_ACT.wait;
+    return;
+  }
+  const p = tripPlan(s);
+  const noParts = p.part < 0 && state.K + p.part < 0;
+  const L = LABELS[state.mode];
+  let rows = '';
+  rows += row('⚡ ' + L.P, spec() ? `−${p.kWh} kWh` : 'cost ' + dots(Math.ceil(p.kWh / 15)), false);
+  if (p.o2) rows += row('🫁 Suit oxygen', spec() ? `−${p.o2.toFixed(1)} kg` : 'cost ' + dots(1), false);
+  if (p.h2o) rows += row('💧 Suit cooling water', spec() ? `−${p.h2o} L` : 'cost ' + dots(1), false);
+  if (p.h2oGain) rows += row('💧 Water from ice', spec() ? `+${p.h2oGain} L` : 'gain ' + dots(3), true);
+  rows += row('☢ Crew dose', s.robotic ? (spec() ? '0 mSv (robot)' : 'none (robot)') : spec() ? `+${p.dose.toFixed(p.storm ? 0 : 2)} mSv` : (p.storm ? 'DANGER ' + dots(5) : 'tiny ' + dots(1)), !!s.robotic);
+  if (p.part) rows += row('🔧 Spare parts', '−1', false);
+  rows += row('🔬 Science', `+${p.sci}${spec() ? ' pts' : ''}`, true);
+  rows += row('⏱ Time', `1 day${spec() ? ` · ${s.km} km each way` : ''}`, false);
+  const warn = [];
+  if (p.dark) warn.push('◐ Dark spell: lights and heaters add 20 kWh to this trip.');
+  if (p.storm && !s.robotic) warn.push('☢ A solar storm is happening today. A crew outside could get 100 mSv in one day.');
+  if (state.visits[s.id] && !p.done && !s.oneTime) warn.push('Already sampled once: this trip brings back half the science.');
+  const label = p.done ? (s.oneTime ? 'Mast already built' : 'Fully sampled') : noParts ? 'No spare parts left' : s.robotic ? 'Send robot' : 'Send crew';
+  box.innerHTML = `<h2>${s.name}</h2>
+    <p>${spec() ? s.specialist : s.cadet}</p>
+    ${warn.map(w => `<p class="muted">${w}</p>`).join('')}
+    <ul class="costs">${rows}</ul>
+    <div class="actions">
+      <button class="primary" id="goBtn" ${state.busy || noParts || p.done ? 'disabled' : ''}>${label}</button>
+      <button id="closeBtn" ${state.busy ? 'disabled' : ''}>Back</button>
+    </div>
+    <div class="nasa"><b>Real NASA data:</b> ${s.nasa}</div>`;
+  $('goBtn').onclick = () => go(s);
+  $('closeBtn').onclick = () => { state.selected = null; render(); };
+}
+
+function renderRoom(box) {
+  const L = LABELS[state.mode], dark = isDark(state.day), storm = isStorm(state.day);
+  const R = {
+    hub: {
+      title: 'HAB-1 · Crew quarters',
+      text: spec() ? `Four crew. Each person needs ${O2_PER_PERSON} kg of oxygen a day; the oxygen generator (OGA) makes it by splitting recycled water.`
+                   : 'Home for the four astronauts. They sleep, eat and exercise here. Every person breathes almost 1 kg of oxygen a day!',
+      rows: row('⏱ Time', '1 day', false),
+      btns: `<button class="primary" data-act="wait">Work inside for 1 day</button>`,
+      nasa: 'Crew oxygen and water figures come from NASA’s Baseline Values and Assumptions Document (BVAD).'
+    },
+    greenhouse: {
+      title: 'GRN-1 · Plant growth',
+      text: spec() ? `3 kW LED module. Adds ~${GH.o2} kg O₂/day and fresh food. Lettuce harvest after ${GH.days} days of uninterrupted power.`
+                   : `Plants need light, and the lights need power. Lettuce takes ${GH.days} days to grow, so start early and never let the power run out!`,
+      rows: row('⚡ ' + L.P, spec() ? `−${KW.greenhouse} kW (−72 kWh/day)` : 'cost ' + dots(3) + ' every day', false)
+          + row('🫁 Oxygen', spec() ? `+${GH.o2} kg/day` : 'gain ' + dots(1), true)
+          + row('🥬 Harvest', spec() ? `+${GH.sci} pts at day ${GH.days}` : `after ${GH.days} days`, true)
+          + row('Plants die if', 'battery hits 0', false),
+      extra: dark && !state.mast ? '<p class="muted">◐ Dark spell: with the grow lights on, the battery drains 120 kWh a day.</p>' : '',
+      btns: `<button class="primary" data-act="ghToggle">${state.gh.on ? 'Turn grow lights off' : 'Turn grow lights on'}</button>`,
+      nasa: 'NASA’s Veggie system grew lettuce on the ISS; it took about a month from seed to harvest.'
+    },
+    power: {
+      title: 'PWR-1 · Power & life support',
+      text: spec() ? 'Power budget per hour. Low-power mode cuts the load to 8 kW but runs the oxygen generator at half rate, drawing on the O₂ tank.'
+                   : 'The batteries and the machines that make air and clean water. Low-power mode saves energy, but makes less oxygen.',
+      rows: head('Power budget') + row('Fission unit', `+${KW.fission} kW`, true)
+          + row('Solar arrays', dark ? (state.mast ? `+${KW.mast} kW (ridge mast)` : '0 kW (dark)') : `+${KW.solar} kW`, !dark || state.mast)
+          + row('Base load', `−${KW.load} kW`, false)
+          + (state.gh.on ? row('Grow lights', `−${KW.greenhouse} kW`, false) : '')
+          + row('Net', `${netKW() >= 0 ? '+' : ''}${netKW()} kW`, netKW() >= 0)
+          + head('Low-power mode (1 day)') + row('Load', `${KW.lowLoad} kW instead of ${KW.load}`, true)
+          + row('🫁 Oxygen tank', spec() ? `−${(CREW * O2_PER_PERSON / 2).toFixed(1)} kg` : 'cost ' + dots(2), false),
+      btns: `<button class="primary" data-act="lowPower">Low-power mode for 1 day</button>`,
+      nasa: 'NASA’s Kilopower project tested a 1–10 kW class fission reactor; the ISS uses an Oxygen Generation Assembly (OGA).'
+    },
+    workshop: {
+      title: 'WKS-1 · Workshop & ISRU',
+      text: 'More moon dirt (regolith) on top of the habitat means less radiation inside. You can pile it in bags, or bake it into bricks.',
+      rows: head('Pile regolith bags') + row('⚡ ' + L.P, spec() ? '−15 kWh' : 'cost ' + dots(1), false) + row('🛡 ' + L.S, '+10%', true)
+          + head('Sinter regolith bricks') + row('⚡ ' + L.P, spec() ? '−80 kWh' : 'cost ' + dots(5), false) + row('🛡 ' + L.S, '+20%', true)
+          + row('⏱ Each job', '1 day', false),
+      btns: `<button class="primary" data-act="bags" ${state.S >= 100 ? 'disabled' : ''}>Pile bags</button><button data-act="sinter" ${state.S >= 100 ? 'disabled' : ''}>Sinter bricks</button>`,
+      nasa: 'NASA studies sintering lunar regolith into bricks and landing pads as part of ISRU (in-situ resource utilization).'
+    },
+    shelter: {
+      title: 'SHL-1 · Storm shelter',
+      text: storm ? 'A solar particle storm is happening now! Under about 2 m of regolith, almost none of it reaches the crew.'
+                  : 'A room buried deep under regolith, with water tanks around the seats. Use it when a solar storm hits.',
+      rows: row('☢ Dose today', spec() ? (storm ? `~${STORM.shelter} mSv (vs ~${habStormDose().toFixed(0)} in HAB-1)` : `~${(habDoseRate() / 2).toFixed(2)} mSv`) : 'tiny ' + dots(1), true)
+          + row('⚡ ' + L.P, spec() ? `−${KW.shelter} kW extra` : 'cost ' + dots(1), false) + row('⏱ Time', '1 day', false),
+      btns: `<button class="primary" data-act="shelter">Shelter for 1 day</button>`,
+      nasa: 'NASA’s DONKI database logs solar particle events; Artemis II crew trained to build a shelter inside Orion.'
+    },
+    airlock: {
+      title: 'AL-1 · Airlock & suitports',
+      text: 'Suit up and head back out onto the surface.',
+      rows: '',
+      btns: `<button class="primary" data-act="exit">Go outside</button>`,
+      nasa: 'Suitports let astronauts climb into a suit from inside, keeping lunar dust out of the cabin.'
+    }
+  }[state.room || 'hub'];
+  box.innerHTML = `<h2>${R.title}</h2><p>${R.text}</p>${R.rows ? `<ul class="costs">${R.rows}</ul>` : ''}${R.extra || ''}
+    <div class="actions">${R.btns}</div><div class="nasa"><b>Real NASA connection:</b> ${R.nasa}</div>`;
+  box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => ROOM_ACT[b.dataset.act]());
+}
+
+// =====================================================================
+//  PHOTO MAP (2D)
+// =====================================================================
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent && parent.appendChild(n); return n; };
+const BASE2D = { x: 770, y: 735 };
+const routes2d = {}, siteEls = {};
+for (const s of SITES) {
+  const mx = (BASE2D.x + s.x) / 2, my = (BASE2D.y + s.y) / 2, dx = s.x - BASE2D.x, dy = s.y - BASE2D.y, len = Math.hypot(dx, dy);
+  routes2d[s.id] = el('path', { d: `M${BASE2D.x} ${BASE2D.y} Q${mx - dy / len * 45} ${my + dx / len * 45} ${s.x} ${s.y}`, class: 'route' }, $('routes2d'));
+  const g = el('g', { class: 'site', transform: `translate(${s.x} ${s.y})`, tabindex: 0, role: 'button', 'aria-label': s.name }, $('sites2d'));
+  el('circle', { r: 22, class: 'ring' }, g); el('circle', { r: 7, fill: '#fff' }, g);
+  el('text', { y: -32, 'text-anchor': 'middle', class: 'label' }, g).textContent = s.name;
+  const pick = () => select(s.id);
+  g.addEventListener('click', pick);
+  g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+  siteEls[s.id] = g;
+}
+function animate2D(id, done) {
+  const path = routes2d[id], rover = $('rover2d'), len = path.getTotalLength();
+  const dur = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 2400, t0 = performance.now();
+  rover.setAttribute('opacity', 1);
+  (function f(now) {
+    const t = Math.min(1, (now - t0) / dur), k = t < .5 ? t * 2 : (1 - t) * 2;
+    const p = path.getPointAtLength(len * k);
+    rover.setAttribute('transform', `translate(${p.x} ${p.y})`);
+    t < 1 ? requestAnimationFrame(f) : (rover.setAttribute('opacity', 0), done());
+  })(t0);
+}
+
+// =====================================================================
+//  OUTCOMES
+// =====================================================================
+function after() { render(); check(); }
+function check() {
+  let title = null, body = null;
+  if (state.o2 <= 0) {
+    title = `Oxygen ran out on Day ${state.day}`;
+    body = 'The reserve tank emptied. Without power the oxygen generator can’t split water into oxygen. Real bases keep a big emergency O₂ reserve and never let the batteries run flat.';
+  } else if (state.h2o <= 0) {
+    title = `Water ran out on Day ${state.day}`;
+    body = 'The oxygen generator uses water, and so do spacesuits. The ice in the cold trap crater could have refilled the tanks. That’s why NASA is so interested in polar ice.';
+  } else if (state.R >= DOSE_LIMIT) {
+    title = 'A crew member hit the radiation limit';
+    body = `NASA limits short-term dose to about ${DOSE_LIMIT} mSv. Most of it came from being outside during a solar storm. Real crews watch NASA space-weather alerts and stay under shielding when a storm is forecast.`;
+  } else if (state.blackout >= 2) {
+    title = `The base lost power on Day ${state.day}`;
+    body = 'Two days with an empty battery means no heating and no oxygen generation. During dark spells only the fission unit makes power. Lower the load, turn off the grow lights, or build a solar mast on the sunlit ridge.';
+  } else if (state.day > MISSION_DAYS) { showEnding(); return; }
+  if (!title) return;
+  $('modalTitle').textContent = title; $('modalBody').textContent = body;
+  $('modal').classList.add('open'); $('restartBtn').focus();
+}
+function showEnding() {
+  const ok = state.sci >= SCI_GOAL;
+  $('endKicker').textContent = `Mission complete · ${MISSION_DAYS} days on the Moon`;
+  $('endTitle').textContent = ok ? 'Your base was the first step' : 'You survived, but the science goal was missed';
+  $('endText').textContent = ok
+    ? 'Every big idea in space starts small. A few modules, a greenhouse, and a crew who balanced power, oxygen and radiation. Missions like yours could one day grow into a whole town on the Moon.'
+    : `The crew came home safe, which matters most. You collected ${state.sci} of ${SCI_GOAL} science points. Try more trips on sunlit, storm-free days next time.`;
+  const stats = [
+    [state.sci, 'Science points'], [state.R.toFixed(1), 'Highest crew dose (mSv)'],
+    [Object.keys(state.visits).length + '/4', 'Places explored'], [state.harvests, 'Lettuce harvests'],
+    [Math.round(state.h2o) + ' L', 'Water left'], [state.K, 'Spare parts left']
+  ];
+  $('endStats').innerHTML = stats.map(([v, l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+  $('ending').classList.add('open'); $('againBtn').focus();
+}
+
+// =====================================================================
+//  WIRING
+// =====================================================================
+function select(id) { if (state.busy) return; state.selected = id; render(); }
+window.JAMT = { get state() { return state; }, SITES, select, enterBase, isDark, isStorm,
+  ready3D() { $('loading3d').remove(); render(); },
+  no3D(err) { console.warn('3D unavailable:', err); $('loading3d').textContent = '3D view needs an internet connection the first time. Showing the photo map.'; state.surface = 'photo'; render(); } };
+
+$('base2d').addEventListener('click', enterBase);
+$('base2d').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enterBase(); } });
+document.querySelectorAll('.room').forEach(r => {
+  const pick = () => { state.room = r.dataset.room; render(); };
+  r.addEventListener('click', pick);
+  r.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+});
+$('cadetBtn').onclick = () => { state.mode = 'cadet'; render(); };
+$('specBtn').onclick = () => { state.mode = 'specialist'; render(); };
+$('v3dBtn').onclick = () => { if (!window.JAMT3D) return; state.surface = '3d'; render(); };
+$('vPhotoBtn').onclick = () => { state.surface = 'photo'; render(); };
+$('stormBtn').onclick = () => { if (!isStorm(state.day)) state.extraStorms.push(state.day); log('⚠ Demo: solar particle storm hitting the Moon today.'); render(); };
+$('restartBtn').onclick = () => { $('modal').classList.remove('open'); start(); };
+$('againBtn').onclick = () => { $('ending').classList.remove('open'); start(); };
+
+function start() {
+  const keep = state ? { mode: state.mode, surface: state.surface } : {};
+  state = Object.assign(freshState(), keep);
+  $('log').innerHTML = '';
+  log(`Welcome, Commander. Keep 4 crew alive for ${MISSION_DAYS} days and earn ${SCI_GOAL} science points.`);
+  render();
+}
+start();
+
+// Preview helper: index.html?ending opens the ending screen
+if (new URLSearchParams(location.search).has('ending')) {
+  Object.assign(state, { day: 31, sci: 38, R: 41.2, harvests: 1, K: 1, visits: { rim: 1, ice: 1, boulders: 1, ridge: 1 } });
+  render(); showEnding();
+}
+</script>
+
+<!-- ===================================================================
+     3D VIEW (three.js). Falls back to the photo map if it can't load.
+     =================================================================== -->
+<script type="module">
+let THREE, OrbitControls;
+try {
+  THREE = await import('three');
+  ({ OrbitControls } = await import('three/addons/controls/OrbitControls.js'));
+} catch (e) { window.JAMT.no3D(e); throw e; }
+
+const J = window.JAMT;
+const wrap = document.getElementById('view3d');
+const labelLayer = document.getElementById('labels3d');
+
+// ---------- terrain shape ----------
+const hash = (x, z) => { const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return s - Math.floor(s); };
+function vnoise(x, z) {
+  const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi;
+  const u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+  const a = hash(xi, zi), b = hash(xi + 1, zi), c = hash(xi, zi + 1), d = hash(xi + 1, zi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+const fbm = (x, z, o = 5) => { let f = 0, a = 1, fr = 1; for (let i = 0; i < o; i++) { f += a * (vnoise(x * fr, z * fr) - .5); a *= .5; fr *= 2.03; } return f; };
+const crater = (r, R, D, rim) => rim * Math.exp(-(((r - R) / (R * .22)) ** 2)) + (r < R ? -D * (1 - (r / R) ** 2) : 0);
+
+const RIM = 90, DEPTH = 34, BASE_ANG = 0.9;
+const polar = (a, r) => [Math.cos(a) * r, Math.sin(a) * r];
+const [BX, BZ] = polar(BASE_ANG, RIM + 4);
+const RIDGE_ANG = BASE_ANG - 0.55;
+const [RAx, RAz] = polar(RIDGE_ANG, RIM + 4), [RBx, RBz] = polar(RIDGE_ANG, RIM + 120);
+const smalls = [];
+{ let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 60; i++) {
+    const a = rnd() * Math.PI * 2, r = RIM + 12 + rnd() * 120, R = 2 + rnd() * rnd() * 14;
+    const [x, z] = polar(a, r);
+    if (Math.hypot(x - BX, z - BZ) < 18) continue;
+    smalls.push({ x, z, R, D: R * .45 });
+  } }
+const [IX, IZ] = polar(BASE_ANG + 0.42, RIM + 24);              // cold trap crater
+smalls.push({ x: IX, z: IZ, R: 8, D: 7 });
+function segDist(px, pz, ax, az, bx, bz) {
+  const vx = bx - ax, vz = bz - az, t = Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / (vx * vx + vz * vz)));
+  return [Math.hypot(px - (ax + t * vx), pz - (az + t * vz)), t];
+}
+function Hraw(x, z) {
+  let h = fbm(x * .018, z * .018) * 5 + fbm(x * .11, z * .11, 3) * 1.0;
+  h += crater(Math.hypot(x, z), RIM, DEPTH, 7);
+  const [d, t] = segDist(x, z, RAx, RAz, RBx, RBz);
+  h += 14 * Math.exp(-((d / 16) ** 2)) * Math.sin(Math.PI * Math.min(1, t * 1.15 + .1));
+  for (const c of smalls) h += crater(Math.hypot(x - c.x, z - c.z), c.R, c.D, c.R * .14);
+  return h;
+}
+const BH = Hraw(BX, BZ);
+function H(x, z) {
+  const h = Hraw(x, z), d = Math.hypot(x - BX, z - BZ);
+  if (d > 12) return h;
+  const k = d < 6 ? 1 : 1 - (d - 6) / 6;                        // flattened landing/base pad
+  return h + (BH - h) * k * k * (3 - 2 * k);
+}
+const v3 = (x, z, up = 0) => new THREE.Vector3(x, H(x, z) + up, z);
+
+// ---------- renderer / scene ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.35;
+wrap.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 6000);
+
+// terrain mesh
+const SIZE = 440, SEG = 320;
+const geo = new THREE.PlaneGeometry(SIZE, SIZE, SEG, SEG);
+geo.rotateX(-Math.PI / 2);
+const P = geo.attributes.position, col = new Float32Array(P.count * 3);
+for (let i = 0; i < P.count; i++) {
+  const x = P.getX(i), z = P.getZ(i);
+  P.setY(i, H(x, z));
+  const n = .5 + fbm(x * .25, z * .25, 3) * .16 + fbm(x * .03, z * .03, 3) * .1;
+  col[i * 3] = n; col[i * 3 + 1] = n * .985; col[i * 3 + 2] = n * .955;
+}
+geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+geo.computeVertexNormals();
+const tc = document.createElement('canvas'); tc.width = tc.height = 512;
+{ const g = tc.getContext('2d'), img = g.createImageData(512, 512);
+  for (let i = 0; i < 512 * 512; i++) { const v = 205 + Math.random() * 50; img.data.set([v, v, v, 255], i * 4); }
+  g.putImageData(img, 0, 0);
+  for (let i = 0; i < 260; i++) { const r = 1 + Math.random() * Math.random() * 9; g.fillStyle = `rgba(60,60,60,${.15 + Math.random() * .2})`; g.beginPath(); g.arc(Math.random() * 512, Math.random() * 512, r, 0, 7); g.fill(); } }
+const detail = new THREE.CanvasTexture(tc);
+detail.wrapS = detail.wrapT = THREE.RepeatWrapping; detail.repeat.set(70, 70); detail.colorSpace = THREE.SRGBColorSpace;
+const ground = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, roughness: 1, metalness: 0 }));
+ground.castShadow = ground.receiveShadow = true;
+scene.add(ground);
+
+// lights: very low polar Sun, almost no ambient (no atmosphere)
+const SUN_AZ = BASE_ANG - Math.PI * 0.18;
+const sun = new THREE.DirectionalLight(0xfff4e2, 3.4);
+sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096);
+Object.assign(sun.shadow.camera, { left: -240, right: 240, top: 240, bottom: -240, near: 1, far: 1200 });
+sun.shadow.bias = -0.0003; sun.shadow.normalBias = 0.6;
+scene.add(sun, sun.target);
+function setSun(elevDeg) {
+  const el = elevDeg * Math.PI / 180;
+  sun.position.set(Math.cos(SUN_AZ) * Math.cos(el), Math.sin(el), Math.sin(SUN_AZ) * Math.cos(el)).multiplyScalar(500);
+  sun.shadow.camera.updateProjectionMatrix();
+}
+const SUN_ELEV = 3.5;   // real max at Shackleton's rim is ~1.5°; raised a little so young players can see the ground
+setSun(SUN_ELEV);
+scene.add(new THREE.AmbientLight(0x8fa2c8, 0.09));
+scene.add(new THREE.HemisphereLight(0xb8c6e6, 0x000000, 0.35));   // readability fill: real lunar shadows are nearly black
+const earthshine = new THREE.DirectionalLight(0x9db8ff, 0.22);
+earthshine.position.set(-Math.cos(BASE_ANG) * 100, 30, -Math.sin(BASE_ANG) * 100);
+scene.add(earthshine);
+
+// stars
+{ const n = 4000, p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const u = Math.random() * 2 - 1, t = Math.random() * Math.PI * 2, r = 3000;
+    p.set([Math.sqrt(1 - u * u) * Math.cos(t) * r, Math.abs(u) * r * .9 + 20, Math.sqrt(1 - u * u) * Math.sin(t) * r], i * 3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 1.3, sizeAttenuation: false }))); }
+
+// Earth, low on the horizon as seen from the south pole
+{ const c = document.createElement('canvas'); c.width = 512; c.height = 256; const g = c.getContext('2d');
+  g.fillStyle = '#1d4f9a'; g.fillRect(0, 0, 512, 256);
+  for (let i = 0; i < 26; i++) { g.fillStyle = `rgba(${90 + Math.random() * 60},${110 + Math.random() * 40},70,.9)`; g.beginPath(); g.ellipse(Math.random() * 512, 40 + Math.random() * 176, 10 + Math.random() * 40, 6 + Math.random() * 22, Math.random() * 3, 0, 7); g.fill(); }
+  for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(255,255,255,${.4 + Math.random() * .5})`; g.beginPath(); g.ellipse(Math.random() * 512, Math.random() * 256, 8 + Math.random() * 40, 2 + Math.random() * 6, Math.random() * .6, 0, 7); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const earth = new THREE.Mesh(new THREE.SphereGeometry(60, 48, 24), new THREE.MeshStandardMaterial({ map: t, roughness: .7 }));
+  earth.position.set(-Math.cos(BASE_ANG) * 2600, 150, -Math.sin(BASE_ANG) * 2600);
+  scene.add(earth); }
+
+// ---------- base (enlarged so it is visible) ----------
+const M = {
+  white: new THREE.MeshStandardMaterial({ color: 0xdcd9d0, roughness: .55, metalness: .15 }),
+  grey: new THREE.MeshStandardMaterial({ color: 0x8b8f96, roughness: .6, metalness: .4 }),
+  dark: new THREE.MeshStandardMaterial({ color: 0x24272d, roughness: .8 }),
+  regolith: new THREE.MeshStandardMaterial({ color: 0x8a8781, roughness: 1, map: detail }),
+  panel: new THREE.MeshStandardMaterial({ color: 0x14204a, roughness: .3, metalness: .7 }),
+  led: new THREE.MeshStandardMaterial({ color: 0x220a1e, emissive: 0xff3fd2, emissiveIntensity: 0 }),
+  window: new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0xffc98a, emissiveIntensity: 0 })
+};
+const add = (mesh, x, y, z, parent) => { mesh.position.set(x, y, z); mesh.castShadow = mesh.receiveShadow = true; parent.add(mesh); return mesh; };
+const base = new THREE.Group();
+base.position.set(BX, BH, BZ);
+base.rotation.y = -BASE_ANG + Math.PI / 2;
+scene.add(base);
+const cyl = (r, l, m) => { const g = new THREE.CylinderGeometry(r, r, l, 32); g.rotateZ(Math.PI / 2); return new THREE.Mesh(g, m); };
+add(cyl(1.1, 4.4, M.white), 0, 1.2, 0, base);                                        // HAB-1
+add(new THREE.Mesh(new THREE.SphereGeometry(1.1, 24, 12), M.white), 2.2, 1.2, 0, base);
+add(new THREE.Mesh(new THREE.SphereGeometry(1.1, 24, 12), M.white), -2.2, 1.2, 0, base);
+for (const x of [-1.2, 0, 1.2]) add(new THREE.Mesh(new THREE.BoxGeometry(.5, .14, .05), M.window), x, 1.6, 1.08, base);
+add(cyl(.85, 3.4, M.white), 0, 1.0, 3.6, base);                                     // GRN-1
+const ledStrip = add(new THREE.Mesh(new THREE.BoxGeometry(3.0, .12, .2), M.led), 0, 1.86, 3.6, base);
+add(cyl(.45, 1.4, M.grey), 0, 1.0, 1.8, base).rotation.y = Math.PI / 2;               // tunnel
+add(new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.4, 1.8), M.white), 4.4, .7, -.4, base); // PWR-1
+add(new THREE.Mesh(new THREE.BoxGeometry(.05, 1.6, 2.4), M.grey), 5.5, 1.4, -.4, base);
+const mound = add(new THREE.Mesh(new THREE.SphereGeometry(2.4, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), M.regolith), -4.6, 0, 2.2, base); // SHL-1
+mound.scale.y = .7;
+add(new THREE.Mesh(new THREE.CylinderGeometry(.75, .75, 1.6, 24), M.white), 0, .8, -2.2, base);   // AL-1
+// vertical solar arrays (tracking the low Sun)
+const arrays = [];
+for (const [x, z] of [[7, 4], [8.5, -3.5], [3, -7]]) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); base.add(g);
+  add(new THREE.Mesh(new THREE.CylinderGeometry(.07, .09, 6, 8), M.grey), 0, 3, 0, g);
+  add(new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.2, .06), M.panel), 0, 4.2, 0, g);
+  arrays.push(g);
+}
+const sunFlat = new THREE.Vector3(Math.cos(SUN_AZ), 0, Math.sin(SUN_AZ));
+scene.updateMatrixWorld(true);
+for (const g of arrays) { const wp = g.getWorldPosition(new THREE.Vector3()); g.lookAt(wp.clone().add(sunFlat)); }
+// fission power unit, set away from the habitat behind a berm
+const fission = new THREE.Group(); fission.position.set(-12, 0, -11); base.add(fission);
+add(new THREE.Mesh(new THREE.CylinderGeometry(.6, .7, 2.2, 20), M.grey), 0, 1.1, 0, fission);
+for (let i = 0; i < 4; i++) { const f = add(new THREE.Mesh(new THREE.BoxGeometry(.05, 2.6, 2.6), M.white), 0, 2.2, 0, fission); f.rotation.y = i * Math.PI / 4; f.translateZ(1.6); }
+add(new THREE.Mesh(new THREE.BoxGeometry(5, 1.2, 1.2), M.regolith), 4, .6, 3, fission).rotation.y = .6;
+// floodlights for dark spells
+const flood = new THREE.PointLight(0xffd9a0, 0, 40, 1.6); flood.position.set(0, 5, 0); base.add(flood);
+
+// rover
+const rover = new THREE.Group();
+add(new THREE.Mesh(new THREE.BoxGeometry(1.4, .35, .9), M.grey), 0, .55, 0, rover);
+add(new THREE.Mesh(new THREE.BoxGeometry(.5, .5, .5), M.white), -.3, .9, 0, rover);
+for (const [x, z] of [[.55, .5], [.55, -.5], [-.55, .5], [-.55, -.5]]) add(new THREE.Mesh(new THREE.CylinderGeometry(.28, .28, .18, 16).rotateX(Math.PI / 2), M.dark), x, .28, z, rover);
+scene.add(rover);
+const parked = v3(BX + Math.cos(BASE_ANG) * 4, BZ + Math.sin(BASE_ANG) * 4);
+rover.position.copy(parked);
+
+// boulders
+{ let s = 3; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const [cx, cz] = polar(BASE_ANG + 0.16, RIM + 30);
+  for (let i = 0; i < 90; i++) {
+    const x = cx + (rnd() - .5) * 26, z = cz + (rnd() - .5) * 20, r = .2 + rnd() * rnd() * 1.4;
+    const b = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), M.regolith);
+    b.position.set(x, H(x, z) + r * .5, z); b.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3); b.scale.y = .7;
+    b.castShadow = b.receiveShadow = true; scene.add(b);
+  } }
+
+// ---------- sites, routes, labels ----------
+const SITE_POS = {
+  rim: v3(...polar(BASE_ANG - 0.24, RIM + 1)),
+  ice: v3(IX, IZ),
+  ridge: v3(...polar(RIDGE_ANG, RIM + 62)),
+  boulders: v3(...polar(BASE_ANG + 0.16, RIM + 30))
+};
+const routes = {}, routePts = {};
+for (const id in SITE_POS) {
+  const a = new THREE.Vector3(BX, 0, BZ), b = SITE_POS[id], pts = [];
+  for (let i = 0; i <= 120; i++) { const t = i / 120, x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t; pts.push(new THREE.Vector3(x, H(x, z) + .5, z)); }
+  routePts[id] = pts;
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color: 0x9fb4ff, dashSize: 1.6, gapSize: 1 }));
+  line.computeLineDistances(); line.visible = false; scene.add(line); routes[id] = line;
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, 4, 6), new THREE.MeshBasicMaterial({ color: 0x9fb4ff }));
+  m.position.copy(b).add(new THREE.Vector3(0, 2, 0)); scene.add(m);
+}
+const labels = [];
+function label(text, pos, cls, onClick) {
+  const b = document.createElement(onClick ? 'button' : 'span');
+  b.className = 'lbl3d ' + (cls || ''); b.textContent = text;
+  if (onClick) b.onclick = onClick;
+  labelLayer.appendChild(b); labels.push({ el: b, pos }); return b;
+}
+const siteLabels = {};
+for (const s of J.SITES) siteLabels[s.id] = label(s.name, SITE_POS[s.id].clone().add(new THREE.Vector3(0, 4.5, 0)), '', () => J.select(s.id));
+label('Base', new THREE.Vector3(BX, BH + 4.5, BZ), 'base', () => J.enterBase());
+label('Solar arrays', arrays[0].getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 6.5, 0)), 'info');
+label('Fission unit · 10 kW', fission.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 4.2, 0)), 'info');
+label('Shackleton crater · floor in permanent shadow', new THREE.Vector3(-Math.cos(BASE_ANG) * 30, -12, -Math.sin(BASE_ANG) * 30), 'info');
+
+// ---------- camera ----------
+const out = new THREE.Vector3(Math.cos(BASE_ANG), 0, Math.sin(BASE_ANG));
+const side = new THREE.Vector3(-out.z, 0, out.x);
+camera.position.set(BX, BH, BZ).addScaledVector(out, 26).addScaledVector(side, 12).add(new THREE.Vector3(0, 11, 0));
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(BX, BH + 1.5, BZ).addScaledVector(out, -3);
+controls.enableDamping = true; controls.minDistance = 8; controls.maxDistance = 320; controls.maxPolarAngle = Math.PI * .47;
+controls.update();
+
+function resize() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(wrap); resize();
+
+// ---------- rover animation ----------
+let anim = null;
+function animate(id, done) { anim = { pts: routePts[id], t0: performance.now(), dur: matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 3200, done }; }
+function stepRover(now) {
+  if (!anim) return;
+  const t = Math.min(1, (now - anim.t0) / anim.dur), k = t < .5 ? t * 2 : (1 - t) * 2, e = k * k * (3 - 2 * k);
+  const pts = anim.pts, f = e * (pts.length - 1), i = Math.min(pts.length - 2, Math.floor(f));
+  const p = pts[i].clone().lerp(pts[i + 1], f - i);
+  rover.position.set(p.x, p.y - .5, p.z);
+  rover.lookAt(pts[t < .5 ? i + 1 : i].x, rover.position.y, pts[t < .5 ? i + 1 : i].z); rover.rotateY(Math.PI / 2);
+  if (t >= 1) { const d = anim.done; anim = null; rover.position.copy(parked); d(); }
+}
+
+// ---------- state -> scene ----------
+function update(s) {
+  const dark = J.isDark(s.day);
+  setSun(dark ? -0.6 : SUN_ELEV);                  // in a dark spell the Sun sits just below the local horizon
+  sun.intensity = dark ? 0 : 3.4;
+  flood.intensity = dark ? 60 : 0;
+  M.window.emissiveIntensity = dark ? 2 : .4;
+  M.led.emissiveIntensity = s.gh.on ? 2.2 : 0;
+  for (const id in routes) routes[id].visible = s.selected === id;
+  for (const id in siteLabels) { siteLabels[id].classList.toggle('selected', s.selected === id); siteLabels[id].classList.toggle('visited', !!s.visits[id]); }
+}
+
+// ---------- loop ----------
+const tmp = new THREE.Vector3();
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (wrap.style.display === 'none') return;
+  controls.update(); stepRover(now);
+  renderer.render(scene, camera);
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  for (const l of labels) {
+    tmp.copy(l.pos).project(camera);
+    const vis = tmp.z < 1 && Math.abs(tmp.x) < 1.1 && Math.abs(tmp.y) < 1.1;
+    l.el.style.display = vis ? '' : 'none';
+    if (vis) l.el.style.transform = `translate(${(tmp.x * .5 + .5) * w}px, ${(-tmp.y * .5 + .5) * h}px) translate(-50%, -100%)`;
+  }
+}
+requestAnimationFrame(frame);
+
+window.JAMT3D = { animate, update };
+J.ready3D();
+</script>
+</body>
+</html>
