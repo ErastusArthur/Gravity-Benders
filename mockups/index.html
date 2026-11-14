@@ -827,6 +827,11 @@
 /* PHONES PLAY SIDEWAYS: held upright, a phone asks you to turn it; held sideways, the Moon fills the screen
    and the panels float on top of it, small, like a console game. */
 #turnPhone { display: none; }
+#crashTrail { position: fixed; z-index: 100001; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto;
+  background: #0b1222; color: #e8edf6; border: 1px solid #5ec8ff; border-radius: 14px; padding: 14px 16px; font: 14px/1.4 system-ui, sans-serif; box-shadow: 0 12px 40px rgba(0,0,0,.6); }
+#crashTrail small { display: block; color: #9fb0cf; margin: 4px 0 6px; }
+#crashTrail ol { margin: 0 0 10px 18px; padding: 0; font: 12px/1.45 ui-monospace, monospace; }
+#crashTrail button { font: inherit; font-weight: 700; padding: 8px 14px; border-radius: 10px; border: 0; background: #5ec8ff; color: #04101f; cursor: pointer; }
 @media (orientation: portrait) and (pointer: coarse) and (max-width: 600px) {
   body:not(.upright) #turnPhone { display: flex; position: fixed; inset: 0; z-index: 100000; background: #05070d; color: #e8edf6; flex-direction: column;
     align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 24px; font: 600 17px/1.35 system-ui, sans-serif; }
@@ -920,8 +925,25 @@
 @media (prefers-reduced-motion: reduce) { #tour .tIc { animation: none; } #tour .tHi, #tour .tCard { transition: none; } }
 </style>
 <script>
+// CRASH TRAIL: the game notes each big step (in this phone's storage). If Chrome closes, the next visit shows the
+// last steps, so we know exactly what was happening.
+var JT = (function () {
+  var t0 = Date.now(), last = null, trail = [];
+  try { last = JSON.parse(localStorage.getItem('jamt_trail') || 'null'); } catch (e) {}
+  function step(what) {
+    trail.push(((Date.now() - t0) / 1000).toFixed(1) + ' s: ' + what); if (trail.length > 14) trail.shift();
+    try { localStorage.setItem('jamt_trail', JSON.stringify(trail)); } catch (e) {}
+  }
+  var once = {}; function first(what) { if (!once[what]) { once[what] = 1; step(what); } }
+  step('page opened (' + screen.width + '×' + screen.height + ', ' + (screen.orientation ? screen.orientation.type : '') + ')');
+  addEventListener('error', function (e) { step('error: ' + (e.message || 'unknown')); });
+  addEventListener('orientationchange', function () { step('screen turned'); });
+  document.addEventListener('fullscreenchange', function () { step(document.fullscreenElement ? 'full screen on' : 'full screen off'); });
+  return { step: step, first: first, last: last };
+})();
 // "Play full screen" on Android: full screen, then lock the screen sideways (iPhones can't lock: they just show the prompt)
 function goLandscape() {
+  JT.step('tapped Play full screen');
   const el = document.documentElement, lock = () => { try { const p = screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'); if (p && p.catch) p.catch(() => {}); } catch (e) {} };
   try { const p = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : null; if (p && p.then) p.then(lock).catch(lock); else lock(); } catch (e) { lock(); }
 }
@@ -933,7 +955,7 @@ function goLandscape() {
   <div>Turn your phone sideways to play</div>
   <small>Lunar Odyssey is made for a wide screen, so you can see more of the Moon.</small>
   <button type="button" onclick="goLandscape()">Play full screen</button>
-  <button type="button" class="lnk" onclick="document.body.classList.add('upright')">Play upright anyway</button>
+  <button type="button" class="lnk" onclick="document.body.classList.add('upright'); JT.step('tapped Play upright')">Play upright anyway</button>
 </div>
 
 <header class="topbar">
@@ -3917,6 +3939,7 @@ function renderSun() {
   c.title = SUN.src === 'loading' ? 'Checking NASA space weather…' : sunText();
 }
 function start() {
+  window.JT && JT.step('mission started');
   const keep = state ? { mode: state.mode, surface: state.surface, interior: state.interior } : { interior: '3d' };
   state = Object.assign(freshState(), keep);
   if (typeof applyPerks === 'function') applyPerks();
@@ -4101,6 +4124,12 @@ const SAFE = (() => { try {
   if (q.get('safe') === '1' || (LITE && crashed)) localStorage.setItem('jamt_safe', '1');
   localStorage.removeItem('jamt_beat');
   const on = localStorage.getItem('jamt_safe') === '1';
+  if (crashed && window.JT && JT.last && JT.last.length) setTimeout(() => {
+    const d = document.createElement('div'); d.id = 'crashTrail'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'What happened last time');
+    d.innerHTML = '<b>📱 Chrome closed the game last time.</b><small>These were its last steps. Please take a screenshot and send it to the team.</small><ol></ol><button type="button">OK, carry on</button>';
+    JT.last.slice(-8).forEach(t => { const li = document.createElement('li'); li.textContent = t; d.querySelector('ol').appendChild(li); });
+    d.querySelector('button').onclick = () => d.remove(); document.body.appendChild(d);
+  }, 600);
   if (on) setTimeout(() => window.toast && toast(crashed ? '📱 The game closed last time, so it now uses phone-safe graphics (no shadows).' : '📱 Phone-safe graphics are on (no shadows).'), 1500);
   return on;
 } catch (e) { return false; } })();
@@ -4114,11 +4143,12 @@ const PR_MAX = SAFE ? .75 : LITE ? 1 : 1.5;
 const FPS_CAP = LITE ? 1000 / 31 : 0;                            // phones: 30 frames a second is plenty, and keeps them cool
 const renderer = new THREE.WebGLRenderer({ antialias: !LITE, powerPreference: LITE ? 'default' : 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, PR_MAX));
+window.JT && JT.step('3D started (' + (SAFE ? 'phone-safe' : LITE ? 'phone' : 'full') + ' graphics)');
 renderer.shadowMap.enabled = !SAFE;
 renderer.shadowMap.type = LITE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 if (LITE) renderer.shadowMap.autoUpdate = false;                // phones: redraw shadows every 4th frame, not every frame
 // if the phone's graphics give out, keep the page alive and let three.js rebuild everything when they come back
-renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); window.toast && toast('📱 The 3D view paused to save memory. It will come back in a moment.'); });
+renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); window.JT && JT.step('3D graphics lost'); window.toast && toast('📱 The 3D view paused to save memory. It will come back in a moment.'); });
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.35;
 wrap.prepend(renderer.domElement);
@@ -5726,6 +5756,7 @@ function cineSize() {
   renderer.setSize(w, h, false); CINE.cam.aspect = w / h; CINE.cam.updateProjectionMatrix();
 }
 function cineStart(host) {
+  window.JT && JT.step('briefing film');
   if (CINE.on) cineEnd();
   CINE.on = true; CINE.host = host; CINE.w = CINE.h = 0; CINE.shot = '';
   CINE.prev = { lv: lander.visible, cv: cargo.visible, ly: lander.position.y };
@@ -5822,10 +5853,12 @@ function stepObjective(now) {
     OBJ.edge.lastChild.textContent = OBJ.at === 'base' && J.roverAt === 'base' && !eva.on ? `${OBJ.name} · go inside` : `${OBJ.name} · ${km} km`;
   }
 }
-let shadowTick = 0;
+let shadowTick = 0; const TURN = document.getElementById('turnPhone') || { offsetWidth: 0 };
 function frame(now) {
   requestAnimationFrame(frame);
   if (FPS_CAP && now - lastT < FPS_CAP) return;
+  if (LITE && !CINE.on && (TURN.offsetWidth || document.querySelector('.ovl.open'))) { lastT = now; return; }   // nothing 3D on show
+  if (window.JT) JT.first(walkWrap.style.display !== 'none' ? 'first base 3D frame' : 'first Moon 3D frame');
   if (LITE && !SAFE && ++shadowTick % 4 === 1) renderer.shadowMap.needsUpdate = true;
   watchSpeed(FPS_CAP ? (now - lastT) * .6 : now - lastT);       // (judged against 50 fps, so the 30 fps cap isn't mistaken for a slow phone)
   const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
@@ -5880,7 +5913,8 @@ window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get 
 const walkWrap = document.getElementById('walk3d');
 const walkLabelLayer = document.getElementById('walkLabels');
 const wr = new THREE.WebGLRenderer({ antialias: !LITE, powerPreference: LITE ? 'default' : 'high-performance' });
-wr.domElement.addEventListener('webglcontextlost', e => e.preventDefault());
+wr.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); window.JT && JT.step('base 3D graphics lost'); });
+window.JT && JT.step('base 3D started');
 wr.setPixelRatio(Math.min(devicePixelRatio, PR_MAX));
 wr.toneMapping = THREE.ACESFilmicToneMapping; wr.toneMappingExposure = 1.05;
 wr.outputColorSpace = THREE.SRGBColorSpace;
@@ -7377,6 +7411,7 @@ function setLook(L, name) {
 setTimeout(() => { if (J.pilotLook) setLook(J.pilotLook, J.callsign); }, 0);
 // the turntable on the "choose your astronaut" screen: its own small 3D scene
 function preview(canvas) {
+  window.JT && JT.step('astronaut picker 3D');
   const r = new THREE.WebGLRenderer({ canvas, antialias: !LITE, alpha: true });
   r.setPixelRatio(Math.min(devicePixelRatio, PR_MAX)); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.15;
   const sc = new THREE.Scene();
