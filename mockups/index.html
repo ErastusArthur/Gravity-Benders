@@ -573,7 +573,7 @@
   body.clean #objPill { display: none; }
   /* the yellow arrow's on-screen parts: a tag over the place, or an arrow at the screen edge when it is out of view */
   .objTag, .objEdge { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 3; will-change: transform; }
-  .objTag { padding: 3px 10px; border-radius: 99px; background: #ffc53d; color: #1a1300; font-size: 12px; font-weight: 800; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+  .objTag { overflow: hidden; text-overflow: ellipsis; padding: 3px 10px; border-radius: 99px; background: #ffc53d; color: #1a1300; font-size: 12px; font-weight: 800; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
   .objTag small { font-weight: 600; opacity: .75; margin-left: 4px; }
   .objEdge { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
   .objEdge i { position: absolute; inset: 0; background: #ffc53d; clip-path: polygon(100% 50%, 20% 8%, 36% 50%, 20% 92%); filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
@@ -646,7 +646,7 @@
     background: radial-gradient(120% 90% at 50% 20%, #5b6170 0%, #2a2e36 55%, #15181e 100%); display: flex; align-items: flex-end; justify-content: center; box-shadow: inset 0 -18px 24px rgba(0,0,0,.35); }
   .dialog .portrait::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--who) 55%, transparent); border-radius: inherit; pointer-events: none; }
   .dialog .portrait .pImg { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; }
-  .dialog .portrait .ava { width: 92px; height: 92px; margin: auto; }
+  .dialog .portrait .ava { width: 92px !important; height: 92px !important; margin: auto; }
   .dialog.speaking .portrait .pImg { animation: talkImg .45s ease-in-out infinite alternate; }
   @keyframes talkImg { from { transform: translateY(0); } to { transform: translateY(-1.5px) scale(1.01); } }
   .dialog .dlgBody { position: relative; padding: 0 30px 12px 14px; }
@@ -659,7 +659,7 @@
   .dialog .dlgX { top: 4px; right: 4px; }
   .dialog .replies { margin-top: 8px; }
   @media (max-width: 760px), (max-height: 520px) {
-    .dialog { margin-top: 0; } .dialog .portrait { width: 64px; margin: -1px 0 -1px -1px; } .dialog .portrait .ava { width: 54px !important; height: 54px !important; }
+    .dialog { margin-top: 0; } .dialog .portrait { width: 64px; margin: -1px 0 -1px -1px; } .dialog .portrait .ava { width: 56px !important; height: 56px !important; }
     .dialog .dlgBody { padding: 6px 26px 8px 10px; } .dialog .nameRow { margin: 0 0 2px; height: auto; flex-wrap: wrap; }
     .dialog .nameTag { padding: 0; background: none; border: 0; box-shadow: none; color: var(--who); }
     .dialog .meta { background: none; padding: 0; white-space: normal; }
@@ -3272,6 +3272,7 @@ setInterval(() => {
   }
 }, 150);
 // the big picture of who is talking: the real 3D astronaut when it can be drawn, else the painted portrait
+const PORTRAIT_3D = ['ama', 'leo', 'mira', 'kofi', 'you', 'earth'];   // the people who have a 3D portrait
 function portraitHTML(id) {
   const W = window.JAMTWALK, url = W && W.portrait ? W.portrait(id, id === 'you' ? pilotLook() : id === 'earth' ? LOOKS.earth : null) : null;
   return url ? `<img class="pImg" src="${url}" alt="">` : avatar(id, 92);
@@ -3296,6 +3297,15 @@ function renderDialog() {
   if (fresh && !matchMedia('(prefers-reduced-motion: reduce)').matches) {         // typewriter, like a game dialog
     let i = 0; hud.typer = setInterval(() => { i += 2; t.textContent = m.text.slice(0, i); if (i >= m.text.length) clearInterval(hud.typer); }, 22);
   } else t.textContent = m.text;
+  if (!box.querySelector('.pImg') && PORTRAIT_3D.includes(m.who)) {
+    let tries = 0; clearInterval(hud.portT);
+    hud.portT = setInterval(() => {
+      if (hud.dlg !== m || ++tries > 40) return clearInterval(hud.portT);
+      const W = window.JAMTWALK; if (!W || !W.portrait) return;
+      const pic = box.querySelector('.portrait'); if (pic) pic.innerHTML = portraitHTML(m.who);
+      clearInterval(hud.portT);
+    }, 500);
+  }
   box.querySelector('.dlgX').onclick = hideDialog;
   box.querySelectorAll('[data-reply]').forEach(b => b.onclick = () => { reply(m, m.replies[+b.dataset.reply]); });
 }
@@ -5343,7 +5353,9 @@ function stepObjective(now) {
   if (inView) {
     OBJ.tag.style.display = ''; OBJ.edge.style.display = 'none';
     OBJ.tag.innerHTML = `▼ ${OBJ.name}<small>${OBJ.text.replace(/</g, '&lt;')}</small>`;
-    OBJ.tag.style.transform = `translate(${sx}px, ${Math.max(sy, 130)}px) translate(-50%, -100%)`;   // never under the top bar
+    const tw = OBJ.tag.offsetWidth, tx = Math.min(w - tw / 2 - 8, Math.max(tw / 2 + 8, sx));   // the whole label stays on screen
+    OBJ.tag.style.maxWidth = `${w - 16}px`;
+    OBJ.tag.style.transform = `translate(${tx}px, ${Math.max(sy, 130)}px) translate(-50%, -100%)`;   // never under the top bar
   } else {
     OBJ.tag.style.display = 'none'; OBJ.edge.style.display = '';
     let dx = sx - w / 2, dy = sy - h / 2; if (behind) { dx = -dx; dy = -dy; }
