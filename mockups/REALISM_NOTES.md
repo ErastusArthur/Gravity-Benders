@@ -158,3 +158,15 @@ There are eight original astronauts, each with a real job and one small specialt
 | Malik | Life-Support Specialist | 25% less daily water loss |
 
 Skin, hair and suit-stripe colour are your choice. Your Commander in the base wears your look and a name tape with your callsign.
+
+## Realistic outside view (ground detail)
+
+The big shapes still come from NASA LRO LOLA heights (205 m per point). Detail smaller than that is added on top:
+
+| What | Why it's real |
+|---|---|
+| ~100 small craters, each a bowl with a raised bright rim | Real lunar ground is covered in craters of every size; the data grid is too coarse to show the small ones. |
+| ~700 boulders, more of them on crater rims | Impacts throw out blocks of rock (ejecta), so boulders gather around craters. Kept small near the base and the places so walking and driving stay clear. |
+| Grainy regolith texture with pebbles, also used as a bump map | Moon dust is fine and sharp; with the Sun this low, every grain and pebble casts a tiny shadow. |
+| Light and dark patches | Fresher, brighter highland dust next to older, darker (space-weathered) ground. |
+| Coloured stars in a black sky | No air, so no blue sky; stars are white, blue-white and orange depending on how hot they are. |
