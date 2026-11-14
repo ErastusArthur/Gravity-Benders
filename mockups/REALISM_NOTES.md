@@ -191,3 +191,8 @@ Every astronaut in the game (the walker outside, the suit racks, the crew, the "
 - **Hair:** the six styles you pick (short, crop, side part, ponytail, puff, curly) now show on your 3D astronaut and on the turntable, in your hair colour. The other crew each have their own style.
 - **Empty suits:** suits hanging on the airlock racks, the spare suit and the suits plugged into the rover's suitports have no one inside, just like real stored suits. When the crew go out from the rover, the suits fill up.
 - **Phones:** the game plays sideways. Held upright, a phone shows "Turn your phone sideways" with a **Play full screen** button (Android also locks the screen sideways; iPhones can't lock, so you just turn the phone) and a "Play upright anyway" link.
+
+## Story scenes you can see, and a how-to-play tour
+
+- **Story scenes play over the live 3D Moon.** A film camera flies slow shots that match each line: the lander touching down on the pad, Earth above the crater rim, the Sun during storms, the solar mast on the ridge, the ice crater, the rover, the boulders, the base. The subtitles sit at the bottom, with letterbox bars and a "🎥 Live 3D" label naming the place.
+- **How to play:** a 12-step guided tour lights up each part of the screen (status bars, day and Sun, mission card, the 3D view, Drive, Work, Enter base, Spacewalk, Comm, End day, emergencies). It plays once after the first countdown, and the ❓ button in the top bar replays it any time.

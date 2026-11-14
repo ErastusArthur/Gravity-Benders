@@ -725,6 +725,40 @@
   #planBtn { top: 46px !important; }
 }
 </style>
+<style id="cineTourCss">
+/* story scenes over the live 3D Moon: letterbox bars, the shot's name, subtitles at the bottom */
+#brief.cine { background: #000; place-items: end center; padding: 0; overflow: hidden; }
+#brief.cine .cineBg { position: absolute; inset: 0; z-index: 0; }
+#brief.cine .cineBg canvas { display: block; width: 100% !important; height: 100% !important; }
+#brief.cine::before, #brief.cine::after { content: ''; position: absolute; left: 0; right: 0; height: 6vh; background: #000; z-index: 1; pointer-events: none; }
+#brief.cine::before { top: 0; } #brief.cine::after { bottom: 0; }
+#brief.cine .cineTag { position: absolute; top: calc(6vh + 10px); left: 14px; z-index: 2; font-size: 12px; letter-spacing: .06em; color: #cfe3ff;
+  background: rgba(5,8,16,.55); border: 1px solid rgba(94,200,255,.3); border-radius: 20px; padding: 4px 11px; }
+#brief.cine .in { position: relative; z-index: 2; max-width: 980px; width: calc(100% - 24px); margin: 0 auto calc(6vh + 10px); padding: 0; }
+#brief.cine .panel { background: linear-gradient(rgba(6,10,20,.6), rgba(6,10,20,.88)); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); padding: 14px 18px; }
+#brief.cine .lines { min-height: 0; margin: 10px 0 4px; }
+#brief.cine .lines p { font-size: 16px; } #brief.cine .lines p.old { font-size: 14px; }
+#brief.cine .patch { width: 46px; height: 46px; font-size: 22px; }
+#brief.cine .chap { margin: 6px 0 0; } #brief.cine .chap .t { font-size: clamp(24px, 4vw, 40px); }
+@media (max-height: 520px) { #brief.cine .lines p.old { display: none; } #brief.cine .panel { padding: 8px 12px; } #brief.cine .chap .t { font-size: 22px; } #brief.cine .bTop { display: none; } }
+/* the how-to-play tour */
+#tour { position: fixed; inset: 0; z-index: 30000; display: none; }
+#tour.open { display: block; }
+#tour.dim { background: rgba(2,4,10,.72); }
+#tour .tHi { position: fixed; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(2,4,10,.72), 0 0 0 3px #ffd166, 0 0 24px 6px rgba(255,209,102,.45);
+  transition: left .3s, top .3s, width .3s, height .3s; pointer-events: none; }
+#tour .tCard { position: fixed; background: linear-gradient(#111a30, #0b1222); border: 1px solid rgba(94,200,255,.4); border-radius: 16px; padding: 16px 18px 14px;
+  color: #e6ecf8; box-shadow: 0 18px 50px rgba(0,0,0,.6); transition: left .3s, top .3s; }
+#tour .tIc { font-size: 34px; line-height: 1; margin-bottom: 6px; animation: tBob 1.6s ease-in-out infinite; }
+@keyframes tBob { 50% { transform: translateY(-4px); } }
+#tour .tK { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #8fb7ff; }
+#tour h3 { margin: 4px 0 6px; font-size: 19px; color: #ffd166; }
+#tour p { margin: 0; font-size: 14.5px; line-height: 1.5; color: #d6deee; }
+#tour .tDots { display: flex; gap: 5px; margin: 12px 0 10px; } #tour .tDots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.2); } #tour .tDots i.on { background: #ffd166; }
+#tour .tRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; } #tour .tRow span { display: flex; gap: 6px; align-items: center; }
+#tour .bigBtn { padding: 9px 16px; font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { #tour .tIc { animation: none; } #tour .tHi, #tour .tCard { transition: none; } }
+</style>
 <script>
 // "Play full screen" on Android: full screen, then lock the screen sideways (iPhones can't lock: they just show the prompt)
 function goLandscape() {
@@ -773,6 +807,7 @@ function goLandscape() {
     </div>
   </section>
   <div class="menuWrap">
+    <button id="helpBtn" class="iconBtn" title="How to play" aria-label="How to play">❓</button>
     <button id="cmpBtn" class="iconBtn" title="Mission map">🗺</button>
     <button id="cleanBtn" class="iconBtn" aria-pressed="false" title="Hide the panels for a clear view (H)">👁</button>
     <button id="menuBtn" class="iconBtn" aria-expanded="false" aria-controls="menu" title="View and settings">⚙</button>
@@ -2655,11 +2690,18 @@ function stormFact(b) {
 const sceneOf = b => { const k = STORY.chapters.findIndex(c => c.id === b.chapter), ch = STORY.chapters[k];
   return { ic: b.type === 'climax' ? '⚠' : '📖', kick: ch ? `Lunar Odyssey · Chapter ${k + 1} · Day ${state.day}` : 'Lunar Odyssey',
     chap: b.title ? { n: `Chapter ${k + 1}`, t: ch.title, g: ch.tagline } : null, head: b.title ? '' : b.type === 'climax' ? 'Emergency!' : ch ? ch.title : '', lines: b.lines, card: b.card }; };
-// a cutscene: each line in the speaker's own voice, with subtitles. Skippable.
+// which film shot fits a line of the story (first match wins)
+const SHOT_WORDS = [[/landing|landed|touchdown|made it|arriv|lander|supply ship/i, 'landing'], [/earth|home planet|family|back home/i, 'earth'],
+  [/storm|flare|radiation|proton|the sun\b|sun is/i, 'sun'], [/ridge|mast|solar panel|sunlight|sunny/i, 'ridge'], [/ice|water|cold trap|drill|frozen|harvest/i, 'ice'],
+  [/rover|drive|wheel|battery/i, 'rover'], [/rock|sample|boulder|geolog/i, 'boulders'], [/young crater|bright ray|fresh/i, 'fresh'],
+  [/dark|night|shadow|crater|view|explor|discover|look at/i, 'crater'], [/greenhouse|plant|base|habitat|crew|together/i, 'base']];
+const shotFor = (txt, k) => { for (const [re, s] of SHOT_WORDS) if (re.test(txt)) return s; return ['base', 'crater', 'earth'][k % 3]; };
+// a cutscene: each line in the speaker's own voice, with subtitles over a live 3D shot of the Moon. Skippable.
 function playScene(o, done) {
   const el = ovl('brief'), run = ++briefRun, lines = o.lines || [], voice = voiceOn && 'speechSynthesis' in window;
-  el.setAttribute('aria-label', o.head || (o.chap && o.chap.t) || 'Story'); el.classList.toggle('quiet', !voice);
-  el.innerHTML = `<div class="in"><div class="panel">
+  const cine = o.cine !== false && !!(window.JAMT3D && JAMT3D.cineStart);
+  el.setAttribute('aria-label', o.head || (o.chap && o.chap.t) || 'Story'); el.classList.toggle('quiet', !voice); el.classList.toggle('cine', cine);
+  el.innerHTML = `${cine ? '<div class="cineBg" id="cineBg" aria-hidden="true"></div><div class="cineTag" id="cineTag"></div>' : ''}<div class="in"><div class="panel">
     <div class="bTop"><div class="patch" aria-hidden="true">${o.ic || '📖'}</div>
       <div><div class="k">${o.kick || 'Lunar Odyssey'}</div>${o.head ? `<h2>${o.head}</h2>` : ''}<div class="who" id="sWho"></div></div></div>
     ${o.chap ? `<div class="chap"><div class="n">${o.chap.n}</div><div class="t">${o.chap.t}</div><div class="g">${o.chap.g || ''}</div></div>` : ''}
@@ -2670,13 +2712,18 @@ function playScene(o, done) {
   const box = $('bLines'); let i = 0, typer = null;
   const say = l => `<span class="sp" style="color:${PEOPLE[SPK[l.who] || 'earth'].c}">${avatar(SPK[l.who] || 'earth', 24)}${esc(spkName(l.who))}</span>`;
   const card = () => { if (o.card) $('sCard').innerHTML = `<div class="sCard"><b>${esc(o.card.title)}</b><span>${esc(o.card.text)}</span></div>`; };
-  const end = () => { if (run !== briefRun) return; briefRun++; clearInterval(typer); if ('speechSynthesis' in window) speechSynthesis.cancel(); el.classList.remove('open'); done && done(); };
+  const SHOT_NAME = { base: 'Shackleton Base', landing: 'Landing pad', earth: 'Earth over the crater rim', sun: 'The Sun on the horizon', ridge: 'Connecting Ridge', ice: 'Cold Trap Crater',
+    boulders: 'Boulder Field', fresh: 'Fresh Crater', rover: 'Rover MO-01', crater: 'Shackleton crater' };
+  const shoot = sh => { if (!cine) return; JAMT3D.cineShot(sh); const tg = $('cineTag'); if (tg) tg.textContent = `🎥 Live 3D · ${SHOT_NAME[sh] || ''}`; };
+  if (cine) { JAMT3D.cineStart($('cineBg')); shoot(o.shot || (lines[0] ? shotFor(lines[0].text, 0) : 'crater')); }
+  const end = () => { if (run !== briefRun) return; briefRun++; clearInterval(typer); if ('speechSynthesis' in window) speechSynthesis.cancel(); if (cine) JAMT3D.cineEnd(); el.classList.remove('open', 'cine'); done && done(); };
   const finish = () => { el.classList.add('quiet'); card(); $('bGo').classList.add('pulse'); };
   const next = () => {
     if (run !== briefRun) return;
     if (i >= lines.length) return finish();
     box.querySelectorAll('p').forEach(p => p.classList.add('old'));
     const l = lines[i++], pEl = document.createElement('p'); pEl.innerHTML = say(l) + '<span class="tx"></span>'; box.appendChild(pEl);
+    shoot(shotFor(l.text, i));
     const tx = pEl.querySelector('.tx'); let k = 0; clearInterval(typer); typer = setInterval(() => { k += 2; tx.textContent = l.text.slice(0, k); if (k >= l.text.length) clearInterval(typer); }, 24);
     while (box.children.length > 3) box.removeChild(box.firstChild);
     const after = () => { if (run === briefRun) setTimeout(next, 350); };
@@ -2696,7 +2743,8 @@ function playScene(o, done) {
 // Day 1 briefing card, then the base computer's countdown into the game
 function briefingCard(b, done) {
   const card = { title: b.card.title, text: `Keep all 4 astronauts safe for ${MISSION_DAYS} days and earn ${SCI_GOAL} science points. Watch three things: Power, Air and water, and Radiation. In Chapter 1 you learn the base: Mission Control gives you a training task each morning (7 in all). You can drive to the Rim Lookout and the Connecting Ridge. More places open in Chapter 2.` };
-  playScene({ ic: '🎯', kick: 'Lunar Odyssey · Chapter 1 · Day 1', head: 'Your mission', lines: [], card, go: 'Start the mission 🚀' }, () => countdown(b.countdown, done));
+  playScene({ ic: '🎯', kick: 'Lunar Odyssey · Chapter 1 · Day 1', head: 'Your mission', lines: [], card, go: 'Start the mission 🚀', shot: 'crater' },
+    () => countdown(b.countdown, () => { if (!tourSeen()) showTour(done); else done(); }));
 }
 function countdown(l, done) {
   if (!l) return done();
@@ -2712,6 +2760,60 @@ function countdown(l, done) {
     if (actx) { try { tone(880, 0, .08); tone(660, .1, .08); } catch (e) {} }
     speechSynthesis.cancel(); setTimeout(() => speechSynthesis.speak(u), 250); setTimeout(() => { [0, 1, 2].forEach(show); close(); }, 2500 + l.text.length * 95); }
   else { [0, 1, 2].forEach(n => setTimeout(() => show(n), 1600 + n * 900)); setTimeout(close, 4400); }
+}
+// HOW TO PLAY: a guided tour of the screen. It lights up one part at a time and says what it is for.
+// Shown once after the first countdown, and any time from the ❓ button.
+const TOUR = [
+  { ic: '🌕', t: 'Welcome, Commander!', d: () => `You run a real Moon base at Shackleton crater for ${MISSION_DAYS} days. Win by keeping all 4 astronauts safe and earning ${SCI_GOAL} science points. This quick tour shows you how.` },
+  { sel: '.hud', ic: '📊', t: 'Your base at a glance', d: 'Air, power, water, food, shield and radiation. They go down a little every day. Keep every bar out of the red. Tap one to learn what it means.' },
+  { sel: '.clock', ic: '🕒', t: 'Days and the Sun', d: 'One turn is one day. At the south pole the Sun stays low and circles the sky. On dark days (6 to 8) the solar panels make no power, so save your battery.' },
+  { sel: '#missionCard', ic: '🎯', t: 'What to do next', d: 'Your goal and today’s training task. Stuck? Follow the 💡 hint.' },
+  { sel: '#stage', ic: '🖐', t: 'Look around the Moon', d: 'The ground is real NASA height data. Drag to turn, scroll or pinch to zoom. Tap a place’s name to see what you can do there.', pad: -40 },
+  { hk: 'Drive', ic: '🚙', t: 'Drive the rover', d: 'Pick a place, then Drive. The rover MO-01 runs on a battery, so always keep enough to get home.' },
+  { hk: 'Work', ic: '🛠', t: 'Do the job there', d: 'When you arrive, Work does that place’s job: collect rocks, build the solar mast, drill ice. Jobs earn science.' },
+  { hk: 'Enter base', ic: '🏠', t: 'Go inside the base', d: 'Walk from room to room and tap things to use them: grow lights, low-power mode, the storm shelter, regolith bags.' },
+  { hk: 'Spacewalk', ic: '🧑‍🚀', t: 'Walk on the Moon', d: 'Suit up and walk outside yourself. Use WASD or the on-screen pad, and E to pick up rocks. Keep an eye on your suit’s oxygen.' },
+  { hk: 'Comm', ic: '📻', t: 'Talk to Mission Control', d: 'Read the radio log, and tap Ask Earth when you are not sure what to do next.' },
+  { hk: 'End day', ic: '🌙', t: 'End the day', d: 'Done for today? End the day. Overnight the crew uses air, water, food and power, then a new day begins.' },
+  { ic: '🚨', t: 'Emergencies', d: 'Solar storms, broken parts and low oxygen pop up with a timer. Read quickly and pick the safest choice. Good luck, Commander!' }
+];
+const tourSeen = () => { try { return localStorage.getItem('jamtTour') === '1'; } catch (e) { return false; } };
+function showTour(onClose) {
+  let el = $('tour'); if (!el) { el = document.createElement('div'); el.id = 'tour'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); document.body.appendChild(el); }
+  el.innerHTML = '<div class="tHi" id="tHi"></div><div class="tCard" id="tCard" aria-live="polite"></div>';
+  el.classList.add('open'); let k = 0;
+  const target = st => st.sel ? document.querySelector(st.sel) : st.hk ? [...document.querySelectorAll('#hotbar .hk')].find(b => b.textContent.replace(/\d/g, '').trim().startsWith(st.hk)) : null;
+  const close = () => { el.classList.remove('open'); document.removeEventListener('keydown', key, true); removeEventListener('resize', draw); try { localStorage.setItem('jamtTour', '1'); } catch (e) {} if (onClose) onClose(); };
+  function draw() {
+    const st = TOUR[k], tg = target(st), hi = $('tHi'), card = $('tCard'), r = tg && tg.getBoundingClientRect(), pad = st.pad || 6;
+    const shown = r && r.width > 0 && r.height > 0;
+    hi.style.display = shown ? 'block' : 'none'; el.classList.toggle('dim', !shown);
+    if (shown) Object.assign(hi.style, { left: `${r.left - pad}px`, top: `${r.top - pad}px`, width: `${r.width + pad * 2}px`, height: `${r.height + pad * 2}px` });
+    card.innerHTML = `<div class="tIc">${st.ic}</div><div class="tK">How to play · ${k + 1} of ${TOUR.length}</div><h3>${st.t}</h3><p>${typeof st.d === 'function' ? st.d() : st.d}</p>
+      <div class="tDots">${TOUR.map((_, n) => `<i class="${n === k ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="tRow"><button class="linkBtn" id="tSkip">Skip tour</button><span>${k ? '<button class="linkBtn" id="tBack">◂ Back</button>' : ''}
+      <button class="bigBtn" id="tNext">${k === TOUR.length - 1 ? 'Let’s play 🚀' : 'Next ▸'}</button></span></div>`;
+    const cw = Math.min(360, innerWidth - 24); card.style.width = `${cw}px`;
+    const ch = card.offsetHeight;
+    if (shown) {
+      const below = r.bottom + pad + 12, above = r.top - pad - 12 - ch, fitsBelow = below + ch < innerHeight - 8;
+      let top = fitsBelow ? below : above >= 8 ? above : Math.max(8, (innerHeight - ch) / 2);
+      if (st.sel === '#stage') top = Math.max(8, (innerHeight - ch) / 2);
+      const left = Math.min(innerWidth - cw - 12, Math.max(12, r.left + r.width / 2 - cw / 2));
+      Object.assign(card.style, { left: `${left}px`, top: `${top}px` });
+    } else Object.assign(card.style, { left: `${(innerWidth - cw) / 2}px`, top: `${Math.max(8, (innerHeight - ch) / 2)}px` });
+    $('tNext').onclick = () => { if (k === TOUR.length - 1) close(); else { k++; draw(); } };
+    $('tSkip').onclick = close; const bk = $('tBack'); if (bk) bk.onclick = () => { k--; draw(); };
+    $('tNext').focus();
+  }
+  function key(e) {
+    if (!el.classList.contains('open')) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); $('tNext').click(); }
+    else if (e.key === 'ArrowLeft' && k) { e.preventDefault(); e.stopPropagation(); k--; draw(); }
+  }
+  document.addEventListener('keydown', key, true); addEventListener('resize', draw);
+  draw();
 }
 // a "Real NASA connection" card that pops up over the game
 function factCard(c) {
@@ -3277,6 +3379,7 @@ $('ffBtn').onclick = () => { if (!state.busy) state.view === 'base' ? ROOM_ACT.s
   fit(); if (window.ResizeObserver) new ResizeObserver(fit).observe(tb); }
 function setClean(on) { hud.clean = on; document.body.classList.toggle('clean', on); $('cleanBtn').setAttribute('aria-pressed', on); $('cleanBtn').title = on ? 'Show the panels again (H)' : 'Hide the panels for a clear view (H)'; }
 $('cleanBtn').onclick = () => setClean(!hud.clean);
+$('helpBtn').onclick = () => showTour();
 $('dataBtn').onclick = () => radio('earth', `Where this game's science comes from: 1) Live solar flares and radiation storms from NASA's DONKI space weather database (ccmc.gsfc.nasa.gov/DONKI-API), checked every time you play. ${SUN.src === 'live' ? 'Connected now.' : 'Not connected right now, so a typical Sun is used.'} 2) Oxygen, water and power numbers from the ISS life support system and NASA Artemis plans. 3) The 8-hour Moon suit from NASA's Artemis AxEMU suit. 4) Radiation doses and the 250 mSv limit from NASA crew health standards. 5) Real astronaut blood tests from NASA's Open Science Data Repository (OSDR, study OSD-569, Inspiration4), saved into the game on ${OSDR.saved}, not live. 6) The dusty-panel risk is real: Apollo 12 found the old Surveyor 3 probe sandblasted by their lander. 7) The Moon map and the 3D ground are real: heights of Shackleton crater measured by the laser on NASA's Lunar Reconnaissance Orbiter (LOLA, 40 m per pixel), saved into the game, not live.`, { instant: true, replies: [copy('Thanks, Mission Control.')] });
 $('sunChip').onclick = () => radio('earth', `Space weather briefing. ${sunText()}${state.flareDays.some(d => d >= state.day) ? ' Stay alert for flare warnings.' : ''}`, { instant: true, replies: [copy()] });
 $('menuBtn').onclick = () => { const m = $('menu'); m.hidden = !m.hidden; $('menuBtn').setAttribute('aria-expanded', !m.hidden); };
@@ -4319,7 +4422,7 @@ function stepLander(now) {
   const blast = Math.round(36 * near * burn * (reduced() ? .3 : 1));          // exhaust hits the ground: grit sprays out flat and fast
   for (let i = 0; i < blast; i++) { const a = Math.random() * Math.PI * 2, sp = 9 + Math.random() * 20;
     kick(PX + Math.cos(a) * 1.4, PH + .15, PZ + Math.sin(a) * 1.4, Math.cos(a) * sp, .2 + Math.random() * 1.6, Math.sin(a) * sp, 3.5); }
-  if (t >= 1) { landerAnim = null; flame.visible = false; landerLight.intensity = 0; dust.material.opacity = 0; cargo.visible = !J.state.unloaded; }
+  if (t >= 1) { const wasCine = landerAnim.cine; landerAnim = null; flame.visible = false; landerLight.intensity = 0; dust.material.opacity = 0; cargo.visible = !wasCine && !J.state.unloaded; }
 }
 
 // ---------- sites, routes, labels ----------
@@ -4888,6 +4991,58 @@ function update(s) {
   showRig(s);
 }
 
+// ---------- CINEMATIC SHOTS: the story scenes play over the real 3D Moon ----------
+// The game's own renderer moves behind the subtitles and a film camera flies slow shots that match what the crew
+// is talking about (the landing, Earth, a storm, the ridge, the ice crater...). When the scene ends it moves back.
+const CINE = { on: false, shot: '', t0: 0, cam: new THREE.PerspectiveCamera(34, 16 / 9, .1, 6000), host: null, prev: null, w: 0, h: 0 };
+const cv = (x, z, up) => new THREE.Vector3(x, H(x, z) + up, z);
+const orbitShot = (c, r, h, a0, spd, lookUp) => t => { const a = a0 + t * spd; return [cv(c.x + Math.cos(a) * r, c.z + Math.sin(a) * r, h), new THREE.Vector3(c.x, H(c.x, c.z) + lookUp, c.z)]; };
+const B0 = () => new THREE.Vector3(BX, BH, BZ);
+const SHOTS = {
+  base: t => orbitShot(B0(), 30, 10, BASE_ANG + .5, .03, 2)(t),
+  landing: t => { const d = new THREE.Vector3(PX - BX, 0, PZ - BZ).normalize(), a = Math.atan2(d.z, d.x) + .45 + t * .015;   // beyond the pad, looking back at the base
+    return [cv(PX + Math.cos(a) * 26, PZ + Math.sin(a) * 26, 4 + t * .2), new THREE.Vector3(PX, PH + 3 + lander.position.y * .8, PZ)]; },
+  earth: t => { const e = EARTH.mesh.position, d = e.clone().sub(B0()).setY(0).normalize(), c = B0().addScaledVector(d, -34 - t * .6);
+    const p = cv(c.x, c.z, 6); return [p, p.clone().lerp(e, .02).add(new THREE.Vector3(0, -.6, 0))]; },
+  sun: t => { const d = sun.position.clone().setY(0).normalize(), c = B0().addScaledVector(d, -30 - t * .5);
+    const p = cv(c.x, c.z, 5); return [p, B0().addScaledVector(sun.position.clone().normalize(), 600)]; },
+  ridge: t => orbitShot(SITE_POS.ridge, 18, 7, RIDGE_ANG + 1.2, .04, 2.5)(t),
+  ice: t => orbitShot(SITE_POS.ice, 26, 16, BASE_ANG + 2.4, .03, -3)(t),
+  boulders: t => orbitShot(SITE_POS.boulders, 14, 4, BASE_ANG - 1, .05, .8)(t),
+  fresh: t => orbitShot(SITE_POS.fresh, 13, 5, BASE_ANG + .4, .05, .3)(t),
+  rover: t => { const c = rover.position.clone(); return orbitShot(c, 9, 3, BASE_ANG + 2.6, .07, 1.2)(t); },
+  crater: t => { const a = BASE_ANG + .25 + t * .012, p = cv(BX + Math.cos(a) * 48, BZ + Math.sin(a) * 48, 34 - t * .3);
+    return [p, new THREE.Vector3(0, H(0, 0) + 10, 0).lerp(B0(), .35)]; }
+};
+function cineSize() {
+  const w = (CINE.host && CINE.host.clientWidth) || innerWidth, h = (CINE.host && CINE.host.clientHeight) || innerHeight;
+  if (w === CINE.w && h === CINE.h) return; CINE.w = w; CINE.h = h;
+  renderer.setSize(w, h, false); CINE.cam.aspect = w / h; CINE.cam.updateProjectionMatrix();
+}
+function cineStart(host) {
+  if (CINE.on) cineEnd();
+  CINE.on = true; CINE.host = host; CINE.w = CINE.h = 0; CINE.shot = '';
+  CINE.prev = { lv: lander.visible, cv: cargo.visible, ly: lander.position.y };
+  host.appendChild(renderer.domElement); cineSize();
+}
+function cineShot(name) {
+  if (!CINE.on) return; if (!SHOTS[name]) name = 'base';
+  if (CINE.shot === name) return; CINE.shot = name; CINE.t0 = performance.now();
+  if (name === 'landing' && !landerAnim) { lander.visible = true; cargo.visible = false; landerAnim = { t0: performance.now(), cine: true }; }   // a lander comes down
+}
+function cineFrame(now) {
+  cineSize();
+  const [p, l] = (SHOTS[CINE.shot] || SHOTS.base)((now - CINE.t0) / 1000);
+  CINE.cam.position.copy(p); CINE.cam.lookAt(l);
+  renderer.render(scene, CINE.cam);
+}
+function cineEnd() {
+  if (!CINE.on) return; CINE.on = false; CINE.shot = '';
+  if (landerAnim && landerAnim.cine) landerAnim = null;
+  if (CINE.prev) { flame.visible = false; landerLight.intensity = 0; dust.material.opacity = 0; lander.position.y = CINE.prev.ly; lander.visible = CINE.prev.lv; cargo.visible = CINE.prev.cv; }
+  wrap.prepend(renderer.domElement); resize();
+}
+
 // ---------- loop ----------
 const tmp = new THREE.Vector3();
 let lastT = performance.now();
@@ -4910,6 +5065,7 @@ function frame(now) {
   watchSpeed(now - lastT);
   const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
   if (walkWrap.style.display !== 'none') frameWalk(now, dt);
+  if (CINE.on) { stepLander(now); stepFx(now, dt); cineFrame(now); return; }
   if (wrap.style.display === 'none') return;
   if (eva.on) stepEVA(dt); else controls.update();
   stepDrive(now); stepAct(now, dt); stepLander(now); stepFx(now, dt);
@@ -4947,7 +5103,7 @@ setTimeout(function drawMap() {
   }
   g.putImageData(im, 0, 0); MAP_IMG = cv.toDataURL();
 }, 1200);
-window.JAMT3D = { camera, controls, scene, H, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
+window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get cineOn() { return CINE.on; }, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
   get mapImg() { return MAP_IMG; }, evaKm: () => eva.on ? xzToKm(eva.pos.x, eva.pos.z) : null };
 // =====================================================================
 //  INSIDE THE BASE: first-person walk-through
