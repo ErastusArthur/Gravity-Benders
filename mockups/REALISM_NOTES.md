@@ -214,3 +214,12 @@ Every astronaut in the game (the walker outside, the suit racks, the crew, the "
 - In the 3D view, a big yellow arrow bobs over that place with a beam and a pulsing ring on the ground, and can be seen through hills. When the place is off screen, an arrow at the edge of the screen points to it with the distance.
 - The Current Mission card is now folded into a small button above the minimap that shows the next task. Tap it (or press M) to open all the goals.
 - On the mission map, the map gets most of the screen. The chosen mission shows in a small bar under it with Details and Start buttons. Details slides the full mission card in from the right.
+
+## Survival on foot (Specialist, ages 13+)
+- **Walk anywhere.** NASA's "walk-back" rule keeps moonwalkers within about 2 km of a safe place, so they could walk home if the carrier broke down. Cadets (7–12) keep that as a wall. Specialists can cross it; Leo warns them over the radio.
+- **Suit air and battery** (xEMU: about 8 h each). The battery runs the fans, CO₂ scrubber, radio, lamp and heaters, so it drains faster in the dark. A dead battery means weak fans and faster breathing. The map is shrunk, so each km walked also costs about 20 minutes of suit time, roughly what a real walk in a suit takes.
+- **Call MO-01 (R).** Leo drives the carrier out to you at carrier speed, steering around Shackleton. He refuses if the battery can't cover the round trip. If you run out of air, Leo rescues you, but you lose 2 hours and your samples.
+- **Solar flares on foot.** The flash comes first; the particles arrive about 30 minutes later and keep coming. A suit stops almost none of them (up to ~8 mSv a minute in the game). Passing NASA's 30-day limit (250 mSv) is logged. Above about 0.7–1 Sv you get radiation sickness: nausea, weakness, slow walking.
+- **No dust storms or eruptions.** The Moon has no air, so there's no wind. Its volcanoes died out more than a billion years ago (the orange glass beads came from them). The real dangers are below.
+- **Meteorite strikes.** With no air, even small rocks hit at about 20 km/s. NASA watches the impact flashes from Earth, and LRO has found hundreds of new craters. In the game a strike leaves a fresh crater with bright rays. Debris can hole a suit (a leak) or dent the carrier's battery box. Real hits near someone are far rarer.
+- **Moonquakes.** Apollo seismometers recorded shallow moonquakes up to about magnitude 5, ringing for 10 minutes or more. You may fall over.
