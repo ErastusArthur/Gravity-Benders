@@ -86,7 +86,8 @@
   .walkPrompt { top: auto !important; bottom: 120px; height: auto !important; min-height: 0; width: auto; right: auto; }
   .walkPad { bottom: 64px; }
   .walkPad .turnL { grid-area: 3 / 1; color: #9fd0ff; }
-  @media (pointer: coarse), (max-width: 900px) { .walkPad { display: grid; } }
+  @media (pointer: coarse) { .walkPad { display: grid; } }   /* touch screens only: on a PC you walk with the keys */
+  @media (hover: hover) and (pointer: fine) { .lbl3d.walkto { display: none !important; } }
   /* far-away things you can use: a small glowing dot, no text (walk closer to see the button) */
   .useDot { position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; pointer-events: none;
     background: #ffcf7a; box-shadow: 0 0 8px 3px rgba(255,179,71,.75); animation: dotGlow 1.6s ease-in-out infinite alternate; z-index: 1; }
@@ -444,7 +445,21 @@
   #osdrCard h2, #dataCard h2 { margin: 0 0 4px; font-size: 18px; color: #ffd166; }
   #osdrCard p, #dataCard p { margin: 6px 0; font-size: 13.5px; line-height: 1.5; color: #dfe6f5; }
   #osdrCard .src, #dataCard .src { font-size: 11.5px; color: #9fb0cf; border-top: 1px solid #22304f; padding-top: 8px; margin-top: 10px; }
-  #osdrCard { z-index: 31; }   /* the blood chart opens on top of the data panel */
+  #osdrCard { z-index: 31; }
+  #judgeGuide { position: fixed; top: 64px; right: 12px; z-index: 26; width: min(330px, calc(100% - 24px)); background: rgba(9,14,27,.95); border: 1px solid rgba(255,209,102,.55);
+    border-radius: 14px; padding: 10px 14px 12px; box-shadow: 0 12px 30px rgba(0,0,0,.5); color: #e6ecf8; }
+  #judgeGuide[hidden] { display: none; }
+  #judgeGuide .jgTop { display: flex; justify-content: space-between; align-items: center; }
+  #judgeGuide .jgK { font-size: 11px; letter-spacing: .06em; color: #ffd166; font-weight: 700; text-transform: uppercase; }
+  #judgeGuide .jgT { display: block; font-size: 15px; margin: 4px 0 2px; }
+  #judgeGuide p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.45; color: #cfd8ea; }
+  #judgeGuide .jgRow { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  #judgeGuide .bigBtn { font-size: 13px; padding: 7px 12px; }
+  #demoCap { position: fixed; left: 50%; top: 112px; transform: translateX(-50%); z-index: 26; max-width: min(620px, calc(100% - 24px)); padding: 9px 16px; border-radius: 12px;
+    background: rgba(5,8,16,.86); border: 1px solid rgba(255,209,102,.5); color: #f2f5fa; font-size: 15px; line-height: 1.4; text-align: center; opacity: 0; transition: opacity .4s; pointer-events: none; }
+  #demoCap.on { opacity: 1; }
+  #demoCap b { color: #ffd166; }
+  @media (max-height: 520px), (max-width: 600px) { #demoCap { top: 64px; font-size: 13px; } #judgeGuide { top: auto; bottom: 8px; right: 8px; width: min(300px, calc(100% - 16px)); } }   /* the blood chart opens on top of the data panel */
   #dataCard .box { width: min(720px, 100%); }
   #dataCard .dRow { display: grid; grid-template-columns: 34px 1fr; gap: 4px 10px; padding: 10px 0; border-top: 1px solid #1c2846; }
   #dataCard .dIc { font-size: 22px; line-height: 1.2; text-align: center; grid-row: span 3; }
@@ -524,7 +539,7 @@
   .evaPad button { padding: 0; font-size: 18px; border-radius: 12px; background: rgba(13,20,32,.85); touch-action: none; }
   .evaPad [data-k="w"] { grid-area: 1 / 2; } .evaPad [data-k="a"] { grid-area: 2 / 1; } .evaPad [data-k="d"] { grid-area: 2 / 3; } .evaPad [data-k="s"] { grid-area: 3 / 2; }
   .evaPad .hop { grid-area: 3 / 3; color: #9fd0ff; } .evaPad .use { grid-area: 1 / 3; color: #ffd08a; font-weight: 800; }
-  @media (pointer: coarse), (max-width: 900px) { body.eva .evaPad { display: grid; } }
+  @media (pointer: coarse) { body.eva .evaPad { display: grid; } }
   @media (max-width: 900px) { .evaBar { bottom: 10px; font-size: 11.5px; } .evaPad { bottom: 44px; } }
   body.eva #labels3d .lbl3d.info { display: none; }
   /* ===================== game HUD ===================== */
@@ -1863,6 +1878,7 @@ function avatar(id, size = 38) {
 // queue a radio call; replies are the Commander's orders back
 function radio(who, text, o = {}) {
   const m = { id: Math.random().toString(36).slice(2), who, text, ch: o.ch || chanFor(who), day: state.day, replies: o.replies || [], answered: null, timer: o.timer || null };
+  if (DEMO && DEMO.on && !o.demo && m.ch !== 'suit') { state.radio.unshift(m); trimRadio(); return; }   // keep the demo scene clean (still in the radio log)
   if (who === 'earth' && o.delay) {                         // a reply from Earth arrives after the round trip
     state.radioWait = true; renderRadio();
     setTimeout(() => { state.radioWait = false; state.radio.unshift(m); trimRadio(); showDialog(m); render(); speak(m); }, o.instant ? 1 : EARTH_DELAY * 2000);
@@ -2073,11 +2089,11 @@ function flareAlert(d) {
 }
 // 13+ free roaming: a flare while you are out on foot. The flash (light, X-rays) comes first; the dangerous fast
 // particles follow some minutes later and keep coming for hours. A suit stops almost none of them: get under cover.
-function flareOnFoot(km, near) {
-  if (MISSION.calm) return false;
-  flareFlashAt = performance.now(); flareFxAt = flareFlashAt + 30000; flareLen = 150000;    // 30 game-minutes of warning, a long storm
+function flareOnFoot(km, near, o = {}) {
+  if (MISSION.calm && !o.demo) return false;
+  flareFlashAt = performance.now(); flareFxAt = flareFlashAt + (o.warn || 30000); flareLen = 150000;    // 30 game-minutes of warning, a long storm
   radio('earth', `Flare alert! A big flare just went off on the Sun. Fast particles reach the Moon in about 30 minutes, and your suit can't stop them. Kofi, you are ${km.toFixed(1)} km from ${near}. Get under cover!`,
-    { delay: true, replies: [
+    { delay: !o.demo, demo: o.demo, replies: [
       { label: '📻 Send MO-01 to Kofi', say: 'Leo, drive out and pick Kofi up. Fast!', then: () => window.JAMT3D && window.JAMT3D.callPickup() },
       { label: 'Kofi, run back', say: 'Kofi, head back to cover. Lope!' }] });
   log('☀ A flare caught Kofi out on foot. Particles arrive about 30 minutes after the flash.');
@@ -2726,6 +2742,7 @@ function showTitle() {
       <div class="btns">
         <button class="bigBtn" id="tStart">${PILOT && PILOT.look ? (applyLook(), avatar('you', 30)) : '▶'} ${PILOT ? `Continue as ${esc(PILOT.callsign)}` : 'Start'}</button>
         ${PILOT ? '<button class="linkBtn" id="tNew">👤 New pilot</button>' : ''}
+        <button class="linkBtn" id="tJudge" title="Skip the story: see the best parts in about 3 minutes">🧑‍⚖️ Judges: 3-minute tour</button>
       </div>
       <div class="hint">Press Enter to start · Sound on for Mission Control’s voice</div>
     </div>
@@ -2735,6 +2752,78 @@ function showTitle() {
   el.classList.add('open'); $('tStart').focus({ preventScroll: true }); el.scrollTop = 0; if ($('tData')) $('tData').onclick = e => { e.stopPropagation(); showData(); };   // don't jump past the game's name on short screens
   $('tStart').onclick = () => { unlockSound(); el.classList.remove('open'); if (PILOT && PILOT.astro) { usePilot(); applyLook(); cmpSel = null; showCampaign(false); } else if (PILOT) showAstro(); else showSetup(); };
   const nw = $('tNew'); if (nw) nw.onclick = () => { unlockSound(); el.classList.remove('open'); showSetup(); };
+  $('tJudge').onclick = () => { unlockSound(); judgeTour(); };
+}
+// =====================================================================
+//  FOR JUDGES. A 3-minute path through the best parts (no story to skip), and a 30-second scripted
+//  scene to screen-record for the video. Links: ?judge=1 opens the tour, ?demo=1 plays the scene.
+// =====================================================================
+var DEMO = { on: false, timers: [] };   // var: radio() may run before this line
+const when3D = f => window.JAMT3D && window.JAMT3D.startEVA && !$('loading3d') ? f() : setTimeout(() => when3D(f), 300);
+function quickPlay() {                                      // straight into a Storm Watch mission as a Specialist (13+)
+  ['title', 'setup', 'astro', 'brief'].forEach(id => { const e = $(id); if (e) e.classList.remove('open'); });
+  hideCampaign();
+  if (PILOT && PILOT.astro) { usePilot(); applyLook(); }
+  applyMission(MISSIONS.find(m => m.id === 'storm'));
+  start(); state.mode = 'specialist'; state.view = 'surface'; state.surface = '3d'; render();
+}
+function demoCap(t) {
+  let c = $('demoCap'); if (!c) { c = document.createElement('div'); c.id = 'demoCap'; c.setAttribute('aria-live', 'polite'); document.body.appendChild(c); }
+  c.innerHTML = t || ''; c.classList.toggle('on', !!t);
+}
+function demoStop() { DEMO.timers.forEach(clearTimeout); DEMO.timers = []; DEMO.on = false; demoCap(''); document.body.classList.remove('demoOn'); if ($('judgeGuide')) $('judgeGuide').hidden = false; }
+// 30 seconds: a real flare catches Kofi 5 km out on foot; he calls the outpost; the carrier gets him in time.
+function demoScene(fromTour) {
+  demoStop(); DEMO.on = true; DEMO.waited = 0; document.body.classList.add('demoOn');
+  if (!fromTour) { quickPlay(); if ($('judgeGuide')) $('judgeGuide').remove(); }
+  else if ($('judgeGuide')) $('judgeGuide').hidden = true;
+  demoCap('Loading the Moon…');
+  when3D(() => {
+    const T = window.JAMT3D; hideDialog(); hud.queue = [];
+    if (T.evaOn()) T.stopEVA();
+    state.busy = false; state.view = 'surface'; render();
+    T.startEVA(); T.demoPlace(5);
+    const at = (ms, f) => DEMO.timers.push(setTimeout(() => { if (DEMO.on) f(); }, ms));
+    demoCap('🧑‍🚀 <b>Ages 13+ can walk anywhere.</b> Kofi is 5 km from the carrier, on foot. His suit has 8 hours of air.');
+    at(4500, () => { demoCap('☀ <b>Flare alert!</b> NASA’s live space-weather data can trigger this. Fast particles reach the Moon within minutes.');
+      flareOnFoot(5, 'MO-01', { warn: 6000, demo: true }); });
+    at(11500, () => demoCap('☢ <b>A spacesuit stops almost none of it.</b> Watch Kofi’s radiation dose climb.'));
+    at(15500, () => { hideDialog(); demoCap('📻 <b>Kofi radios the outpost.</b> Leo drives the carrier MO-01 out to pick him up.'); T.callPickup({ speed: 4 }); });
+    const wait = () => { if (!DEMO.on) return;
+      if (T.eva.on && T.eva.pos.distanceTo(T.roverPos()) > 4.2 && (DEMO.waited = (DEMO.waited || 0) + 1) < 40) return DEMO.timers.push(setTimeout(wait, 300));   // never stuck: go on after 12 s
+      demoCap('🚙 <b>Inside the carrier, out of the storm.</b> Kofi took ' + Math.round(T.eva.dose || 0) + ' mSv. NASA’s 30-day limit is ' + DOSE_LIMIT + '.');
+      at(2200, () => { if (T.evaOn()) T.stopEVA(); render(); });
+      at(6000, () => { demoCap('📚 <b>Every number is real NASA data.</b> The Sun’s storms are live from NASA DONKI.'); showData(); });
+      at(12500, () => demoStop());
+    };
+    at(17000, wait);
+  });
+}
+// the 3-minute tour: a small guide card with four stops
+const JSTEPS = [
+  { t: '🌑 The real Moon', d: 'This 3D ground is built from NASA’s LRO laser heights of Shackleton crater, near the south pole. Drag to look around. The mission map is drawn from the same data.',
+    b: '🗺 Open the mission map', f: () => showCampaign(true) },
+  { t: '☀ Survive on foot (ages 13+)', d: 'A 30-second scene: a solar flare catches Kofi 5 km from help. Suit air, radiation dose and a call to the outpost.',
+    b: '▶ Play the scene', f: () => demoScene(true) },
+  { t: '🏠 Inside the base', d: 'Four crew live and work here. They walk their own routes around the furniture, talk on the radio and fall ill from real space-health effects.',
+    b: '🚪 Go inside', f: () => { hideCampaign(); enterBase(); } },
+  { t: '📚 The data', d: 'Every source in one panel: what is live, what is saved, and what we simplified, honestly.',
+    b: '📚 Open the data panel', f: () => showData() }];
+function judgeTour() {
+  quickPlay();
+  let g = $('judgeGuide'); if (!g) { g = document.createElement('div'); g.id = 'judgeGuide'; g.setAttribute('role', 'region'); g.setAttribute('aria-label', 'Judge tour'); document.body.appendChild(g); }
+  let i = 0;
+  const draw = () => { const st = JSTEPS[i];
+    g.innerHTML = `<div class="jgTop"><span class="jgK">🧑‍⚖️ Judge tour · ${i + 1} of ${JSTEPS.length}</span><button class="iconBtn" id="jgX" aria-label="End the tour">✕</button></div>
+      <b class="jgT">${st.t}</b><p>${st.d}</p>
+      <div class="jgRow"><button class="bigBtn" id="jgDo">${st.b}</button>
+        <span><button class="linkBtn" id="jgBack" ${i ? '' : 'disabled'}>◀</button><button class="linkBtn" id="jgNext">${i < JSTEPS.length - 1 ? 'Next ▶' : 'Done ✓'}</button></span></div>`;
+    $('jgDo').onclick = () => st.f();
+    $('jgBack').onclick = () => { if (i) { i--; draw(); } };
+    $('jgNext').onclick = () => { if (i < JSTEPS.length - 1) { i++; draw(); } else g.remove(); };
+    $('jgX').onclick = () => { demoStop(); g.remove(); };
+  };
+  draw(); g.hidden = false;
 }
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function unlockSound() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} }
@@ -3246,7 +3335,7 @@ addEventListener('keydown', e => { if (e.key === 'Enter' && $('title') && $('tit
 // =====================================================================
 function select(id) { if (state.busy || state.view !== 'surface') return; state.selected = id; state.target = null; hud.dismissed = null; render(); }
 function setRoom(id) { if (state.busy || state.view !== 'base') return; state.room = id; render(); }
-window.JAMT = { get objective() { return typeof objectiveNow === 'function' ? objectiveNow() : null; }, get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, flareOnFoot, log: m => log(m), render: () => render(), radio: (w, t, o) => radio(w, t, o), DOSE_LIMIT, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
+window.JAMT = { get cardKey() { return document.body.classList.contains('detailsOpen') ? detailsKey() : null; }, dismissCard() { hud.dismissed = detailsKey(); render(); }, get objective() { return typeof objectiveNow === 'function' ? objectiveNow() : null; }, get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, flareOnFoot, log: m => log(m), render: () => render(), radio: (w, t, o) => radio(w, t, o), DOSE_LIMIT, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
   ready3D() { $('loading3d').remove(); render(); },
   no3D(err) { console.warn('3D unavailable:', err); $('loading3d').textContent = '3D view needs an internet connection the first time. Showing the photo map.'; state.surface = 'photo'; render(); } };
 
@@ -3845,6 +3934,7 @@ start();
 usePilot();
 loadSun();
 showTitle();
+{ const q = new URLSearchParams(location.search); if (q.has('judge')) judgeTour(); else if (q.has('demo')) demoScene(); }
 
 // Preview helper: index.html?ending opens the ending screen
 if (new URLSearchParams(location.search).has('ending')) {
@@ -3997,8 +4087,13 @@ const v3 = (x, z, up = 0) => new THREE.Vector3(x, H(x, z) + up, z);
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);              // a plain vector (v3 above sits on the ground)
 
 // ---------- renderer / scene ----------
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+// PHONES: a phone browser gets much less memory than a PC, and the page was being killed and reloaded. On touch
+// screens (or devices that report 4 GB of memory or less) draw at normal resolution, without anti-aliasing,
+// with smaller shadow maps.
+const LITE = matchMedia('(pointer: coarse)').matches || (navigator.deviceMemory && navigator.deviceMemory <= 4) || Math.min(screen.width, screen.height) < 600;
+const PR_MAX = LITE ? 1 : 1.5;
+const renderer = new THREE.WebGLRenderer({ antialias: !LITE, powerPreference: LITE ? 'default' : 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, PR_MAX));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -4053,7 +4148,7 @@ scene.add(ground);
 const SUN_AZ = BASE_ANG - Math.PI * 0.18;
 const sun = new THREE.DirectionalLight(0xfff4e2, 3.4);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(LITE ? 1024 : 2048, LITE ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -240, right: 240, top: 240, bottom: -240, near: 1, far: 1200 });
 sun.shadow.bias = -0.0003; sun.shadow.normalBias = 0.6;
 scene.add(sun, sun.target);
@@ -5064,6 +5159,13 @@ function stepFx(now, dt) {
   sun.intensity = SUN_BASE * (1 + .5 * flick);
 }
 let solids = [], solidsT = 0;
+// a place's card (room, site) opens when you arrive and closes by itself once you walk about 3 m away
+const cardAt = { key: null, x: 0, z: 0 };
+window.JAMT_cardAuto = function (x, z) {
+  const k = J.cardKey;
+  if (k !== cardAt.key) { cardAt.key = k; cardAt.x = x; cardAt.z = z; return; }
+  if (k && Math.hypot(x - cardAt.x, z - cardAt.z) > 3) { cardAt.key = null; J.dismissCard(); }
+};
 const R_KOFI = .35, _sv = new THREE.Vector3();
 function buildSolids() {
   const skip = new Set([ground, walker.root, rockG, tgt, EARTH.mesh].filter(Boolean));
@@ -5200,7 +5302,7 @@ function setRover(v) {
   rover.position.set(v.x, H(v.x, v.z), v.z);
   const s = J.state; s.rover.pos = xzToKm(v.x, v.z); s.rover.at = null;
 }
-function callPickup() {
+function callPickup(o = {}) {
   if (!eva.on || !FREE() || pickup) return;
   const s = J.state, d = eva.pos.distanceTo(rover.position), km = d / KM;
   if (driveAnim || actAnim) return J.toast('MO-01 is busy right now.');
@@ -5210,11 +5312,26 @@ function callPickup() {
     J.radio('leo', `Kofi, I’d love to, but MO-01 only has ${Math.round(s.rover.bat)} kWh. Driving out and back needs about ${Math.round(need)}. You have to walk.`, { ch: 'suit' }); return;
   }
   const mins = Math.round(d / PICK_V);
-  pickup = { t0: performance.now() };
+  pickup = { t0: performance.now(), speed: o.speed || 1 };
   J.radio('leo', `Copy, Kofi. MO-01 is on its way, ${km.toFixed(1)} km. About ${mins} minutes. Stay where you are, or walk towards me to save time.`, { ch: 'suit' });
   J.log(`📻 Kofi called for a pickup ${km.toFixed(1)} km out.`);
 }
 const _pd = new THREE.Vector3(), _cv = new THREE.Vector3();
+// for the demo scene: put Kofi some km from the carrier, away from the crater, looking back at it
+function demoPlace(km) {
+  const [cx, cz] = kmToXZ(J.CRATER.at), dir = V3(rover.position.x - cx, 0, rover.position.z - cz).normalize().applyAxisAngle(V3(0, 1, 0), .9);
+  let p = null;
+  for (let k = 0; k < 14; k++) {
+    const q = rover.position.clone().addScaledVector(dir, km * KM);
+    if (!hitSolid(q.x, q.z) && Math.abs(q.x) < EDGE && Math.abs(q.z) < EDGE && J.kmBetween(xzToKm(q.x, q.z), J.CRATER.at) > J.CRATER.r + .3) { p = q; break; }
+    dir.applyAxisAngle(V3(0, 1, 0), .45);
+  }
+  if (!p) return;
+  p.y = H(p.x, p.z); eva.pos.copy(p); eva.vel.set(0, 0, 0); eva.last.copy(p); walker.root.position.copy(p);
+  eva.hzT = Infinity; eva.flareDone = true; eva.beyond = true;
+  const to = rover.position.clone().sub(p); eva.yaw = eva.camYaw = Math.atan2(to.x, to.z); eva.camPitch = .3; eva.camDist = 7.5;
+  camera.position.copy(p).addScaledVector(fwdOf(eva.camYaw), -eva.camDist).add(V3(0, 3, 0));
+}
 function stepPickup(dt) {
   if (!pickup) return;
   if (!eva.on) { pickup = null; J.render(); return; }
@@ -5232,7 +5349,7 @@ function stepPickup(dt) {
     _cv.set(rp.x - cx, 0, rp.z - cz).normalize(); const t1 = V3(-_cv.z, 0, _cv.x), t2 = V3(_cv.z, 0, -_cv.x);
     _pd.copy(t1.dot(_pd) > t2.dot(_pd) ? t1 : t2).addScaledVector(_cv, .25).normalize();
   }
-  const step = Math.min(d - 3.4, PICK_V * dt), prev = rp.clone();
+  const step = Math.min(d - 3.4, PICK_V * pickup.speed * dt), prev = rp.clone();
   setRover(rp.clone().addScaledVector(_pd, step));
   faceRover(rp.clone().addScaledVector(_pd, 3));
   const kmGone = step / KM; J.state.rover.bat = Math.max(0, J.state.rover.bat - kmGone * J.ROVER.kWhPerKm);
@@ -5317,6 +5434,7 @@ function stepHazards(now) {
   else if (flashSpr.visible) { flashSpr.visible = false; flashLight.intensity = 0; }
 }
 function stepEVA(dt) {
+  window.JAMT_cardAuto(eva.pos.x, eva.pos.z);
   // breathing uses up the suit's oxygen
   const work = eva.effort || J.SUIT_O2.rest;                                // harder work, faster breathing
   if (!J.state.busy && !J.state.radioWait) eva.o2 -= dt * J.SUIT_O2.minPerSec * work / 60;   // the clock pauses while you answer a question
@@ -5616,7 +5734,7 @@ let lastT = performance.now();
 const QUAL = { lvl: 0, slow: 0, ema: 1 / 60 };
 function setQuality(l) {
   QUAL.lvl = l;   // never drop below the screen's own pixel size (that is what made the picture blurry), only the extra sharpness of high-DPI screens
-  const dpr = Math.min(devicePixelRatio, 1.5), pr = Math.max(Math.min(1, dpr), dpr * [1, .8, .8, .7][l]);
+  const dpr = Math.min(devicePixelRatio, PR_MAX), pr = Math.max(Math.min(1, dpr), dpr * [1, .8, .8, .7][l]);
   renderer.setPixelRatio(pr); if (window.JAMTWALK && window.JAMTWALK.setPR) window.JAMTWALK.setPR(pr);
   if (l >= 2 && sun.shadow.mapSize.x > 1024) { sun.shadow.mapSize.set(1024, 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
   const w = wrap.clientWidth, h = wrap.clientHeight; if (w && h) renderer.setSize(w, h, false);
@@ -5728,15 +5846,15 @@ setTimeout(function drawMap() {
   }
   g.putImageData(im, 0, 0); MAP_IMG = cv.toDataURL();
 }, 1200);
-window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get cineOn() { return CINE.on; }, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, boulders: BOULDERS, hitSolid, callPickup, impact, quake, get eva() { return eva; }, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
+window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get cineOn() { return CINE.on; }, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, boulders: BOULDERS, hitSolid, callPickup, impact, quake, demoPlace, roverPos: () => rover.position, get eva() { return eva; }, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
   get mapImg() { return MAP_IMG; }, evaKm: () => eva.on ? xzToKm(eva.pos.x, eva.pos.z) : null };
 // =====================================================================
 //  INSIDE THE BASE: first-person walk-through
 // =====================================================================
 const walkWrap = document.getElementById('walk3d');
 const walkLabelLayer = document.getElementById('walkLabels');
-const wr = new THREE.WebGLRenderer({ antialias: true });
-wr.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+const wr = new THREE.WebGLRenderer({ antialias: !LITE });
+wr.setPixelRatio(Math.min(devicePixelRatio, PR_MAX));
 wr.toneMapping = THREE.ACESFilmicToneMapping; wr.toneMappingExposure = 1.05;
 wr.outputColorSpace = THREE.SRGBColorSpace;
 walkWrap.prepend(wr.domElement);
@@ -7191,6 +7309,7 @@ function project(el, pos, w, h, show) {
   if (vis) el.style.transform = `translate(${(tmpW.x * .5 + .5) * w}px, ${(-tmpW.y * .5 + .5) * h}px) translate(-50%, -100%)`;
 }
 function frameWalk(now, dt) {
+  if (window.JAMT_cardAuto) window.JAMT_cardAuto(mePos.x, mePos.z);
   stepWalk(dt); stepRoutine(now); stepChat(now); stepCrew(dt); stepBot(dt, now); for (const f of TICK) f(now, dt);
   outerDoor.position.y += (doorGoal - outerDoor.position.y) * Math.min(1, dt * 2.5);
   const pulse = walkStorm ? 1.6 + 1.6 * Math.sin(now / 160) : 0;
@@ -7231,8 +7350,8 @@ function setLook(L, name) {
 setTimeout(() => { if (J.pilotLook) setLook(J.pilotLook, J.callsign); }, 0);
 // the turntable on the "choose your astronaut" screen: its own small 3D scene
 function preview(canvas) {
-  const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  r.setPixelRatio(Math.min(devicePixelRatio, 1.5)); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.15;
+  const r = new THREE.WebGLRenderer({ canvas, antialias: !LITE, alpha: true });
+  r.setPixelRatio(Math.min(devicePixelRatio, PR_MAX)); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.15;
   const sc = new THREE.Scene();
   sc.add(new THREE.HemisphereLight(0xd6e4ff, 0x1a2030, 1.3));
   const key = new THREE.DirectionalLight(0xfff4e2, 2.4); key.position.set(2, 3, 3); sc.add(key);
@@ -7271,7 +7390,7 @@ function portrait(id, L) {
   if (!(id in PORT_I)) return null;
   try {
     if (!PORT.r) { const cv = document.createElement('canvas'); cv.width = cv.height = 256;
-      PORT.r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true });
+      PORT.r = new THREE.WebGLRenderer({ canvas: cv, antialias: !LITE, alpha: true, preserveDrawingBuffer: true });
       PORT.r.setSize(256, 256, false); PORT.r.outputColorSpace = THREE.SRGBColorSpace; PORT.r.toneMapping = THREE.ACESFilmicToneMapping; PORT.r.toneMappingExposure = 1.2; }
     const sc = new THREE.Scene(), earth = id === 'earth';
     sc.add(new THREE.HemisphereLight(0xdfe8ff, 0x2a2420, 1.2));
@@ -7288,6 +7407,7 @@ function portrait(id, L) {
     PORT.r.render(sc, cam);
     const url = PORT.r.domElement.toDataURL('image/png');
     sc.traverse(o => { if (o.geometry && o.geometry.dispose) o.geometry.dispose(); });
+    clearTimeout(PORT.kill); PORT.kill = setTimeout(() => { if (PORT.r) { PORT.r.dispose(); try { PORT.r.forceContextLoss(); } catch (e) {} PORT.r = null; } }, 3000);   // free this extra 3D context once the portraits are made
     return PORT.cache[key] = url;
   } catch (e) { return null; }
 }
