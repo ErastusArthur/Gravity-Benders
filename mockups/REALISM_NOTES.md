@@ -202,3 +202,9 @@ Every astronaut in the game (the walker outside, the suit racks, the crew, the "
 - The picture is the real 3D astronaut from the game (helmet, suit colour, name tape), drawn once and reused. Mission Control's Esi is shown without a helmet.
 - On phones and small windows the box gets smaller and keeps the name inside it.
 - The how-to-play tour now only points at things you can actually see. If a screen like the mission map is covering the game, the tour card sits in the middle instead. The tour also points at the hotbar buttons correctly now.
+
+## A real map and a tidier menu
+- The mission map is now drawn from the same real NASA LOLA heights as the 3D world, seen from straight above. It is shaded like a relief map, with 100 m contour lines and the crater floor that never sees the Sun.
+- It has a 1 km grid with letters and numbers, a compass (north points away from the south pole), a 2 km scale bar and a map key. Each mission has a pin with its name and place, and places without a mission are labelled too.
+- The map is drawn a few rows at a time in the background, so the game never freezes. Until it is ready, the old picture shows.
+- The settings menu has labelled rows (surface view, detail level, crew voices). The duplicate "Mission map" button is gone because the 🗺 button already opens it. The storm demo sits under "For judges / demo".
