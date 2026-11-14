@@ -438,14 +438,30 @@
   @media (prefers-reduced-motion: reduce) { .dialog.urgent { animation: none; } }
   .sunChip { cursor: pointer; border: 1px solid transparent; }
   /* real astronaut blood data (NASA OSDR) */
-  #osdrCard { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; background: rgba(2,4,10,.6); padding: 12px; }
-  #osdrCard.open { display: grid; }
-  #osdrCard .box { width: min(560px, 100%); max-height: calc(100svh - 24px); overflow: auto; background: #0b1222; border: 1px solid rgba(94,200,255,.45); border-radius: 16px; padding: 16px 18px; box-shadow: 0 20px 50px rgba(0,0,0,.6); }
-  #osdrCard h2 { margin: 0 0 4px; font-size: 18px; color: #ffd166; }
-  #osdrCard p { margin: 6px 0; font-size: 13.5px; line-height: 1.5; color: #dfe6f5; }
-  #osdrCard .src { font-size: 11.5px; color: #9fb0cf; border-top: 1px solid #22304f; padding-top: 8px; margin-top: 10px; }
+  #osdrCard, #dataCard { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; background: rgba(2,4,10,.6); padding: 12px; }
+  #osdrCard.open, #dataCard.open { display: grid; }
+  #osdrCard .box, #dataCard .box { width: min(560px, 100%); max-height: calc(100svh - 24px); overflow: auto; background: #0b1222; border: 1px solid rgba(94,200,255,.45); border-radius: 16px; padding: 16px 18px; box-shadow: 0 20px 50px rgba(0,0,0,.6); }
+  #osdrCard h2, #dataCard h2 { margin: 0 0 4px; font-size: 18px; color: #ffd166; }
+  #osdrCard p, #dataCard p { margin: 6px 0; font-size: 13.5px; line-height: 1.5; color: #dfe6f5; }
+  #osdrCard .src, #dataCard .src { font-size: 11.5px; color: #9fb0cf; border-top: 1px solid #22304f; padding-top: 8px; margin-top: 10px; }
+  #osdrCard { z-index: 31; }   /* the blood chart opens on top of the data panel */
+  #dataCard .box { width: min(720px, 100%); }
+  #dataCard .dRow { display: grid; grid-template-columns: 34px 1fr; gap: 4px 10px; padding: 10px 0; border-top: 1px solid #1c2846; }
+  #dataCard .dIc { font-size: 22px; line-height: 1.2; text-align: center; grid-row: span 3; }
+  #dataCard .dName { font-weight: 700; font-size: 14px; color: #f2f5fa; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  #dataCard .badge { font-size: 10px; font-weight: 800; letter-spacing: .06em; padding: 2px 7px; border-radius: 999px; }
+  #dataCard .badge.live { background: rgba(80,220,140,.18); color: #6ee7a8; border: 1px solid rgba(110,231,168,.5); }
+  #dataCard .badge.off { background: rgba(255,140,100,.15); color: #ffb59e; border: 1px solid rgba(255,181,158,.45); }
+  #dataCard .badge.saved { background: rgba(94,200,255,.14); color: #9fdcff; border: 1px solid rgba(159,220,255,.4); }
+  #dataCard .badge.hist { background: rgba(255,209,102,.13); color: #ffd98a; border: 1px solid rgba(255,217,138,.4); }
+  #dataCard .dUse { font-size: 13px; color: #dfe6f5; line-height: 1.45; }
+  #dataCard .dSrc { font-size: 11.5px; color: #9fb0cf; line-height: 1.4; }
+  #dataCard .dSrc a { color: #9fdcff; }
+  #dataCard .dSrc button { font: inherit; color: #ffd166; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+  #dataCard .note { background: rgba(255,209,102,.07); border: 1px solid rgba(255,209,102,.3); border-radius: 10px; padding: 8px 12px; margin-top: 10px; }
+  #dataCard .note ul { margin: 4px 0 0 18px; padding: 0; font-size: 12.5px; color: #dfe6f5; line-height: 1.5; }
   #osdrCard svg { width: 100%; height: auto; display: block; margin: 8px 0; }
-  #osdrCard .close { float: right; }
+  #osdrCard .close, #dataCard .close { float: right; }
   .sunChip.quiet { color: #7fe0a0; } .sunChip.active { color: #ffd166; } .sunChip.stormy { color: #ff8a65; border-color: rgba(255,138,101,.5); }
   .replies button { font-size: 12px; padding: 5px 10px; }
   .radioOld { margin-top: 6px; font-size: 12px; }
@@ -949,7 +965,7 @@ function goLandscape() {
       </span></div>
       <hr class="mSep">
       <button id="keysBtn">⌨ Keyboard controls</button>
-      <button id="dataBtn">📚 NASA data used</button>
+      <button id="dataBtn">📚 Where the data comes from</button>
       <details class="mDemo"><summary>For judges / demo</summary><button id="stormBtn" title="Demo control">☀ Start a solar storm today</button><button id="impactBtn" title="Demo control">☄ Meteorite strike nearby</button><button id="quakeBtn" title="Demo control">〰 Moonquake</button></details>
     </div>
   </div>
@@ -2710,9 +2726,9 @@ function showTitle() {
       <div class="hint">Press Enter to start · Sound on for Mission Control’s voice</div>
     </div>
     <div class="porthole"><img src="${LOLA_URL}" alt="The real ground around Shackleton crater from NASA's Lunar Reconnaissance Orbiter laser (LOLA)"><div class="cap">Shackleton crater · real NASA LOLA heights</div></div>
-    <div class="foot">Real NASA data inside: LRO LOLA Moon heights · DONKI space weather (live) · OSDR astronaut blood tests · ISS life support · Artemis spacesuits</div>
+    <div class="foot">Real NASA data inside: LRO LOLA Moon heights · DONKI space weather (live) · OSDR astronaut blood tests · ISS life support · Artemis spacesuits · <button class="linkBtn" id="tData" style="font-size:inherit;padding:0 4px">📚 See every source</button></div>
   </div>`;
-  el.classList.add('open'); $('tStart').focus({ preventScroll: true }); el.scrollTop = 0;   // don't jump past the game's name on short screens
+  el.classList.add('open'); $('tStart').focus({ preventScroll: true }); el.scrollTop = 0; if ($('tData')) $('tData').onclick = e => { e.stopPropagation(); showData(); };   // don't jump past the game's name on short screens
   $('tStart').onclick = () => { unlockSound(); el.classList.remove('open'); if (PILOT && PILOT.astro) { usePilot(); applyLook(); cmpSel = null; showCampaign(false); } else if (PILOT) showAstro(); else showSetup(); };
   const nw = $('tNew'); if (nw) nw.onclick = () => { unlockSound(); el.classList.remove('open'); showSetup(); };
 }
@@ -3617,7 +3633,7 @@ $('ffBtn').onclick = () => { if (!state.busy) state.view === 'base' ? ROOM_ACT.s
 function setClean(on) { hud.clean = on; document.body.classList.toggle('clean', on); $('cleanBtn').setAttribute('aria-pressed', on); $('cleanBtn').title = on ? 'Show the panels again (H)' : 'Hide the panels for a clear view (H)'; }
 $('cleanBtn').onclick = () => setClean(!hud.clean);
 $('helpBtn').onclick = () => showTour();
-$('dataBtn').onclick = () => radio('earth', `Where this game's science comes from: 1) Live solar flares and radiation storms from NASA's DONKI space weather database (ccmc.gsfc.nasa.gov/DONKI-API), checked every time you play. ${SUN.src === 'live' ? 'Connected now.' : 'Not connected right now, so a typical Sun is used.'} 2) Oxygen, water and power numbers from the ISS life support system and NASA Artemis plans. 3) The 8-hour Moon suit from NASA's Artemis AxEMU suit. 4) Radiation doses and the 250 mSv limit from NASA crew health standards. 5) Real astronaut blood tests from NASA's Open Science Data Repository (OSDR, study OSD-569, Inspiration4), saved into the game on ${OSDR.saved}, not live. 6) The dusty-panel risk is real: Apollo 12 found the old Surveyor 3 probe sandblasted by their lander. 7) The Moon map and the 3D ground are real: heights of Shackleton crater measured by the laser on NASA's Lunar Reconnaissance Orbiter (LOLA, 40 m per pixel), saved into the game, not live.`, { instant: true, replies: [copy('Thanks, Mission Control.')] });
+$('dataBtn').onclick = showData;
 $('sunChip').onclick = () => radio('earth', `Space weather briefing. ${sunText()}${state.flareDays.some(d => d >= state.day) ? ' Stay alert for flare warnings.' : ''}`, { instant: true, replies: [copy()] });
 $('menuBtn').onclick = () => { const m = $('menu'); m.hidden = !m.hidden; $('menuBtn').setAttribute('aria-expanded', !m.hidden); };
 document.addEventListener('click', e => { if (!e.target.closest('.menuWrap')) { $('menu').hidden = true; $('menuBtn').setAttribute('aria-expanded', false); } });
@@ -3632,6 +3648,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'm' || e.key === 'M') toggleMission();
   if ((e.key === 'h' || e.key === 'H') && !evaOn()) setClean(!hud.clean);
   if (e.key === 'Escape' && $('osdrCard') && $('osdrCard').classList.contains('open')) { $('osdrCard').classList.remove('open'); return; }
+  if (e.key === 'Escape' && $('dataCard') && $('dataCard').classList.contains('open')) { $('dataCard').classList.remove('open'); return; }
   if (e.key === 'Escape') { if (hud.dlg) hideDialog(); else if (document.body.classList.contains('detailsOpen')) $('detailsClose').click(); }
 });
 
@@ -3669,6 +3686,57 @@ function showOSDR() {
     <p><b>All four</b> had fewer defenders after landing: on average ${Math.round(OSDR.pre)} → ${Math.round(OSDR.post)} cells per microlitre, about <b>${OSDR.drop}% fewer</b>. Six weeks later the average was back up to ${Math.round(OSDR.r45)}.</p>
     <p><b>Why it matters in the game:</b> with fewer defenders, a cold spreads more easily on a base. Fresh food from the greenhouse and keeping radiation low help the crew stay healthy.</p>
     <p class="src">Source: NASA Open Science Data Repository (OSDR), study ${OSDR.study}, ${OSDR.mission} Complete Blood Count (Quest Diagnostics). Found with the OSDR biodata API and saved into the game on ${OSDR.saved}. This is real measured data, but it is saved, not live. In the chart, "Crew 1–4" are the study's anonymous IDs C001–C004.</p></div>`;
+  card.classList.add('open'); card.querySelector('.close').focus();
+}
+// ---- WHERE THE DATA COMES FROM: one panel for judges, teachers and curious players ----
+function showData() {
+  let card = $('dataCard');
+  if (!card) { card = document.createElement('div'); card.id = 'dataCard'; card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); card.setAttribute('aria-label', 'Where the data comes from'); document.body.appendChild(card);
+    card.addEventListener('click', e => { if (e.target === card || e.target.closest('.close')) card.classList.remove('open'); if (e.target.closest('[data-osdr]')) showOSDR(); }); }
+  const live = SUN.src === 'live', sunNow = SUN.src === 'loading' ? 'Connecting…'
+    : live ? `Connected now: ${SUN.from} to ${SUN.to}, ${SUN.x + SUN.m + SUN.c} flares (${SUN.x} X, ${SUN.m} M, ${SUN.c} C) and ${SUN.sep} radiation storm${SUN.sep === 1 ? '' : 's'}${SUN.big ? `; biggest ${SUN.big.classType}` : ''}. The Sun is <b>${SUN_INFO[SUN.level].word}</b>.`
+    : 'Not reachable right now (offline?), so this game uses a typical, fairly busy Sun.';
+  const B = { live: '<span class="badge live">LIVE</span>', off: '<span class="badge off">OFFLINE NOW</span>', saved: '<span class="badge saved">SAVED NASA DATA</span>', hist: '<span class="badge hist">NASA HISTORY</span>' };
+  const row = (ic, name, badge, use, src) => `<div class="dRow"><div class="dIc" aria-hidden="true">${ic}</div><div class="dName">${name} ${badge}</div><div class="dUse">${use}</div><div class="dSrc">${src}</div></div>`;
+  card.innerHTML = `<div class="box"><button class="iconBtn close" aria-label="Close">✕</button>
+    <h2>📚 Where the data comes from</h2>
+    <p>Every number that keeps your crew alive comes from NASA. <b>LIVE</b> data is fetched each time you play. <b>Saved</b> data was downloaded from NASA and built into the game, so it also works offline.</p>
+    ${row('☀', 'Solar flares and radiation storms · DONKI', live ? B.live : SUN.src === 'loading' ? B.live : B.off,
+      `Sets how stormy the Sun is in your mission: how many surprise flare alerts you get, and the radiation storm days. ${sunNow}`,
+      `NASA Space Weather Database Of Notifications, Knowledge, Information (DONKI), Community Coordinated Modeling Center, NASA Goddard: flares (FLR) and solar energetic particles (SEP), last 30 days. <a href="https://ccmc.gsfc.nasa.gov/" target="_blank" rel="noopener">ccmc.gsfc.nasa.gov</a>`)}
+    ${row('🗺', 'The Moon’s ground · LRO LOLA heights', B.saved,
+      'The 3D Moon, the minimap and the mission map are built from real laser heights of Shackleton crater: 65,536 heights covering 52 km. The rim radius (10.6 km), the slopes you can’t climb and the always-dark crater floor all come from it.',
+      `Lunar Reconnaissance Orbiter Laser Altimeter, product LDEM_85S_40M (40 m per pixel), PDS Geosciences Node. Saved 14 Nov 2026. <a href="https://imbrium.mit.edu/" target="_blank" rel="noopener">imbrium.mit.edu</a>`)}
+    ${row('🩸', 'Astronaut blood tests · OSDR', B.saved,
+      `Crew colds: after 3 days in orbit the Inspiration4 crew had about ${OSDR.drop}% fewer germ-fighting white blood cells, so a cold spreads more easily on your base.`,
+      `NASA Open Science Data Repository, study ${OSDR.study} (${OSDR.mission}), complete blood count. Saved ${OSDR.saved}; OSDR doesn’t allow live calls from other websites. <button data-osdr>See the real chart ▸</button> · <a href="https://osdr.nasa.gov/bio/repo/data/studies/${OSDR.study}" target="_blank" rel="noopener">osdr.nasa.gov</a>`)}
+    ${row('🫁', 'Oxygen each person needs', B.saved,
+      `${O2_PER_PERSON} kg of oxygen per person per day: the base’s oxygen tank and the carrier’s air drain at this rate.`,
+      'NASA Life Support Baseline Values and Assumptions Document (BVAD).')}
+    ${row('💧', 'Water and the oxygen generator', B.saved,
+      `Oxygen is made by splitting recycled water, like the ISS oxygen generator. The ISS recovers about 93% of its water; a brand-new Moon base is set to waste more (${H2O_LOSS} L a day).`,
+      'International Space Station Environmental Control and Life Support System (ECLSS).')}
+    ${row('☢', 'Radiation limit', B.saved,
+      `Your crew’s dose is measured in mSv. Above ${DOSE_LIMIT} mSv in 30 days is over NASA’s short-term limit. On foot, a suit stops almost none of a flare’s particles.`,
+      'NASA crew health standard NASA-STD-3001 (30-day limit for blood-forming organs).')}
+    ${row('🧑‍🚀', 'Spacesuits and the 2 km walk-back rule', B.saved,
+      `About ${SUIT_O2.hours} hours of air and battery per walk. Astronauts stay close enough to walk home if the carrier breaks (ages 7–12); ages 13+ may go further at their own risk.`,
+      'NASA Artemis spacesuit (xEMU/AxEMU) requirements; Artemis surface operations planning.')}
+    ${row('🌱', 'The greenhouse', B.saved,
+      `Lettuce takes about ${GH.days} days to grow, as it did in the Veggie plant chamber on the ISS. Plants also add a little oxygen.`,
+      'NASA Veggie experiment on the ISS (Outredgeous red romaine, 28–33 days).')}
+    ${row('☄', 'Meteorite strikes and new craters', B.saved,
+      'With no air, rocks hit the Moon at about 20 km/s. Strikes leave bright, fresh craters; the Fresh Crater site and the meteorite hazard are based on this.',
+      'LRO Narrow Angle Camera before-and-after images (over 200 brand-new craters found); NASA Meteoroid Environment Office lunar impact flash monitoring.')}
+    ${row('🏛', 'Lessons from Apollo', B.hist,
+      'Moon dust flies in clean arcs and sandblasts things (the dusty solar panels); moonquakes ring for over 10 minutes; orange glass beads came from ancient volcanoes.',
+      'Apollo 12 and the Surveyor 3 probe; Apollo Passive Seismic Experiments; Apollo 17 orange soil.')}
+    <div class="note"><b>What we simplified, honestly</b><ul>
+      <li>Distances are shrunk so a game day fits in a few minutes (1 km = 8.5 game units). On foot, each km still costs the suit time a real walk would.</li>
+      <li>The clock runs fast: 1 real second is 1 minute on the Moon.</li>
+      <li>The crew, the base layout and the carrier MO-01 are imagined, based on NASA Artemis concepts. Pictures marked “AI concept art” are not NASA data.</li>
+      <li>Hazards come more often than in real life, so you get to practise them.</li></ul></div>
+    <p class="src">Made for NASA Space Apps 2026. Data downloaded on 14 Nov 2026 unless marked LIVE.</p></div>`;
   card.classList.add('open'); card.querySelector('.close').focus();
 }
 // a cold on the base: fresh food and low radiation keep the crew's defenders strong
