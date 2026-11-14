@@ -491,6 +491,11 @@
   .evaBar { position: absolute; left: 50%; bottom: 112px; transform: translateX(-50%); padding: 5px 14px; border-radius: 999px; font-size: 13px; white-space: nowrap;
     background: rgba(9,14,27,.85); border: 1px solid rgba(94,200,255,.35); color: #dfe8f8; }
   .evaBar .warn { color: var(--warn); font-weight: 700; }
+  .evaCall { position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%); pointer-events: auto; padding: 7px 14px; border-radius: 999px; font: 600 13px/1.2 inherit;
+    background: rgba(20,24,32,.88); color: #ffd166; border: 1px solid rgba(255,209,102,.6); cursor: pointer; white-space: nowrap; }
+  .evaCall kbd { font-size: 11px; opacity: .8; margin-left: 4px; }
+  .evaCall[hidden] { display: none; }
+  @media (max-width: 900px) { .evaCall { bottom: 40px; font-size: 12px; } }
   .evaPrompt { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600;
     background: rgba(9,14,27,.9); border: 1px solid #ffb347; box-shadow: 0 0 16px rgba(255,179,71,.35); color: #fff; max-width: 80%; text-align: center; }
   .evaPrompt[hidden] { display: none; }
@@ -940,7 +945,7 @@ function goLandscape() {
       <hr class="mSep">
       <button id="keysBtn">⌨ Keyboard controls</button>
       <button id="dataBtn">📚 NASA data used</button>
-      <details class="mDemo"><summary>For judges / demo</summary><button id="stormBtn" title="Demo control">☀ Start a solar storm today</button></details>
+      <details class="mDemo"><summary>For judges / demo</summary><button id="stormBtn" title="Demo control">☀ Start a solar storm today</button><button id="impactBtn" title="Demo control">☄ Meteorite strike nearby</button><button id="quakeBtn" title="Demo control">〰 Moonquake</button></details>
     </div>
   </div>
 </header>
@@ -2029,6 +2034,7 @@ function breakdown(d) {
 }
 function flareAlert(d) {
   flareFlashAt = performance.now(); flareFxAt = flareFlashAt + 6000;      // light first, particles a few seconds later
+  flareLen = 45000;
   const out = !roverHome() || evaOn(), r = state.rover;
   const text = out ? `Flare alert! NASA's space weather team just saw a big flare on the Sun. Fast particles reach the Moon in minutes. MO-01 is out at ${r.at ? placeOf(r.at).name : 'open ground'}. Stop work and hide behind the water tanks, or keep working?`
                    : 'Flare alert! NASA’s space weather team just saw a big flare on the Sun. Fast particles reach the Moon in minutes. Move everyone into the storm shelter, or keep working?';
@@ -2040,14 +2046,26 @@ function flareAlert(d) {
     timer: { late: { say: 'Outpost? … Outpost, do you copy?', log: 'nobody took cover from the flare.', then: () => hit(out ? 45 : 15, 'Nobody took cover in time') } } });
   log('📡 That warning took 1.3 seconds to cross from Earth. On Mars it could take up to 22 minutes, so a Mars crew would have to decide on their own.');
 }
+// 13+ free roaming: a flare while you are out on foot. The flash (light, X-rays) comes first; the dangerous fast
+// particles follow some minutes later and keep coming for hours. A suit stops almost none of them: get under cover.
+function flareOnFoot(km, near) {
+  if (MISSION.calm) return false;
+  flareFlashAt = performance.now(); flareFxAt = flareFlashAt + 30000; flareLen = 150000;    // 30 game-minutes of warning, a long storm
+  radio('earth', `Flare alert! A big flare just went off on the Sun. Fast particles reach the Moon in about 30 minutes, and your suit can't stop them. Kofi, you are ${km.toFixed(1)} km from ${near}. Get under cover!`,
+    { delay: true, replies: [
+      { label: '📻 Send MO-01 to Kofi', say: 'Leo, drive out and pick Kofi up. Fast!', then: () => window.JAMT3D && window.JAMT3D.callPickup() },
+      { label: 'Kofi, run back', say: 'Kofi, head back to cover. Lope!' }] });
+  log('☀ A flare caught Kofi out on foot. Particles arrive about 30 minutes after the flash.');
+  return true;
+}
 // RADIATION YOU CAN SEE. A flare's light (and X-rays) reach the Moon in about 8 minutes: the Sun flashes first.
 // The fast particles come a little later. When they hit a camera they make white specks and streaks, like the
 // "snow" in NASA SOHO pictures during big storms. Apollo astronauts even saw flashes with their eyes shut.
 // Inside the base the walls stop most of them, and the storm shelter stops nearly all.
-let flareFlashAt = -1e9, flareFxAt = -1e9;
+let flareFlashAt = -1e9, flareFxAt = -1e9, flareLen = 45000;
 function radLevel() {
   if (!state) return 0;
-  const t = performance.now() - flareFxAt, f = t < 0 ? 0 : Math.max(0, 1 - t / 45000);
+  const t = performance.now() - flareFxAt, f = t < 0 ? 0 : Math.max(0, 1 - t / flareLen);
   return Math.max(isStorm(state.day) ? .85 : 0, f);
 }
 const radFx = ['view3d', 'walk3d'].map(id => { const host = $(id); if (!host) return null;
@@ -2707,7 +2725,7 @@ function showSetup(back) {
     <label class="f">Training track</label>
     <div class="tracks">
       <button class="track" data-t="cadet" aria-pressed="${track === 'cadet'}"><b>🧒 Cadet</b><span>Ages 7–12. Simple words, hints and a helpful crew.</span></button>
-      <button class="track" data-t="specialist" aria-pressed="${track === 'specialist'}"><b>🛰 Specialist</b><span>Ages 13+. Real numbers, units and NASA facts in every panel.</span></button>
+      <button class="track" data-t="specialist" aria-pressed="${track === 'specialist'}"><b>🛰 Specialist</b><span>Ages 13+. Real numbers and NASA facts. Walk anywhere on foot, and survive on your suit's air and power.</span></button>
     </div>
     <div class="row">
       <label class="vt"><input type="checkbox" id="suVoice" ${voiceOn ? 'checked' : ''}> 🔊 Mission Control voices</label>
@@ -3203,7 +3221,7 @@ addEventListener('keydown', e => { if (e.key === 'Enter' && $('title') && $('tit
 // =====================================================================
 function select(id) { if (state.busy || state.view !== 'surface') return; state.selected = id; state.target = null; hud.dismissed = null; render(); }
 function setRoom(id) { if (state.busy || state.view !== 'base') return; state.room = id; render(); }
-window.JAMT = { get objective() { return typeof objectiveNow === 'function' ? objectiveNow() : null; }, get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
+window.JAMT = { get objective() { return typeof objectiveNow === 'function' ? objectiveNow() : null; }, get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, flareOnFoot, log: m => log(m), render: () => render(), radio: (w, t, o) => radio(w, t, o), DOSE_LIMIT, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
   ready3D() { $('loading3d').remove(); render(); },
   no3D(err) { console.warn('3D unavailable:', err); $('loading3d').textContent = '3D view needs an internet connection the first time. Showing the photo map.'; state.surface = 'photo'; render(); } };
 
@@ -3219,6 +3237,8 @@ $('specBtn').onclick = () => { state.mode = 'specialist'; if (PILOT) { PILOT.tra
 $('v3dBtn').onclick = () => { if (!window.JAMT3D) return; state.surface = '3d'; render(); };
 $('vPhotoBtn').onclick = () => { state.surface = 'photo'; render(); };
 $('planBtn').onclick = () => { state.interior = state.interior === 'plan' ? '3d' : 'plan'; render(); };
+$('impactBtn').onclick = () => { if (window.JAMT3D && window.JAMT3D.impact) window.JAMT3D.impact(true); };
+$('quakeBtn').onclick = () => { if (window.JAMT3D && window.JAMT3D.quake) window.JAMT3D.quake(); };
 $('stormBtn').onclick = () => { if (!isStorm(state.day)) state.extraStorms.push(state.day); log('⚠ Demo: solar particle storm hitting the Moon today.'); if (roverHome()) stormNow(); else once('stormOut' + state.day, () => radio('leo', 'Outpost, the radiation alarm in MO-01 is going off! We are huddled behind the water tanks.', { replies: [orderHome] })); render(); };
 $('restartBtn').onclick = () => { $('modal').classList.remove('open'); start(); };
 $('againBtn').onclick = () => { $('ending').classList.remove('open'); start(); };
@@ -4877,6 +4897,10 @@ function stepAct(now, dt) {
 // WASD / arrows to walk, Shift to lope (the Apollo "bunny hop"), Space to hop in 1/6 gravity, E to interact,
 // drag to turn the camera, scroll to zoom. The walker must stay within 2 km of the carrier or the base (walk-back limit).
 const MOON_G = 1.62, WALK_V = 2.2, LOPE_V = 4.2, HOP_V = 2.4, WALK_LIMIT_KM = 2;
+// Ages 13+ (Specialist) can walk anywhere. The 2 km "walk-back" rule is NASA's: stay close enough to walk home if
+// the carrier breaks. Past it you are on your own with the suit's air and battery, unless you call MO-01 out to you.
+const FREE = () => J.state.mode === 'specialist';
+const EDGE = 214;                                                         // the edge of the mapped ground
 // speeds in m/s, like Apollo: walk ~1.1, bound ~2.2. Little grip: slow to speed up (acc) and to stop (brake).
 // A push-off of up to 1.35 m/s lifts a suited astronaut about half a metre (Apollo 16's John Young: ~0.4 m).
 const MOVE = { walk: 1.1, bound: 2.2, acc: 1.3, accBound: 1.7, brake: 1.1, boundHop: .62, steep: 26, tripSpeed: 1.5, tripChance: .45,
@@ -4905,6 +4929,7 @@ function bootPrint(p, yaw, sideOff) {
 const evaUI = document.createElement('div'); evaUI.className = 'evaUI'; evaUI.innerHTML = `
   <div class="evaBar" id="evaBar"></div>
   <div class="evaPrompt" id="evaPrompt" hidden><kbd>E</kbd> <span></span></div>
+  <button class="evaCall" id="evaCall" hidden title="Radio the outpost: Leo drives MO-01 out to pick you up (R)">📻 Call MO-01 to pick me up <kbd>R</kbd></button>
   <div class="evaPad" id="evaPad" aria-label="Walk controls">
     <button data-k="w" aria-label="Walk forward">▲</button><button data-k="a" aria-label="Step left">◀</button><button data-k="s" aria-label="Walk back">▼</button><button data-k="d" aria-label="Step right">▶</button>
     <button data-k=" " class="hop" aria-label="Hop">⤒</button><button data-k="e" class="use" aria-label="Interact">E</button></div>`;
@@ -4978,6 +5003,9 @@ function startEVA() {
   const p = rover.localToWorld(new THREE.Vector3(2.9, 0, 1.3)); p.y = H(p.x, p.z);
   buildSolids();
   eva.pos.copy(p); eva.vel.set(0, 0, 0); eva.charge = eva.stumble = 0; eva.vy = 0; eva.air = false; eva.lastPrint.copy(p); eva.o2 = J.SUIT_O2.hours; eva.alarm = null;   // a fresh, full tank
+  Object.assign(eva, { bat: SUIT_BAT, batWarn: 0, last: p.clone(), beyond: false, leak: 0, dose: 0, doseTold: 0, sick: false, flareDone: false,
+    hzT: performance.now() + 45000 + Math.random() * 45000 });
+  eva.saved.rover = rover.position.clone();
   const away = p.clone().sub(rover.position); away.y = 0; eva.yaw = eva.camYaw = Math.atan2(away.x, away.z);
   walker.root.position.copy(p); walker.root.rotation.y = eva.yaw; walker.root.visible = true;
   crewRover.suits[1].root.visible = false;                  // Kofi's suit has left its suitport
@@ -4989,7 +5017,9 @@ function stopEVA() {
   if (!eva.on) return;
   eva.on = false; eva.keys = {}; eva.pick = null; glowRocks(0, null); walker.root.visible = false; crewRover.suits[1].root.visible = true;
   helmetLamp.intensity = evaFill.intensity = suitGlow.intensity = 0;
-  camera.position.copy(eva.saved.pos); controls.target.copy(eva.saved.tgt); controls.enabled = true; controls.update();
+  camera.position.copy(eva.saved.pos); controls.target.copy(eva.saved.tgt);
+  if (eva.saved.rover) { const d = rover.position.clone().sub(eva.saved.rover); camera.position.add(d); controls.target.add(d); }   // the carrier may have driven out to you
+  controls.enabled = true; controls.update();
   document.body.classList.remove('eva'); document.getElementById('evaPrompt').hidden = true; J.evaChanged(false);
 }
 // jumping: crouch (hold), then push off with your legs (let go). The longer you crouch, the harder the push.
@@ -5012,7 +5042,9 @@ function evaInteract() {
 function evaOptions() {
   const p = eva.pos, o = [];
   const rk = nearRock(p); if (rk) o.push({ t: `Pick up ${J.ROCK[rk.kind].name.toLowerCase()}`, f: () => pickUp(rk), rock: rk });
-  if (p.distanceTo(rover.position) < 4) o.push({ t: 'Climb back into MO-01', f: stopEVA });
+  if (FREE() && p.distanceTo(rover.position) < 4 && !pickup && (eva.o2 < J.SUIT_O2.hours - .05 || eva.bat < SUIT_BAT - .05 || eva.leak))
+    o.push({ t: 'Plug into MO-01: refill suit air and battery', f: refillSuit });
+  if (p.distanceTo(rover.position) < 4 && !pickup) o.push({ t: 'Climb back into MO-01', f: stopEVA });
   if (J.roverHome() && Math.hypot(p.x - doorPos().x, p.z - doorPos().z) < 5) o.push({ t: 'Go in through the airlock', f: () => { stopEVA(); J.enterBase(); } });
   for (const s of J.SITES) {
     const d = Math.hypot(p.x - SITE_POS[s.id].x, p.z - SITE_POS[s.id].z);
@@ -5022,13 +5054,199 @@ function evaOptions() {
   return o;
 }
 const fmtO2 = h => `${Math.floor(h)} h ${String(Math.floor((h % 1) * 60)).padStart(2, '0')} min`;
+// ===================== SURVIVAL ON FOOT (ages 13+) =====================
+// A suit carries its own air and battery (NASA's xEMU: about 8 hours of each). The battery runs the fans that move air
+// and scrub out CO2, the radio, the lamp and the heaters, so in the dark it drains faster. The clock here runs at
+// 1 game-minute per real second, and because the map is shrunk, every km you walk also costs the time a real walk
+// would take (about 20 minutes per km in a suit).
+const SUIT_BAT = 8, MIN_PER_KM = 20;
+const callBtn = document.getElementById('evaCall');
+callBtn.addEventListener('click', () => callPickup());
+const shake = { until: 0, amp: 0, len: 1 };
+function survive(dt) {
+  const s = J.state, paused = s.busy || s.radioWait, p = eva.pos;
+  const km = Math.hypot(p.x - eva.last.x, p.z - eva.last.z) / KM; eva.last.copy(p);
+  if (!paused) {
+    const walkH = km * MIN_PER_KM / 60;                                   // the real time that walk would have taken
+    const fan = eva.bat > 0 ? 1 : 1.6;                                    // no battery: the backup fan is weak, you breathe harder
+    eva.o2 -= walkH * (eva.effort || 1) * fan + (eva.leak ? dt * eva.leak / 60 : 0) + (eva.bat > 0 ? 0 : dt * .4 / 60);
+    eva.bat -= dt / 60 * (J.isDark(s.day) ? 1.5 : 1) + walkH;             // heaters work hard in the dark
+  }
+  if (eva.bat <= 1 && eva.batWarn === 0) { eva.batWarn = 1; J.radio('kofi', 'Suit battery is down to one hour. When it dies the fans slow down and I’ll breathe harder.', { ch: 'suit' }); }
+  if (eva.bat <= 0 && eva.batWarn === 1) { eva.batWarn = 2; helmetLamp.intensity = 0; J.toast('🔋 Kofi’s suit battery is EMPTY: no lamp, weak fans. His oxygen now goes much faster!'); }
+  // the walk-back rule
+  const away = anchorDistKm();
+  if (away > WALK_LIMIT_KM && !eva.beyond) { eva.beyond = true;
+    J.radio('leo', `Kofi, you’re ${away.toFixed(1)} km out, past the 2 km walk-back line. If your suit has a problem out there, you might not make it back on foot. Call me if you need a ride.`, { ch: 'suit' }); }
+  if (away < WALK_LIMIT_KM * .9) eva.beyond = false;
+  // radiation: a suit is thin; outside, a flare's particles go straight through
+  const lv = J.radLevel();
+  if (lv > 0 && !paused) {
+    const mSv = lv * 8 * dt;                                               // up to ~8 mSv per minute in a big storm, unshielded
+    eva.dose += mSv; s.R += mSv;
+    if (eva.dose > 50 && eva.doseTold < 1) { eva.doseTold = 1; J.toast('☢ Kofi has taken 50 mSv on this walk, more than a year of natural radiation on Earth (about 3 mSv) many times over. Get under cover!'); }
+    if (eva.dose > J.DOSE_LIMIT && eva.doseTold < 2) { eva.doseTold = 2; J.log(`☢ Kofi passed NASA’s 30-day limit (${J.DOSE_LIMIT} mSv) on one walk.`);
+      J.radio('kofi', 'My dosimeter is screaming. I’m past the 30-day limit. I need to get inside!', { ch: 'suit' }); }
+    if (eva.dose > 700 && !eva.sick) { eva.sick = true;
+      J.log('🤢 Radiation sickness: after about 0.7–1 Sv in a short time, people get sick to their stomach, weak and tired. Kofi can only walk slowly now.');
+      J.radio('kofi', 'I feel sick… my stomach, my head. I’m so tired I can barely walk. Please come and get me.', { ch: 'suit', replies: [{ label: '📻 Send MO-01', say: 'Leo, go get Kofi now!', then: () => callPickup() }] }); }
+  }
+  // flares, meteorites and moonquakes, now and then
+  const now = performance.now();
+  if (now > eva.hzT && !paused && !pickup) {
+    eva.hzT = now + 80000 + Math.random() * 80000;
+    const r = Math.random();
+    if (!eva.flareDone && away > 1 && r < .4) {
+      const dr = p.distanceTo(rover.position) / KM, db = Math.hypot(p.x - BX, p.z - BZ) / KM;
+      eva.flareDone = J.flareOnFoot(Math.min(dr, db), dr < db ? 'MO-01' : 'the base');
+    } else if (r < .72) impact(false); else quake();
+  }
+}
+function refillSuit() {
+  eva.o2 = J.SUIT_O2.hours; eva.bat = SUIT_BAT; eva.leak = 0; eva.alarm = null; eva.batWarn = 0; helmetLamp.intensity = 90;
+  J.toast('🔌 Plugged into MO-01: suit air and battery are full again, and the leak is patched.');
+}
+// out of air far from help: Leo races out and drags Kofi in
+function rescue() {
+  const p = eva.pos.clone(), back = p.clone().sub(rover.position); back.y = 0;
+  if (back.length() > 4) { back.setLength(back.length() - 3); setRover(rover.position.clone().add(back)); }
+  J.state.hours = Math.max(0, J.state.hours - 2);
+  J.log('🆘 Kofi ran out of oxygen far from help. Leo raced out in MO-01 and pulled him aboard just in time. Kofi needs rest: −2 hours of work today.');
+  J.radio('leo', 'Got him! He was barely conscious. That was far too close. Out there, you are only as safe as your air.', { ch: 'carrier' });
+  const lost = J.state.bag.length; J.state.bag = []; if (lost) J.log(`🎒 The ${lost} rock sample${lost > 1 ? 's were' : ' was'} left behind.`);
+  stopEVA(); J.render();
+}
+// ---- the carrier comes to you: Leo drives MO-01 out, at real carrier speed ----
+let pickup = null;
+const PICK_V = 1.7;                                                       // world units a second (about 12 km/h on the clock)
+function setRover(v) {
+  rover.position.set(v.x, H(v.x, v.z), v.z);
+  const s = J.state; s.rover.pos = xzToKm(v.x, v.z); s.rover.at = null;
+}
+function callPickup() {
+  if (!eva.on || !FREE() || pickup) return;
+  const s = J.state, d = eva.pos.distanceTo(rover.position), km = d / KM;
+  if (driveAnim || actAnim) return J.toast('MO-01 is busy right now.');
+  if (d < 6) return J.toast('MO-01 is right here. Walk over and press E to climb in.');
+  const need = km * J.ROVER.kWhPerKm * 2;
+  if (s.rover.bat < need) {
+    J.radio('leo', `Kofi, I’d love to, but MO-01 only has ${Math.round(s.rover.bat)} kWh. Driving out and back needs about ${Math.round(need)}. You have to walk.`, { ch: 'suit' }); return;
+  }
+  const mins = Math.round(d / PICK_V);
+  pickup = { t0: performance.now() };
+  J.radio('leo', `Copy, Kofi. MO-01 is on its way, ${km.toFixed(1)} km. About ${mins} minutes. Stay where you are, or walk towards me to save time.`, { ch: 'suit' });
+  J.log(`📻 Kofi called for a pickup ${km.toFixed(1)} km out.`);
+}
+const _pd = new THREE.Vector3(), _cv = new THREE.Vector3();
+function stepPickup(dt) {
+  if (!pickup) return;
+  if (!eva.on) { pickup = null; J.render(); return; }
+  if (J.state.busy || J.state.radioWait) return;
+  const to = eva.pos, rp = rover.position; _pd.set(to.x - rp.x, 0, to.z - rp.z);
+  const d = _pd.length();
+  if (d < 3.6) {
+    pickup = null; J.render();
+    J.radio('leo', 'I’m here, Kofi! Hop in.', { ch: 'suit' }); return;
+  }
+  _pd.normalize();
+  // never drive into Shackleton: steer around its rim
+  const [cx, cz] = kmToXZ(J.CRATER.at), rr = (J.CRATER.r + .25) * KM, nx = rp.x + _pd.x * 3, nz = rp.z + _pd.z * 3;
+  if (Math.hypot(nx - cx, nz - cz) < rr) {
+    _cv.set(rp.x - cx, 0, rp.z - cz).normalize(); const t1 = V3(-_cv.z, 0, _cv.x), t2 = V3(_cv.z, 0, -_cv.x);
+    _pd.copy(t1.dot(_pd) > t2.dot(_pd) ? t1 : t2).addScaledVector(_cv, .25).normalize();
+  }
+  const step = Math.min(d - 3.4, PICK_V * dt), prev = rp.clone();
+  setRover(rp.clone().addScaledVector(_pd, step));
+  faceRover(rp.clone().addScaledVector(_pd, 3));
+  const kmGone = step / KM; J.state.rover.bat = Math.max(0, J.state.rover.bat - kmGone * J.ROVER.kWhPerKm);
+  for (const w of crewRover.wheels) w.rotation.z += .22;
+  if (!reduced() && Math.random() < .6) for (const w of crewRover.wheels) { w.getWorldPosition(_wp);
+    kick(_wp.x, rp.y + .12, _wp.z, -_pd.x * .4 + (Math.random() - .5), .8 + Math.random() * 1.4, -_pd.z * .4 + (Math.random() - .5), 3); }
+  if (rp.distanceTo(prev) > 0 && Math.random() < dt * 2) J.render();
+}
+// ---- METEORITE STRIKES. The Moon has no air to burn them up, so even pebbles hit at ~20 km/s. NASA's cameras on
+// Earth see the flashes on the Moon's night side, and LRO has found hundreds of brand-new craters. Real hits near you
+// are very rare; the game speeds that up.
+const craterTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  for (let i = 0; i < 70; i++) {                                         // bright rays of fresh, unweathered ejecta
+    const a = Math.random() * 6.283, l = 60 + Math.random() * 68, w = .02 + Math.random() * .05;
+    const gr = g.createLinearGradient(128, 128, 128 + Math.cos(a) * l, 128 + Math.sin(a) * l);
+    gr.addColorStop(0, 'rgba(225,222,214,.75)'); gr.addColorStop(1, 'rgba(225,222,214,0)');
+    g.fillStyle = gr; g.beginPath(); g.moveTo(128, 128); g.arc(128, 128, l, a - w, a + w); g.fill();
+  }
+  const r = g.createRadialGradient(128, 128, 0, 128, 128, 52);
+  r.addColorStop(0, 'rgba(78,75,70,.9)'); r.addColorStop(.55, 'rgba(112,108,101,.9)'); r.addColorStop(.8, 'rgba(236,233,226,.95)'); r.addColorStop(1, 'rgba(200,196,188,0)');
+  g.fillStyle = r; g.beginPath(); g.arc(128, 128, 52, 0, 6.283); g.fill();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const craterMat = new THREE.MeshStandardMaterial({ map: craterTex, transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -3 });
+const flashSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glareTex, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 }));
+flashSpr.visible = false; scene.add(flashSpr);
+const flashLight = new THREE.PointLight(0xfff1d8, 0, 120, 1.4); scene.add(flashLight);
+let flashT = -1e9;
+function freshCrater(x, z, r) {
+  const n = 24, S = r * 4.6, geo = new THREE.PlaneGeometry(S, S, n, n).rotateX(-Math.PI / 2), P = geo.attributes.position;
+  for (let i = 0; i < P.count; i++) {
+    const lx = P.getX(i), lz = P.getZ(i), d = Math.hypot(lx, lz) / r;
+    const rim = d > .85 && d < 1.5 ? Math.sin((d - .85) / .65 * Math.PI) * r * .12 : 0;   // a raised rim of thrown-out rock
+    P.setXYZ(i, x + lx, H(x + lx, z + lz) + .05 + rim, z + lz);
+  }
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, craterMat); m.renderOrder = 1; scene.add(m);
+  BOULDERS.push({ x, z, r: r * .55 });                                  // you can't walk across the hole itself
+}
+function impact(demo) {
+  const near = eva.on ? eva.pos : controls.target, inCr = (x, z) => J.kmBetween(xzToKm(x, z), J.CRATER.at) < J.CRATER.r;
+  let x = 0, z = 0;
+  for (let k = 0; k < 30; k++) {
+    const close = demo || Math.random() < .15, d = close ? 7 + Math.random() * 5 : 18 + Math.random() * 40, a = Math.random() * 6.283;
+    x = near.x + Math.cos(a) * d; z = near.z + Math.sin(a) * d;
+    if (!inCr(x, z) && Math.hypot(x - BX, z - BZ) > 14 && Math.abs(x) < EDGE && Math.abs(z) < EDGE) break;
+  }
+  const y = H(x, z), r = .5 + Math.random() * 1.1;
+  flashT = performance.now(); flashSpr.position.set(x, y + 1.5, z); flashLight.position.set(x, y + 3, z);
+  shake.until = flashT + 1200; shake.len = 1200; shake.amp = .25;
+  if (!reduced()) for (let i = 0; i < 320; i++) {                        // ejecta flies out in clean arcs and falls straight back
+    const a = Math.random() * 6.283, sp = 2 + Math.random() * 9, up = 2 + Math.random() * 7;
+    kick(x + Math.cos(a) * r * .4, y + .2, z + Math.sin(a) * r * .4, Math.cos(a) * sp, up, Math.sin(a) * sp, 5);
+  }
+  freshCrater(x, z, r);
+  const km = Math.hypot(x - near.x, z - near.z) / KM;
+  J.log(`☄ A meteorite struck ${Math.hypot(x - near.x, z - near.z) < 15 ? 'right next to Kofi' : `${km.toFixed(1)} km away`} and left a fresh crater.`);
+  J.toast('☄ Meteorite strike! With no air on the Moon, even small rocks hit at about 20 km/s. NASA sees these flashes from Earth.');
+  if (eva.on && Math.hypot(x - eva.pos.x, z - eva.pos.z) < 13) {
+    eva.leak = Math.max(eva.leak, 3); eva.stumble = performance.now() + 1600;
+    J.radio('kofi', 'Whoa! Something hit my suit. Pressure is dropping! A tiny hole. I’m losing air fast. I need to plug into MO-01!', { ch: 'suit',
+      replies: [{ label: '📻 Send MO-01', say: 'Leo, go get Kofi, now!', then: () => callPickup() }, { label: 'Head back', say: 'Kofi, get back to the carrier.' }] });
+  }
+  if (rover.position.distanceTo(V3(x, y, z)) < 12) { J.state.rover.bat = Math.max(0, J.state.rover.bat - 12);
+    J.log('💥 Flying debris dented MO-01’s battery box: −12 kWh.'); }
+  J.render();
+}
+// ---- MOONQUAKES. Apollo's seismometers recorded shallow moonquakes up to about magnitude 5 that rang for 10 minutes
+// or more: the dry, cold rock shakes like a bell. Loose rock slides down the slopes.
+function quake() {
+  const now = performance.now(); shake.until = now + 9000; shake.len = 9000; shake.amp = .18;
+  const at = eva.on ? eva.pos : controls.target;
+  if (!reduced()) for (let i = 0; i < 160; i++) { const a = Math.random() * 6.283, d = 4 + Math.random() * 30, x = at.x + Math.cos(a) * d, z = at.z + Math.sin(a) * d;
+    kick(x, H(x, z) + .1, z, (Math.random() - .5) * 1.2, .3 + Math.random() * 1.2, (Math.random() - .5) * 1.2, 3); }
+  J.toast('〰 Moonquake! Apollo seismometers felt shallow quakes up to about magnitude 5, ringing for over 10 minutes.');
+  if (eva.on && (Math.hypot(eva.vel.x, eva.vel.z) > 1 || Math.random() < .4)) { eva.stumble = now + 1800;
+    J.radio('kofi', 'The ground is shaking! I fell over. I’m okay, just dusty.', { ch: 'suit' }); }
+  J.log('〰 A moonquake shook the ground.');
+}
+function stepHazards(now) {
+  const t = (now - flashT) / 700;
+  if (t >= 0 && t < 1) { flashSpr.visible = true; flashSpr.material.opacity = 1 - t; flashSpr.scale.setScalar(26 * (1 + t)); flashLight.intensity = 9000 * (1 - t) ** 2; }
+  else if (flashSpr.visible) { flashSpr.visible = false; flashLight.intensity = 0; }
+}
 function stepEVA(dt) {
   // breathing uses up the suit's oxygen
   const work = eva.effort || J.SUIT_O2.rest;                                // harder work, faster breathing
   if (!J.state.busy && !J.state.radioWait) eva.o2 -= dt * J.SUIT_O2.minPerSec * work / 60;   // the clock pauses while you answer a question
   if (eva.o2 <= 1 && !eva.alarm) { eva.alarm = 'low'; J.suitAlarm('low'); }
   if (eva.o2 <= 0 && eva.alarm === 'low') { eva.alarm = 'reserve'; J.suitAlarm('reserve'); }
-  if (eva.o2 <= -J.SUIT_O2.reserve) { J.suitAlarm('out'); stopEVA(); return; }
+  if (FREE()) { survive(dt); if (!eva.on) return; }
+  if (eva.o2 <= -J.SUIT_O2.reserve) { if (FREE()) { rescue(); return; } J.suitAlarm('out'); stopEVA(); return; }
   const k = eva.keys, busy = !!actAnim || !!eva.pick || J.state.busy;
   const f = fwdOf(eva.camYaw), r = new THREE.Vector3(-f.z, 0, f.x);
   const mv = new THREE.Vector3();
@@ -5041,9 +5259,9 @@ function stepEVA(dt) {
   // you speed up slowly, skid when you stop, can't turn sharply and can't steer in the air. Apollo crews walked about
   // 1 m/s, bounded at about 2 m/s ("kangaroo hop") and still fell over now and then.
   const now = performance.now(), down = now < eva.stumble, M = MOVE;
-  const dir = mv.lengthSq() > 0 ? mv.normalize() : null, bound = !!(dir && k.shift);
+  const dir = mv.lengthSq() > 0 ? mv.normalize() : null, bound = !!(dir && k.shift && !eva.sick);
   const vel = eva.vel, speed0 = Math.hypot(vel.x, vel.z);
-  let maxV = bound ? M.bound : M.walk;
+  let maxV = (bound ? M.bound : M.walk) * (eva.sick ? .7 : 1);
   if (!eva.air && !down) {
     let wx = 0, wz = 0;
     if (dir && !eva.charge) {
@@ -5085,11 +5303,11 @@ function stepEVA(dt) {
     const km = xzToKm(next.x, next.z);
     const inShackleton = J.kmBetween(km, J.CRATER.at) < J.CRATER.r + .05;
     const save = eva.pos.clone(); eva.pos.x = next.x; eva.pos.z = next.z;
-    const far = anchorDistKm() > WALK_LIMIT_KM;
+    const far = FREE() ? Math.abs(next.x) > EDGE || Math.abs(next.z) > EDGE : anchorDistKm() > WALK_LIMIT_KM;
     if (inShackleton || far) {
       eva.pos.copy(save); vel.set(0, 0, 0);
       if (performance.now() - eva.warned > 4000) { eva.warned = performance.now();
-        J.toast(inShackleton ? '⛔ The crater wall drops 4 km into permanent darkness. Too steep to walk!' : `⚠ Walk-back limit: astronauts stay within ${WALK_LIMIT_KM} km of the carrier or base, in case a suit breaks.`); }
+        J.toast(inShackleton ? '⛔ The crater wall drops 4 km into permanent darkness. Too steep to walk!' : FREE() ? '🗺 This is the edge of the mapped ground. Turn back.' : `⚠ Walk-back limit: astronauts stay within ${WALK_LIMIT_KM} km of the carrier or base, in case a suit breaks.`); }
     }
     // a suit turns slowly: face the way you're moving
     const want = Math.atan2(vel.x, vel.z), dy = Math.atan2(Math.sin(want - eva.yaw), Math.cos(want - eva.yaw));
@@ -5136,11 +5354,17 @@ function stepEVA(dt) {
   const pr = document.getElementById('evaPrompt'), o = eva.opts[0];
   pr.hidden = !o; if (o) pr.lastChild.textContent = o.t;
   glowRocks(performance.now(), o && o.rock);
-  const km = anchorDistKm();
+  const km = anchorDistKm(), p0 = eva.pos;
   const tank = eva.o2 > 0 ? `🫁 Suit O₂ <span class="${eva.o2 <= 1 ? 'warn' : ''}">${fmtO2(eva.o2)}</span>` : `<span class="warn">🫁 EMERGENCY O₂ ${Math.max(0, Math.ceil((eva.o2 + J.SUIT_O2.reserve) * 60))} min</span>`;
   const spd = Math.hypot(eva.vel.x, eva.vel.z), pw = eva.charge ? chargePower(performance.now()) : 0;
   const gait = performance.now() < eva.stumble ? '🤕 fell over' : eva.charge ? `🦘 push-off ${'▮'.repeat(Math.round(pw * 5))}${'▯'.repeat(5 - Math.round(pw * 5))}` : eva.air ? '🦘 in the air' : `${spd > 1.4 ? '🦘' : '🚶'} ${spd.toFixed(1)} m/s`;
-  document.getElementById('evaBar').innerHTML = `🧑‍🚀 <b>Kofi on foot</b> · ${gait} · ${tank} · ${km < .1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`} from safety <span class="${km > WALK_LIMIT_KM * .8 ? 'warn' : ''}">(limit ${WALK_LIMIT_KM} km)</span> · 🎒 ${J.state.bag.length}/${J.BAG_MAX} rocks${lope ? ' · loping' : ''}`;
+  const free = FREE(), batTxt = free ? ` · <span class="${eva.bat <= 1 ? 'warn' : ''}">🔋 ${eva.bat > 0 ? fmtO2(eva.bat) : 'EMPTY'}</span>` : '',
+    doseTxt = free && eva.dose >= 1 ? ` · <span class="${eva.dose > 100 ? 'warn' : ''}">☢ ${Math.round(eva.dose)} mSv</span>` : '',
+    leakTxt = free && eva.leak ? ' · <span class="warn">💨 suit leak</span>' : '',
+    lim = free ? `<span class="${km > WALK_LIMIT_KM ? 'warn' : ''}">(walk-back ${WALK_LIMIT_KM} km)</span>` : `<span class="${km > WALK_LIMIT_KM * .8 ? 'warn' : ''}">(limit ${WALK_LIMIT_KM} km)</span>`;
+  document.getElementById('evaBar').innerHTML = `🧑‍🚀 <b>Kofi on foot</b> · ${gait} · ${tank}${batTxt}${leakTxt}${doseTxt} · ${km < .1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`} from safety ${lim} · 🎒 ${J.state.bag.length}/${J.BAG_MAX} rocks${lope ? ' · loping' : ''}`;
+  callBtn.hidden = !free || !!pickup || driveAnim || p0.distanceTo(rover.position) < 6;
+  if (pickup) callBtn.hidden = true;
 }
 // keyboard and mouse while walking
 addEventListener('keydown', e => {
@@ -5149,6 +5373,7 @@ addEventListener('keydown', e => {
   if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(key)) { eva.keys[key] = true; e.preventDefault(); }
   else if (key === ' ') { e.preventDefault(); if (!e.repeat) evaCharge(); }
   else if (key === 'e') { e.preventDefault(); evaInteract(); }
+  else if (key === 'r' && FREE() && !e.repeat) { e.preventDefault(); callPickup(); }
 });
 addEventListener('keyup', e => { if (e.key === ' ' && eva.on) evaRelease(); eva.keys[e.key.toLowerCase()] = false; });
 addEventListener('blur', () => { eva.keys = {}; eva.charge = 0; });
@@ -5387,8 +5612,11 @@ function frame(now) {
   if (eva.on) stepEVA(dt); else controls.update();
   stepDrive(now); stepAct(now, dt); stepLander(now); stepFx(now, dt);
   crewRover.crew.forEach(c => c.pose('sit', dt));
-  stepObjective(now);
+  stepObjective(now); stepPickup(dt); stepHazards(now, dt);
+  const sk = shake.until > now && !reduced() ? shake.amp * (shake.until - now) / shake.len : 0;
+  const off = V3((Math.random() - .5) * sk, (Math.random() - .5) * sk, (Math.random() - .5) * sk); camera.position.add(off);
   renderer.render(scene, camera);
+  camera.position.sub(off);
   const w = wrap.clientWidth, h = wrap.clientHeight;
   for (const l of labels) {
     tmp.copy(l.pos).project(camera);
@@ -5421,7 +5649,7 @@ setTimeout(function drawMap() {
   }
   g.putImageData(im, 0, 0); MAP_IMG = cv.toDataURL();
 }, 1200);
-window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get cineOn() { return CINE.on; }, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, boulders: BOULDERS, hitSolid, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
+window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get cineOn() { return CINE.on; }, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, boulders: BOULDERS, hitSolid, callPickup, impact, quake, get eva() { return eva; }, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
   get mapImg() { return MAP_IMG; }, evaKm: () => eva.on ? xzToKm(eva.pos.x, eva.pos.z) : null };
 // =====================================================================
 //  INSIDE THE BASE: first-person walk-through
