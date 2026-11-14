@@ -4091,11 +4091,34 @@ const V3 = (x, y, z) => new THREE.Vector3(x, y, z);              // a plain vect
 // screens (or devices that report 4 GB of memory or less) draw at normal resolution, without anti-aliasing,
 // with smaller shadow maps.
 const LITE = matchMedia('(pointer: coarse)').matches || (navigator.deviceMemory && navigator.deviceMemory <= 4) || Math.min(screen.width, screen.height) < 600;
-const PR_MAX = LITE ? 1 : 1.5;
+// PHONE-SAFE GRAPHICS: if the tab died last time (Chrome ran out of graphics memory and reloaded it), this load
+// draws with no shadows, a lower resolution and 30 frames a second. A heartbeat says "still playing"; leaving the
+// page normally clears it, so a heartbeat left behind means a crash. ?safe=1 turns it on, ?safe=0 turns it off.
+const SAFE = (() => { try {
+  const q = new URLSearchParams(location.search);
+  if (q.get('safe') === '0') localStorage.removeItem('jamt_safe');
+  const beat = +localStorage.getItem('jamt_beat') || 0, crashed = beat && Date.now() - beat < 10 * 60000;
+  if (q.get('safe') === '1' || (LITE && crashed)) localStorage.setItem('jamt_safe', '1');
+  localStorage.removeItem('jamt_beat');
+  const on = localStorage.getItem('jamt_safe') === '1';
+  if (on) setTimeout(() => window.toast && toast(crashed ? '📱 The game closed last time, so it now uses phone-safe graphics (no shadows).' : '📱 Phone-safe graphics are on (no shadows).'), 1500);
+  return on;
+} catch (e) { return false; } })();
+try {
+  const beat = () => { try { localStorage.setItem('jamt_beat', Date.now()); } catch (e) {} };
+  setInterval(() => { if (document.visibilityState === 'visible') beat(); }, 3000);
+  addEventListener('pagehide', () => { try { localStorage.removeItem('jamt_beat'); } catch (e) {} });
+  document.addEventListener('visibilitychange', () => { try { if (document.visibilityState === 'hidden') localStorage.removeItem('jamt_beat'); else beat(); } catch (e) {} });
+} catch (e) {}
+const PR_MAX = SAFE ? .75 : LITE ? 1 : 1.5;
+const FPS_CAP = LITE ? 1000 / 31 : 0;                            // phones: 30 frames a second is plenty, and keeps them cool
 const renderer = new THREE.WebGLRenderer({ antialias: !LITE, powerPreference: LITE ? 'default' : 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, PR_MAX));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = !SAFE;
+renderer.shadowMap.type = LITE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+if (LITE) renderer.shadowMap.autoUpdate = false;                // phones: redraw shadows every 4th frame, not every frame
+// if the phone's graphics give out, keep the page alive and let three.js rebuild everything when they come back
+renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); window.toast && toast('📱 The 3D view paused to save memory. It will come back in a moment.'); });
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.35;
 wrap.prepend(renderer.domElement);
@@ -5799,9 +5822,12 @@ function stepObjective(now) {
     OBJ.edge.lastChild.textContent = OBJ.at === 'base' && J.roverAt === 'base' && !eva.on ? `${OBJ.name} · go inside` : `${OBJ.name} · ${km} km`;
   }
 }
+let shadowTick = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  watchSpeed(now - lastT);
+  if (FPS_CAP && now - lastT < FPS_CAP) return;
+  if (LITE && !SAFE && ++shadowTick % 4 === 1) renderer.shadowMap.needsUpdate = true;
+  watchSpeed(FPS_CAP ? (now - lastT) * .6 : now - lastT);       // (judged against 50 fps, so the 30 fps cap isn't mistaken for a slow phone)
   const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
   if (walkWrap.style.display !== 'none') frameWalk(now, dt);
   if (CINE.on) { stepLander(now); stepFx(now, dt); cineFrame(now); return; }
@@ -5853,7 +5879,8 @@ window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get 
 // =====================================================================
 const walkWrap = document.getElementById('walk3d');
 const walkLabelLayer = document.getElementById('walkLabels');
-const wr = new THREE.WebGLRenderer({ antialias: !LITE });
+const wr = new THREE.WebGLRenderer({ antialias: !LITE, powerPreference: LITE ? 'default' : 'high-performance' });
+wr.domElement.addEventListener('webglcontextlost', e => e.preventDefault());
 wr.setPixelRatio(Math.min(devicePixelRatio, PR_MAX));
 wr.toneMapping = THREE.ACESFilmicToneMapping; wr.toneMappingExposure = 1.05;
 wr.outputColorSpace = THREE.SRGBColorSpace;
