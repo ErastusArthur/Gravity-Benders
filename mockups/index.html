@@ -573,7 +573,7 @@
   body.clean #objPill { display: none; }
   /* the yellow arrow's on-screen parts: a tag over the place, or an arrow at the screen edge when it is out of view */
   .objTag, .objEdge { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 3; will-change: transform; }
-  .objTag { padding: 3px 10px; border-radius: 99px; background: #ffc53d; color: #1a1300; font-size: 12px; font-weight: 800; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+  .objTag { overflow: hidden; text-overflow: ellipsis; padding: 3px 10px; border-radius: 99px; background: #ffc53d; color: #1a1300; font-size: 12px; font-weight: 800; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
   .objTag small { font-weight: 600; opacity: .75; margin-left: 4px; }
   .objEdge { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
   .objEdge i { position: absolute; inset: 0; background: #ffc53d; clip-path: polygon(100% 50%, 20% 8%, 36% 50%, 20% 92%); filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
@@ -640,26 +640,27 @@
   .dialog .dlgX { position: absolute; top: 6px; right: 6px; font-size: 11px; padding: 1px 6px; }
   .dialog .meta { font-size: 11px; color: var(--muted); }
   /* game-style radio call: a big portrait on the left, the name on a tab above, the words in a dark grey panel */
-  .dialog { --who: #5ec8ff; align-items: stretch; gap: 0; padding: 0; border-radius: 10px; overflow: visible; margin-top: 22px;
+  .dialog { --who: #5ec8ff; align-items: stretch; gap: 0; padding: 0; border-radius: 10px; overflow: visible; margin-top: 18px; max-width: 480px; margin-left: auto; margin-right: auto;
     background: linear-gradient(180deg, rgba(44,50,60,.94), rgba(28,33,42,.94)); border: 1px solid rgba(214,224,240,.32); box-shadow: 0 14px 34px rgba(0,0,0,.55); }
-  .dialog .portrait { width: 104px; margin: -22px 0 -1px -1px; border-radius: 10px 0 0 10px; overflow: hidden; border: 1px solid rgba(214,224,240,.32); border-right: 0;
+  .dialog .portrait { width: 84px; margin: -18px 0 -1px -1px; border-radius: 10px 0 0 10px; overflow: hidden; border: 1px solid rgba(214,224,240,.32); border-right: 0;
     background: radial-gradient(120% 90% at 50% 20%, #5b6170 0%, #2a2e36 55%, #15181e 100%); display: flex; align-items: flex-end; justify-content: center; box-shadow: inset 0 -18px 24px rgba(0,0,0,.35); }
   .dialog .portrait::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--who) 55%, transparent); border-radius: inherit; pointer-events: none; }
   .dialog .portrait .pImg { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; }
-  .dialog .portrait .ava { width: 92px; height: 92px; margin: auto; }
+  .dialog .portrait .ava { width: 72px !important; height: 72px !important; margin: auto; }
   .dialog.speaking .portrait .pImg { animation: talkImg .45s ease-in-out infinite alternate; }
   @keyframes talkImg { from { transform: translateY(0); } to { transform: translateY(-1.5px) scale(1.01); } }
-  .dialog .dlgBody { position: relative; padding: 0 30px 12px 14px; }
-  .dialog .nameRow { display: flex; align-items: baseline; gap: 8px; margin: -22px 0 6px -1px; height: 22px; }
-  .dialog .nameTag { margin: 0; padding: 3px 14px 2px; border-radius: 8px 8px 0 0; font-size: 13px; letter-spacing: .02em; color: #f4f7fc;
+  .dialog .dlgBody { position: relative; padding: 0 28px 8px 12px; min-width: 0; }
+  .dialog .nameRow { display: flex; align-items: baseline; gap: 8px; margin: -19px 0 4px -1px; height: 19px; min-width: 0; }
+  .dialog .nameTag { margin: 0; padding: 2px 12px 1px; border-radius: 7px 7px 0 0; font-size: 12px; letter-spacing: .02em; color: #f4f7fc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
     background: rgba(44,50,60,.96); border: 1px solid rgba(214,224,240,.32); border-bottom: 0; box-shadow: inset 0 2px 0 var(--who); }
   .dialog .meta { font-size: 10.5px; color: #c9d2e0; background: rgba(18,22,30,.82); padding: 2px 8px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-  .dialog .dlgText { margin: 4px 0 0; font-size: 14.5px; line-height: 1.5; color: #f2f5fa; min-height: 3em; }
-  .dialog .dlgIc { position: absolute; right: 8px; bottom: 6px; font-size: 14px; opacity: .55; }
+  .dialog .dlgText { margin: 4px 0 0; font-size: 13.5px; line-height: 1.45; color: #f2f5fa; min-height: 2.9em; }
+  .dialog .dlgMeta { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; font-size: 10.5px; color: #9aa6bb; }
+  .dialog .dlgIc { font-size: 13px; opacity: .6; margin-right: -18px; }
   .dialog .dlgX { top: 4px; right: 4px; }
   .dialog .replies { margin-top: 8px; }
   @media (max-width: 760px), (max-height: 520px) {
-    .dialog { margin-top: 0; } .dialog .portrait { width: 64px; margin: -1px 0 -1px -1px; } .dialog .portrait .ava { width: 54px !important; height: 54px !important; }
+    .dialog { margin-top: 0; } .dialog .portrait { width: 64px; margin: 0; border: 0; } .dialog .portrait .ava { width: 56px !important; height: 56px !important; }
     .dialog .dlgBody { padding: 6px 26px 8px 10px; } .dialog .nameRow { margin: 0 0 2px; height: auto; flex-wrap: wrap; }
     .dialog .nameTag { padding: 0; background: none; border: 0; box-shadow: none; color: var(--who); }
     .dialog .meta { background: none; padding: 0; white-space: normal; }
@@ -2934,11 +2935,16 @@ const TOUR = [
 ];
 const tourSeen = () => { try { return localStorage.getItem('jamtTour') === '1'; } catch (e) { return false; } };
 function showTour(onClose) {
+  // the tour explains the game screen, so the mission map steps aside while it runs and comes back afterwards
+  const cmp = $('campaign'), mapWas = !!(cmp && cmp.classList.contains('open')), mapCanClose = mapWas && !!cmp.dataset.close;
+  if (mapWas) hideCampaign();
   let el = $('tour'); if (!el) { el = document.createElement('div'); el.id = 'tour'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); document.body.appendChild(el); }
   el.innerHTML = '<div class="tHi" id="tHi"></div><div class="tCard" id="tCard" aria-live="polite"></div>';
   el.classList.add('open'); let k = 0;
   const target = st => st.sel ? document.querySelector(st.sel) : st.hk ? [...document.querySelectorAll('#hotbar .hk')].find(b => b.textContent.replace(/[\d\s]/g, '').replace(/^[^A-Za-z]+/, '').startsWith(st.hk.replace(/\s/g, ''))) : null;
-  const close = () => { el.classList.remove('open'); document.removeEventListener('keydown', key, true); removeEventListener('resize', draw); try { localStorage.setItem('jamtTour', '1'); } catch (e) {} if (onClose) onClose(); };
+  const close = () => { el.classList.remove('open'); document.removeEventListener('keydown', key, true); removeEventListener('resize', draw); try { localStorage.setItem('jamtTour', '1'); } catch (e) {}
+    if (mapWas) showCampaign(mapCanClose);
+    if (onClose) onClose(); };
   function draw() {
     const st = TOUR[k], tg = target(st), hi = $('tHi'), card = $('tCard'), r = tg && tg.getBoundingClientRect(), pad = st.pad || 6;
     // only point at it if it is really on screen and on top (not hidden behind the mission map or another screen)
@@ -3272,6 +3278,7 @@ setInterval(() => {
   }
 }, 150);
 // the big picture of who is talking: the real 3D astronaut when it can be drawn, else the painted portrait
+const PORTRAIT_3D = ['ama', 'leo', 'mira', 'kofi', 'you', 'earth'];   // the people who have a 3D portrait
 function portraitHTML(id) {
   const W = window.JAMTWALK, url = W && W.portrait ? W.portrait(id, id === 'you' ? pilotLook() : id === 'earth' ? LOOKS.earth : null) : null;
   return url ? `<img class="pImg" src="${url}" alt="">` : avatar(id, 92);
@@ -3286,8 +3293,9 @@ function renderDialog() {
   const p = PEOPLE[m.who];
   box.style.setProperty('--who', p.c);
   box.innerHTML = `<div class="portrait">${portraitHTML(m.who)}</div>
-    <div class="dlgBody"><div class="nameRow"><span class="nameTag">${p.name}</span><span class="meta">${p.role} · ${CHANNEL[m.ch]}${m.ch === 'earth' ? ` · ${EARTH_DELAY.toFixed(1)} s delay` : ''}</span></div>
-      <p class="dlgText"></p><span class="dlgIc" aria-hidden="true">${m.ch === 'earth' ? '📡' : '📻'}</span>
+    <div class="dlgBody"><div class="nameRow"><span class="nameTag" title="${esc(p.role)}">${p.name}</span></div>
+      <p class="dlgText"></p>
+      <div class="dlgMeta">${CHANNEL[m.ch]}${m.ch === 'earth' ? ` · ${EARTH_DELAY.toFixed(1)} s each way` : ''}<span class="dlgIc" aria-hidden="true">${m.ch === 'earth' ? '📡' : '📻'}</span></div>
       ${m.replies.length ? `<div class="replies">${m.replies.map((r, i) => `<button data-reply="${i}">${r.label}</button>`).join('')}</div>` : ''}
       ${m.timer && !m.answered ? `<div class="timer" data-timer="${m.id}" role="timer"><span>⏱</span><span class="tb"><i></i></span><span class="tn"></span></div>` : ''}</div>
     <button class="iconBtn dlgX" aria-label="Close message">✕</button>`;
@@ -3296,6 +3304,15 @@ function renderDialog() {
   if (fresh && !matchMedia('(prefers-reduced-motion: reduce)').matches) {         // typewriter, like a game dialog
     let i = 0; hud.typer = setInterval(() => { i += 2; t.textContent = m.text.slice(0, i); if (i >= m.text.length) clearInterval(hud.typer); }, 22);
   } else t.textContent = m.text;
+  if (!box.querySelector('.pImg') && PORTRAIT_3D.includes(m.who)) {
+    let tries = 0; clearInterval(hud.portT);
+    hud.portT = setInterval(() => {
+      if (hud.dlg !== m || ++tries > 40) return clearInterval(hud.portT);
+      const W = window.JAMTWALK; if (!W || !W.portrait) return;
+      const pic = box.querySelector('.portrait'); if (pic) pic.innerHTML = portraitHTML(m.who);
+      clearInterval(hud.portT);
+    }, 500);
+  }
   box.querySelector('.dlgX').onclick = hideDialog;
   box.querySelectorAll('[data-reply]').forEach(b => b.onclick = () => { reply(m, m.replies[+b.dataset.reply]); });
 }
@@ -5343,7 +5360,9 @@ function stepObjective(now) {
   if (inView) {
     OBJ.tag.style.display = ''; OBJ.edge.style.display = 'none';
     OBJ.tag.innerHTML = `▼ ${OBJ.name}<small>${OBJ.text.replace(/</g, '&lt;')}</small>`;
-    OBJ.tag.style.transform = `translate(${sx}px, ${Math.max(sy, 130)}px) translate(-50%, -100%)`;   // never under the top bar
+    const tw = OBJ.tag.offsetWidth, tx = Math.min(w - tw / 2 - 8, Math.max(tw / 2 + 8, sx));   // the whole label stays on screen
+    OBJ.tag.style.maxWidth = `${w - 16}px`;
+    OBJ.tag.style.transform = `translate(${tx}px, ${Math.max(sy, 130)}px) translate(-50%, -100%)`;   // never under the top bar
   } else {
     OBJ.tag.style.display = 'none'; OBJ.edge.style.display = '';
     let dx = sx - w / 2, dy = sy - h / 2; if (behind) { dx = -dx; dy = -dy; }
