@@ -170,3 +170,17 @@ The big shapes still come from NASA LRO LOLA heights (205 m per point). Detail s
 | Grainy regolith texture with pebbles, also used as a bump map | Moon dust is fine and sharp; with the Sun this low, every grain and pebble casts a tiny shadow. |
 | Light and dark patches | Fresher, brighter highland dust next to older, darker (space-weathered) ground. |
 | Coloured stars in a black sky | No air, so no blue sky; stars are white, blue-white and orange depending on how hot they are. |
+
+## Realistic spacesuits
+
+Every astronaut in the game (the walker outside, the suit racks, the crew, the "choose your astronaut" turntable) uses one suit model, now built like a real moonwalking suit, all in code:
+
+| Part | Real-world reason |
+|---|---|
+| White quilted cloth with folds and stitched seams | The outer layer is Beta cloth (fireproof glass-fibre weave) that wrinkles at every bend. |
+| Accordion folds at elbows and knees | Pressurised suits need "bellows" joints, or the limbs would be too stiff to bend. |
+| Grey dust on the lower legs and boots | Moon dust is sharp and clingy; Apollo suits came back grey from the knees down. |
+| Cloth hood over the clear bubble helmet, gold visor | The gold film blocks the Sun's glare and heat; the hood protects the bubble. |
+| Chest control box, blue and red hose connectors | Oxygen goes in through the blue connectors, used gas comes out of the red. |
+| Two-part backpack | Life support below, an emergency oxygen-purge pack on top. |
+| Ribbed rubber moon boots, gloves with fingers | Overshoes grip loose dust; gloves are thick but still let astronauts hold tools. |

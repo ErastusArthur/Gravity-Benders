@@ -3743,6 +3743,82 @@ const SUIT = {
   eye: new THREE.MeshStandardMaterial({ color: 0x15100c, roughness: .25 }),
   vent: new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: .6, metalness: .4 })
 };
+// SUIT CLOTH: real moon suits have an outer layer of white Beta cloth (a fireproof glass-fibre weave) over the
+// pressure bladder. It is quilted, wrinkles at every bend, and Moon dust sticks to it, mostly on the legs and boots.
+// All painted here in code (no image files): a weave, stitched seams, soft folds, and a dusty copy for the lower legs.
+const SUITTEX = (() => {
+  const W = 512, can = () => { const c = document.createElement('canvas'); c.width = c.height = W; return c; };
+  let sd = 4242; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const base = can(), g = base.getContext('2d');
+  g.fillStyle = '#ecebe6'; g.fillRect(0, 0, W, W);
+  const img = g.getImageData(0, 0, W, W), d = img.data;
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {                // the weave
+    const i = (y * W + x) * 4, w = (((x >> 1) + (y >> 1)) & 1 ? 5 : -5) + (rnd() - .5) * 12;
+    d[i] += w; d[i + 1] += w; d[i + 2] += w; }
+  g.putImageData(img, 0, 0);
+  const folds = can(), f = folds.getContext('2d');                         // soft folds: a lit ridge with a shaded side
+  f.filter = 'blur(4px)';
+  for (let k = 0; k < 60; k++) {
+    const y0 = rnd() * W, x0 = rnd() * W, len = 40 + rnd() * 140, amp = (rnd() - .5) * 40, th = 3 + rnd() * 7, tilt = (rnd() - .5) * 1.4;
+    for (const ox of [-W, 0, W]) for (const oy of [-W, 0, W]) for (const [dy, col] of [[-th * .6, 'rgba(255,255,255,.26)'], [th * .6, 'rgba(70,66,60,.2)']]) {
+      f.strokeStyle = col; f.lineWidth = th; f.lineCap = 'round'; f.beginPath();
+      for (let t = 0; t <= 1.001; t += .05) { const px = x0 + ox + (t - .5) * len, py = y0 + oy + dy + Math.sin(t * Math.PI) * amp + (t - .5) * len * tilt; t ? f.lineTo(px, py) : f.moveTo(px, py); }
+      f.stroke(); } }
+  g.drawImage(folds, 0, 0);
+  g.setLineDash([5, 4]); g.lineWidth = 1.4;                                // stitched quilting seams
+  for (const [x, a] of [[64, .3], [256, .22], [448, .3]]) { g.strokeStyle = `rgba(80,76,70,${a})`; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, W); g.stroke(); }
+  for (const y of [120, 380]) { g.strokeStyle = 'rgba(80,76,70,.2)'; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+  g.setLineDash([]);
+  const dust = can(), q = dust.getContext('2d'); q.drawImage(base, 0, 0);    // dusty copy: grey dust rising from the bottom
+  const gr = q.createLinearGradient(0, W, 0, 0); gr.addColorStop(0, 'rgba(105,100,94,.85)'); gr.addColorStop(.35, 'rgba(120,116,110,.45)'); gr.addColorStop(.75, 'rgba(130,126,120,0)');
+  q.fillStyle = gr; q.fillRect(0, 0, W, W);
+  for (let k = 0; k < 900; k++) { const y = W - rnd() ** 2 * W * .8, x = rnd() * W, r = .6 + rnd() * 2.4; q.fillStyle = `rgba(90,86,80,${.15 + rnd() * .35})`; q.beginPath(); q.arc(x, y, r, 0, 7); q.fill(); }
+  const tex = (c, srgb) => { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+  // the face: painted in greys on white, so the skin colour you choose tints it
+  const face = document.createElement('canvas'); face.width = 512; face.height = 256; const h = face.getContext('2d');
+  h.fillStyle = '#fff'; h.fillRect(0, 0, 512, 256);
+  const shade = h.createRadialGradient(128, 128, 20, 128, 128, 150); shade.addColorStop(0, 'rgba(0,0,0,0)'); shade.addColorStop(1, 'rgba(0,0,0,.22)');
+  h.fillStyle = shade; h.fillRect(0, 0, 512, 256);
+  h.filter = 'blur(3px)';
+  for (const s2 of [-1, 1]) {
+    h.fillStyle = 'rgba(40,25,20,.22)'; h.beginPath(); h.ellipse(128 + s2 * 29, 116, 15, 9, 0, 0, 7); h.fill();        // eye sockets
+    h.fillStyle = 'rgba(200,80,70,.12)'; h.beginPath(); h.ellipse(128 + s2 * 36, 140, 14, 10, 0, 0, 7); h.fill(); }    // cheeks
+  h.fillStyle = 'rgba(40,25,20,.18)'; h.beginPath(); h.ellipse(128, 132, 6, 14, 0, 0, 7); h.fill();                      // nose shadow
+  h.fillStyle = 'rgba(40,25,20,.25)'; h.beginPath(); h.ellipse(128, 176, 26, 8, 0, 0, 7); h.fill();                       // under the chin
+  h.filter = 'blur(1px)';
+  for (const s2 of [-1, 1]) { h.strokeStyle = 'rgba(25,16,12,.85)'; h.lineWidth = 4.5; h.lineCap = 'round'; h.beginPath();   // eyebrows
+    h.moveTo(128 + s2 * 18, 103); h.quadraticCurveTo(128 + s2 * 29, 97, 128 + s2 * 41, 103); h.stroke();
+    h.fillStyle = 'rgba(30,18,14,.55)'; h.beginPath(); h.arc(128 + s2 * 4, 143, 2.6, 0, 7); h.fill(); }                   // nostrils
+  h.fillStyle = 'rgba(150,70,64,.55)'; h.beginPath(); h.ellipse(128, 160, 13, 4.8, 0, 0, 7); h.fill();                  // lips
+  h.strokeStyle = 'rgba(60,25,22,.7)'; h.lineWidth = 1.6; h.beginPath(); h.moveTo(116, 160); h.quadraticCurveTo(128, 163, 140, 160); h.stroke();
+  return { cloth: tex(base, true), clothBump: tex(base), dust: tex(dust, true), dustBump: tex(dust), face: tex(face, true) };
+})();
+const clothMat = (col, dusty) => new THREE.MeshStandardMaterial({ color: col, map: dusty ? SUITTEX.dust : SUITTEX.cloth, bumpMap: dusty ? SUITTEX.dustBump : SUITTEX.clothBump, bumpScale: 1.1, roughness: .93 });
+SM.eva = clothMat(0xf4f2ec); SM.evaDust = clothMat(0xf4f2ec, true);
+SM.under = clothMat(0xe6e9ee); SM.under.bumpScale = .7;                          // the cooling undersuit is cloth too
+SUIT.orange = clothMat(0xd8692a); SUIT.orangeDust = clothMat(0xd8692a, true);
+SUIT.glove = new THREE.MeshStandardMaterial({ color: 0x4b4a47, roughness: .8, bumpMap: SUITTEX.clothBump, bumpScale: 2 });
+SUIT.rubber = new THREE.MeshStandardMaterial({ color: 0x3d3f42, roughness: .95, bumpMap: SUITTEX.dustBump, bumpScale: 2.5 });
+SUIT.white = new THREE.MeshStandardMaterial({ color: 0xe9e8e3, roughness: .5, metalness: .05 });
+SUIT.visorGold = new THREE.MeshStandardMaterial({ color: 0xe0b04a, roughness: .12, metalness: .95, emissive: 0x3a2606, emissiveIntensity: .5, side: THREE.DoubleSide });   // gold film blocks the Sun's glare
+SUIT.sclera = new THREE.MeshStandardMaterial({ color: 0xf2efe8, roughness: .3 });
+// a box with rounded edges (backpack, chest box, boots)
+const rbox = (w, h, d, r) => {
+  const S = new THREE.Shape(), x0 = -w / 2 + r, y0 = -h / 2 + r, x1 = w / 2 - r, y1 = h / 2 - r;
+  S.moveTo(x0, -h / 2); S.lineTo(x1, -h / 2); S.quadraticCurveTo(w / 2, -h / 2, w / 2, y0); S.lineTo(w / 2, y1); S.quadraticCurveTo(w / 2, h / 2, x1, h / 2);
+  S.lineTo(x0, h / 2); S.quadraticCurveTo(-w / 2, h / 2, -w / 2, y1); S.lineTo(-w / 2, y0); S.quadraticCurveTo(-w / 2, -h / 2, x0, -h / 2);
+  const g = new THREE.ExtrudeGeometry(S, { depth: Math.max(.001, d - 2 * r), bevelEnabled: true, bevelThickness: r, bevelSize: r * .9, bevelSegments: 3, curveSegments: 4 });
+  g.translate(0, 0, -Math.max(.001, d - 2 * r) / 2); return g; };
+// a sleeve or leg: a tapering tube of cloth from 0 down to -len, with soft bumps, and accordion folds ("bellows") at a joint
+const sleeve = (rT, rB, len, at = -1, amp = 0, folds = 4) => {
+  const pts = [], N = 26;
+  for (let i = 0; i <= N; i++) {
+    const t = 1 - i / N; let r = rT + (rB - rT) * t;
+    if (at >= 0) { const u = (t - at) / .2; if (Math.abs(u) < 1) r += amp * Math.cos(u * Math.PI / 2) * (.5 + .5 * Math.cos(u * folds * Math.PI)); }
+    r *= 1 + .025 * Math.sin(t * 19 + rT * 40);
+    pts.push(new THREE.Vector2(r, -t * len)); }
+  pts.unshift(new THREE.Vector2(.001, -len)); pts.push(new THREE.Vector2(.001, 0));
+  return new THREE.LatheGeometry(pts, 18); };
 const ACC = ROLE.map(r => new THREE.MeshStandardMaterial({ color: r.col, roughness: .6 }));
 // original mission patch (role colour ring, "JAMT", role) and a name tape
 const BADGE = ROLE.map(r => {
@@ -3764,7 +3840,8 @@ function makeCrew(i, outfit = 'base') {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   const k4 = i % 4, acc = ACC[k4], badge = BADGE[k4];
   const skin = new THREE.MeshStandardMaterial({ color: SKIN[k4], roughness: .65 }); root.userData.skin = skin;
-  const fabric = k4 === 1 ? SUIT.orange : SM.eva;          // the engineer wears an orange suit
+  const faceM = new THREE.MeshStandardMaterial({ map: SUITTEX.face, roughness: .6 }); faceM.color = skin.color;   // same colour object: choosing a skin tone tints the face too
+  const fabric = k4 === 1 ? SUIT.orange : SM.eva, dust = k4 === 1 ? SUIT.orangeDust : SM.evaDust;   // the engineer wears an orange suit
   const evaSet = [], baseSet = [];
   const E = (geo, mat, x, y, z, p) => { const m = mk(geo, mat, x, y, z, p); evaSet.push(m); return m; };
   const U = (geo, mat, x, y, z, p) => { const m = mk(geo, mat, x, y, z, p); baseSet.push(m); return m; };
@@ -3773,10 +3850,13 @@ function makeCrew(i, outfit = 'base') {
 
   // head and face (seen through the helmet glass)
   mk(new THREE.CylinderGeometry(.05, .06, .1, 8), skin, 0, 1.5, 0, body);
-  mk(new THREE.SphereGeometry(.115, 18, 14), skin, 0, 1.63, 0, body);
-  for (const s of [-1, 1]) mk(new THREE.SphereGeometry(.014, 8, 6), SUIT.eye, s * .04, 1.648, .1, body);
-  mk(new THREE.SphereGeometry(.02, 8, 6), skin, 0, 1.62, .112, body);
-  mk(new THREE.BoxGeometry(.045, .008, .01), SUIT.eye, 0, 1.585, .108, body);
+  const headM = mk(new THREE.SphereGeometry(.115, 28, 20), faceM, 0, 1.63, 0, body); headM.scale.set(.92, 1.06, 1);
+  for (const s of [-1, 1]) {
+    mk(new THREE.SphereGeometry(.0145, 12, 8), SUIT.sclera, s * .037, 1.648, .093, body).scale.set(1.25, .8, .6);
+    mk(new THREE.SphereGeometry(.0078, 10, 8), SUIT.eye, s * .037, 1.648, .1015, body);
+    mk(new THREE.SphereGeometry(.018, 8, 6), skin, s * .106, 1.628, -.005, body).scale.set(.45, 1.1, .8);    // ears
+  }
+  mk(new THREE.ConeGeometry(.017, .045, 10), skin, 0, 1.625, .113, body).rotation.x = .25;                  // nose
   U(new THREE.SphereGeometry(.122, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), SM.hair, 0, 1.645, -.012, body);
 
   // ---------- cooling undersuit (inside the base) ----------
@@ -3788,41 +3868,51 @@ function makeCrew(i, outfit = 'base') {
   for (const s of [-1, 1]) U(new THREE.CylinderGeometry(.012, .012, .3, 6), SM.tube, s * .07, 1.2, .124, body);
 
   // ---------- spacesuit ----------
-  const torsoE = E(cap(.21, .28), fabric, 0, 1.24, 0, body); torsoE.scale.set(1.1, 1, .82);
-  E(new THREE.BoxGeometry(.38, .3, .07), SUIT.hard, 0, 1.31, .15, body);                   // hard upper torso
-  plane(.13, .033, badge.tape, -.09, 1.42, .186, 0, body, E);
-  E(new THREE.CylinderGeometry(.17, .16, .2, 14), fabric, 0, .95, 0, body);
-  ringY(.18, .022, SUIT.ring, 0, 1.05, 0, body, E);                                         // waist bearing
-  ringY(.15, .026, SUIT.ring, 0, 1.47, 0, body, E);                                         // neck ring
-  // chest control box with a little screen and two knobs
-  E(new THREE.BoxGeometry(.22, .13, .12), SUIT.hard, 0, 1.19, .24, body);
-  E(new THREE.BoxGeometry(.15, .065, .01), SM.lens, 0, 1.2, .302, body);
-  for (const s of [-1, 1]) { const kn = E(new THREE.CylinderGeometry(.018, .018, .03, 10), SUIT.ring, s * .085, 1.27, .26, body); }
-  // hose connectors (blue = oxygen in, red = out) and hoses round to the backpack
-  [[-.09, SUIT.blue], [-.03, SUIT.blue], [.03, SUIT.red], [.09, SUIT.red]].forEach(([x, m]) => { const c = E(new THREE.CylinderGeometry(.022, .022, .045, 10), m, x, 1.08, .19, body); c.rotation.x = Math.PI / 2; });
+  // torso: a bulky pressure garment, broad at the chest, narrower at the waist
+  const torsoPts = [[.001, .8], [.12, .805], [.165, .85], [.18, .93], [.176, 1.0], [.184, 1.07], [.208, 1.16], [.228, 1.26], [.232, 1.35], [.214, 1.43], [.17, 1.48], [.14, 1.5], [.001, 1.5]];
+  const torsoE = E(new THREE.LatheGeometry(torsoPts.map(([r, y]) => new THREE.Vector2(r, y)), 24), fabric, 0, 0, 0, body); torsoE.scale.z = .74;
+  E(new THREE.TorusGeometry(.172, .014, 6, 24), fabric, 0, .99, 0, body).rotation.x = Math.PI / 2;          // waist fold
+  E(new THREE.TorusGeometry(.18, .016, 6, 24), SUIT.white, 0, .94, 0, body).rotation.x = Math.PI / 2;     // waist ring
+  plane(.12, .03, badge.tape, -.1, 1.385, .163, -.3, body, E);
+  ringY(.15, .024, SUIT.ring, 0, 1.47, 0, body, E);                                         // neck ring
+  // chest box (display and control module): switches, a small screen, a pressure gauge
+  const dcm = E(rbox(.2, .12, .085, .015), SUIT.white, 0, 1.2, .175, body);
+  E(new THREE.BoxGeometry(.11, .045, .006), SM.lens, -.02, 1.215, .218, body);
+  for (const x of [.055, .075]) E(new THREE.CylinderGeometry(.009, .009, .02, 8), SM.dark, x, 1.215, .222, body).rotation.x = Math.PI / 2;
+  for (const s of [-1, 1]) E(new THREE.CylinderGeometry(.016, .016, .035, 10), SUIT.ring, s * .07, 1.275, .19, body);
+  E(new THREE.BoxGeometry(.05, .07, .02), SUIT.white, 0, 1.31, .17, body);                   // strap to the box
+  // hose connectors (blue = oxygen in, red = out) and white hoses round to the backpack
+  [[-.085, SUIT.blue], [-.03, SUIT.blue], [.03, SUIT.red], [.085, SUIT.red]].forEach(([x, m]) => {
+    const c = E(new THREE.CylinderGeometry(.021, .024, .04, 12), m, x, 1.085, .152, body); c.rotation.x = Math.PI / 2;
+    E(new THREE.TorusGeometry(.021, .006, 6, 12), SUIT.ring, x, 1.085, .172, body); });
   for (const s of [-1, 1]) {
-    const curve = new THREE.CatmullRomCurve3([[s * .06, 1.08, .21], [s * .2, 1.02, .17], [s * .28, 1.12, .02], [s * .22, 1.3, -.17]].map(p => new THREE.Vector3(...p)));
-    E(new THREE.TubeGeometry(curve, 16, .016, 6), SUIT.cap, 0, 0, 0, body);
+    const curve = new THREE.CatmullRomCurve3([[s * .058, 1.085, .175], [s * .17, 1.04, .15], [s * .25, 1.1, .02], [s * .2, 1.25, -.17]].map(p => new THREE.Vector3(...p)));
+    E(new THREE.TubeGeometry(curve, 20, .017, 8), SUIT.white, 0, 0, 0, body);
   }
-  // helmet: clear bubble, hard shell at the back, gold sun visor half raised, two lamps
-  E(new THREE.SphereGeometry(.2, 24, 16), SUIT.glass, 0, 1.64, 0, body).castShadow = false;
-  E(new THREE.SphereGeometry(.212, 20, 12, Math.PI * .85, Math.PI * 1.3, 0, Math.PI * .78), SUIT.hard, 0, 1.64, 0, body);
-  E(new THREE.SphereGeometry(.214, 20, 8, Math.PI * .18, Math.PI * .64, Math.PI * .1, Math.PI * .27), SM.visor, 0, 1.64, 0, body);
-  E(new THREE.BoxGeometry(.03, .025, .3), acc, 0, 1.855, -.02, body);                       // role stripe on the helmet
+  // helmet: clear bubble, a white cloth hood over it, gold sun visor raised, small lamps
+  E(new THREE.SphereGeometry(.2, 28, 18), SUIT.glass, 0, 1.64, 0, body).castShadow = false;
+  E(new THREE.SphereGeometry(.222, 28, 16, Math.PI * .84, Math.PI * 1.32, 0, Math.PI * .66), fabric, 0, 1.64, 0, body);
+  E(new THREE.SphereGeometry(.226, 28, 10, Math.PI * .17, Math.PI * .66, Math.PI * .1, Math.PI * .19), SUIT.visorGold, 0, 1.64, 0, body);
+  E(new THREE.SphereGeometry(.228, 28, 4, Math.PI * .15, Math.PI * .7, Math.PI * .085, Math.PI * .03), SUIT.white, 0, 1.64, 0, body);   // visor frame
+  const stripe = E(new THREE.TorusGeometry(.2235, .007, 4, 24, Math.PI * .8), acc, 0, 1.64, 0, body); stripe.rotation.y = Math.PI / 2;   // role stripe over the top
   for (const s of [-1, 1]) {
-    E(new THREE.BoxGeometry(.05, .06, .09), SUIT.hard, s * .2, 1.72, .03, body);
-    const l = E(new THREE.CylinderGeometry(.02, .02, .01, 10), SUIT.lamp, s * .2, 1.72, .08, body); l.rotation.x = Math.PI / 2;
-    const ear = E(new THREE.CylinderGeometry(.035, .035, .03, 10), SM.dark, s * .118, 1.62, -.01, body); ear.rotation.z = Math.PI / 2;
+    E(rbox(.035, .045, .06, .01), SUIT.white, s * .215, 1.69, .04, body);
+    const l = E(new THREE.CylinderGeometry(.013, .013, .008, 10), SUIT.lamp, s * .215, 1.69, .072, body); l.rotation.x = Math.PI / 2;
   }
-  E(new THREE.SphereGeometry(.125, 16, 10, 0, Math.PI * 2, 0, Math.PI * .55), SUIT.cap, 0, 1.635, -.008, body);   // comm cap
-  E(new THREE.SphereGeometry(.127, 16, 10, Math.PI * 1.35, Math.PI * .3, 0, Math.PI * .55), SUIT.capBrown, 0, 1.635, -.008, body);
-  // life-support backpack: oxygen tanks, vents, role panel, radio antenna
-  E(new THREE.BoxGeometry(.5, .62, .25), SUIT.hard, 0, 1.26, -.31, body);
-  E(new THREE.BoxGeometry(.42, .13, .22), SUIT.hard, 0, 1.64, -.3, body);
-  E(new THREE.BoxGeometry(.32, .16, .012), acc, 0, 1.43, -.44, body);
-  for (let v = 0; v < 3; v++) E(new THREE.BoxGeometry(.3, .022, .012), SUIT.vent, 0, 1.06 + v * .05, -.44, body);
-  for (const s of [-1, 1]) E(new THREE.CylinderGeometry(.05, .05, .5, 12), SUIT.ring, s * .27, 1.25, -.3, body);
-  E(new THREE.CylinderGeometry(.008, .008, .26, 6), SM.dark, .16, 1.83, -.36, body);
+  const cc = E(new THREE.SphereGeometry(.123, 20, 10, 0, Math.PI * 2, 0, Math.PI * .34), SUIT.cap, 0, 1.64, -.006, body); cc.scale.set(.95, 1.06, 1.02);   // comm cap
+  E(new THREE.SphereGeometry(.124, 16, 10, Math.PI * .9, Math.PI * 1.2, Math.PI * .3, Math.PI * .3), SUIT.capBrown, 0, 1.64, -.006, body).scale.set(.95, 1.06, 1.02);
+  for (const s of [-1, 1]) E(new THREE.CylinderGeometry(.03, .03, .022, 12), SUIT.capBrown, s * .108, 1.625, -.005, body).rotation.z = Math.PI / 2;
+  // life-support backpack: a cloth-covered pack with a smaller oxygen-purge pack on top, straps, antenna
+  E(rbox(.46, .5, .2, .045), fabric, 0, 1.23, -.3, body);
+  E(rbox(.44, .17, .19, .04), fabric, 0, 1.585, -.3, body);
+  E(new THREE.BoxGeometry(.46, .012, .2), SUIT.white, 0, 1.495, -.3, body);
+  E(new THREE.BoxGeometry(.2, .1, .008), acc, 0, 1.3, -.402, body);
+  for (let v = 0; v < 3; v++) E(new THREE.BoxGeometry(.24, .016, .01), SUIT.vent, 0, 1.06 + v * .04, -.402, body);
+  for (const s of [-1, 1]) {
+    E(new THREE.BoxGeometry(.05, .3, .012), SUIT.white, s * .15, 1.32, -.198, body);          // shoulder straps
+    E(new THREE.CylinderGeometry(.012, .012, .05, 8), SUIT.ring, s * .2, 1.06, -.22, body);
+  }
+  E(new THREE.CylinderGeometry(.006, .006, .24, 6), SM.dark, .17, 1.78, -.36, body);
 
   // limbs: both outfits hang off the same joints so the poses work for either
   const limb = (side, y, isArm) => {
@@ -3838,27 +3928,29 @@ function makeCrew(i, outfit = 'base') {
     else U(new THREE.BoxGeometry(.13, .08, .26), SM.boot, 0, -lo - r * 1.1, .05, joint);
     // spacesuit
     if (isArm) {
-      const sh = E(new THREE.TorusGeometry(.085, .022, 6, 18), SUIT.ring, 0, 0, 0, pivot); sh.rotation.y = Math.PI / 2;
-      E(cap(R, up - .1), fabric, 0, -.14, 0, pivot);
-      E(new THREE.CylinderGeometry(R * 1.05, R * 1.05, .05, 14), acc, 0, -.08, 0, pivot);
-      if (side < 0) plane(.085, .085, badge.patch, side * (R * 1.06), -.17, 0, side * Math.PI / 2, pivot, E);
-      ringY(R * .95, .016, SUIT.ring, 0, .0, 0, joint, E);
-      E(cap(R * .9, lo - .1), fabric, 0, -.11, 0, joint);
-      E(new THREE.CylinderGeometry(.062, .052, .07, 12), SUIT.glove, 0, -.25, 0, joint);       // gauntlet
-      ringY(.066, .014, SUIT.ring, 0, -.215, 0, joint, E);
-      E(new THREE.BoxGeometry(.085, .1, .05), SUIT.glove, 0, -.31, 0, joint);
-      const f = E(new THREE.BoxGeometry(.08, .065, .042), SUIT.glove, 0, -.37, .008, joint); f.rotation.x = .35;
-      const th = E(new THREE.BoxGeometry(.026, .06, .03), SUIT.glove, -side * .045, -.31, .03, joint); th.rotation.z = -side * .4;
+      E(new THREE.SphereGeometry(.105, 16, 12), fabric, 0, -.02, 0, pivot).scale.set(1, .95, .95);            // shoulder
+      E(sleeve(.088, .076, .31), fabric, 0, .0, 0, pivot);
+      E(new THREE.CylinderGeometry(.087, .087, .028, 16), acc, 0, -.1, 0, pivot);                               // role band
+      if (side < 0) plane(.085, .085, badge.patch, side * .091, -.17, 0, side * Math.PI / 2, pivot, E);
+      E(sleeve(.08, .064, .23, .12, .013), fabric, 0, .035, 0, joint);                                          // forearm with elbow folds
+      ringY(.066, .012, SUIT.ring, 0, -.2, 0, joint, E);                                                      // wrist ring
+      E(new THREE.CylinderGeometry(.064, .074, .075, 14, 1, true), SUIT.glove, 0, -.235, 0, joint);            // glove cuff
+      const hand = new THREE.Group(); hand.position.set(0, -.3, 0); joint.add(hand);
+      E(rbox(.04, .08, .075, .016), SUIT.glove, 0, 0, 0, hand);                                                // palm (faces the body)
+      for (let k = 0; k < 4; k++) {
+        const fg = E(new THREE.CapsuleGeometry(.0105, .042, 3, 8), SUIT.glove, -side * .004, -.065, -.026 + k * .0175, hand);
+        fg.rotation.z = side * .25; fg.rotation.x = (k - 1.5) * .06; }
+      const th = E(new THREE.CapsuleGeometry(.012, .035, 3, 8), SUIT.glove, -side * .012, -.02, .045, hand); th.rotation.x = .6;
     } else {
-      E(cap(R, up - .12), fabric, 0, -.2, 0, pivot);
-      E(new THREE.CylinderGeometry(R * 1.05, R * 1.05, .06, 14), acc, 0, -.1, 0, pivot);
-      E(new THREE.BoxGeometry(.03, .11, .09), fabric, side * R, -.26, .01, pivot);           // thigh pocket
-      E(new THREE.BoxGeometry(.13, .14, .05), SUIT.hard, 0, -.01, R * .92, joint);            // knee pad
-      E(cap(R * .95, lo - .16), fabric, 0, -.15, 0, joint);
-      ringY(R * .95, .018, SUIT.ring, 0, -.3, 0, joint, E);
-      E(new THREE.CylinderGeometry(.094, .1, .12, 14), SUIT.hard, 0, -.36, 0, joint);         // boot
-      E(new THREE.BoxGeometry(.15, .06, .3), SUIT.sole, 0, -.42, .04, joint);
-      E(new THREE.BoxGeometry(.14, .06, .09), SUIT.hard, 0, -.37, .15, joint);
+      E(sleeve(.11, .094, .46), fabric, 0, .03, 0, pivot);
+      E(new THREE.CylinderGeometry(.103, .103, .03, 16), acc, 0, -.1, 0, pivot);                               // role band
+      E(rbox(.022, .11, .09, .008), fabric, side * .103, -.27, .01, pivot);                                         // thigh pocket
+      E(sleeve(.098, .084, .33, .1, .015), dust, 0, .045, 0, joint);                                            // lower leg with knee folds
+      // moon boot: a dusty cloth overshoe on a thick ribbed rubber sole
+      E(rbox(.15, .12, .27, .045), dust, 0, -.365, .035, joint);
+      E(rbox(.165, .05, .3, .02), SUIT.rubber, 0, -.42, .04, joint);
+      for (let k = 0; k < 7; k++) E(new THREE.BoxGeometry(.15, .012, .022), SUIT.rubber, 0, -.449, -.09 + k * .043, joint);
+      E(new THREE.SphereGeometry(.075, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), SUIT.rubber, 0, -.4, .14, joint).scale.set(1.05, .7, .9);   // toe cap
     }
     return { pivot, joint, side, isArm };
   };
@@ -6187,6 +6279,7 @@ function preview(canvas) {
   raf = requestAnimationFrame(loop);
   return {
     set(L, name, w) { look = L; if (w !== wear) build(w); acc.color.set(L.stripe); c.root.userData.skin.color.set(L.skin); tape.map.image = tapeCanvas(name || 'CDR', L.stripe); tape.map.needsUpdate = true; },
+    face(a, still) { ang = a; if (still) spin = 0; },                                      // turn to an angle (for screenshots)
     stop() { cancelAnimationFrame(raf); r.dispose(); try { r.forceContextLoss(); } catch (e) {} }
   };
 }
