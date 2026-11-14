@@ -208,3 +208,9 @@ Every astronaut in the game (the walker outside, the suit racks, the crew, the "
 - It has a 1 km grid with letters and numbers, a compass (north points away from the south pole), a 2 km scale bar and a map key. Each mission has a pin with its name and place, and places without a mission are labelled too.
 - The map is drawn a few rows at a time in the background, so the game never freezes. Until it is ready, the old picture shows.
 - The settings menu has labelled rows (surface view, detail level, crew voices). The duplicate "Mission map" button is gone because the 🗺 button already opens it. The storm demo sits under "For judges / demo".
+
+## A yellow arrow to the next task, and a bigger mission map
+- The game works out one "next thing to do" and where it is: today's training task in Chapter 1, then the ice run, the cargo lander, or the next place to visit. The minimap "!", the mission button and the 3D arrow all use it.
+- In the 3D view, a big yellow arrow bobs over that place with a beam and a pulsing ring on the ground, and can be seen through hills. When the place is off screen, an arrow at the edge of the screen points to it with the distance.
+- The Current Mission card is now folded into a small button above the minimap that shows the next task. Tap it (or press M) to open all the goals.
+- On the mission map, the map gets most of the screen. The chosen mission shows in a small bar under it with Details and Start buttons. Details slides the full mission card in from the right.

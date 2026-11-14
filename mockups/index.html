@@ -235,14 +235,30 @@
   #campaign { position: fixed; inset: 0; z-index: 25; display: none; overflow: auto; color: #e6ecf8;
     background: radial-gradient(ellipse at 30% 20%, #16203a 0%, #070a14 60%, #03040a 100%); }
   #campaign.open { display: block; }
-  #campaign .cWrap { min-height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; padding: 20px 24px; max-width: 1600px; margin: 0 auto; align-items: center; }
+  #campaign .cWrap { min-height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px 24px; max-width: 1700px; margin: 0 auto; align-items: center; }
   #campaign .cHead { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   #campaign .cHead h1 { margin: 0; font-size: clamp(22px, 3vw, 32px); letter-spacing: .02em; }
   #campaign .cHead .k { font-size: 11px; letter-spacing: .18em; color: #8fb7ff; text-transform: uppercase; }
   #campaign .cProg { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #b9c6e4; }
   #campaign .cProg .bar { width: 140px; height: 8px; border-radius: 99px; background: #1b2540; overflow: hidden; }
   #campaign .cProg .bar i { display: block; height: 100%; background: linear-gradient(90deg, #5ec8ff, #ffd166); }
-  #campaign .cMap { position: relative; width: 100%; max-width: calc((100vh - 210px) * 1.66); margin: 0 auto; }
+  #campaign .cMap { position: relative; width: 100%; max-width: calc((100vh - 200px) * 1.66); margin: 0 auto; }
+  #campaign .cRow { display: flex; gap: 12px; align-items: stretch; margin-top: 10px; flex-wrap: wrap; }
+  #campaign .cRow .cLegend { margin-top: 0; flex: 1 1 300px; }
+  #campaign .cBar { flex: 2 1 420px; display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 14px; border-radius: 14px; background: rgba(11,18,34,.94);
+    border: 1px solid rgba(255,209,102,.45); box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  #campaign .cbIc { font-size: 26px; }
+  #campaign .cbT { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+  #campaign .cbT small { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #8fb7ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #campaign .cbT b { font-size: 16px; color: #ffd166; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #campaign .cbGo { padding: 10px 16px; border: 0; border-radius: 10px; font-weight: 800; font-size: 14px; cursor: pointer; white-space: nowrap; color: #1a1300; background: linear-gradient(180deg, #ffd166, #ffb23f); }
+  #campaign .cbGo:disabled { background: #26304a; color: #8a96b3; cursor: not-allowed; }
+  #campaign .cCard { position: fixed; right: 20px; top: 76px; width: min(390px, calc(100vw - 24px)); max-height: calc(100vh - 96px); overflow: auto; z-index: 3;
+    transform: translateX(calc(100% + 40px)); opacity: 0; pointer-events: none; transition: transform .3s ease, opacity .3s; }
+  #campaign .cCard.open { transform: none; opacity: 1; pointer-events: auto; }
+  #campaign .cCardX { position: absolute; top: 10px; right: 10px; }
+  #campaign .cCard .kick { padding-right: 36px; }
+  @media (prefers-reduced-motion: reduce) { #campaign .cCard { transition: none; } }
   #campaign .cMap svg { aspect-ratio: 1360 / 820; height: auto; border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.55); background: #15171c; }
   #campaign .cGrid line { stroke: #fff; stroke-opacity: .09; stroke-width: 1; }
   #campaign .cTicks text { fill: #fff; fill-opacity: .55; font-size: 15px; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: #000; stroke-width: 3px; stroke-opacity: .6; }
@@ -542,6 +558,26 @@
   .cardHead .iconBtn { font-size: 12px; padding: 2px 7px; }
   .bang { width: 20px; height: 20px; border-radius: 50%; background: #ffc53d; color: #1a1300; font-weight: 900; display: grid; place-items: center; font-size: 13px; flex-shrink: 0; }
   #missionCard h3 { margin: 6px 0 2px; font-size: 16px; }
+  #missionCard[hidden] { display: none !important; }
+  #objPill { display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 12px 8px 9px; border-radius: 14px; cursor: pointer; font: inherit; color: #eef2fa;
+    background: rgba(9,14,27,.92); border: 1px solid rgba(255,197,61,.6); box-shadow: 0 8px 22px rgba(0,0,0,.45); max-width: 320px; }
+  #objPill:hover { border-color: #ffc53d; }
+  #objPill .oi { width: 30px; height: 30px; border-radius: 50%; background: #ffc53d; color: #1a1300; display: grid; place-items: center; font-weight: 900; font-size: 17px; flex-shrink: 0;
+    box-shadow: 0 0 0 0 rgba(255,197,61,.6); animation: objPing 1.8s ease-out infinite; }
+  @keyframes objPing { to { box-shadow: 0 0 0 10px rgba(255,197,61,0); } }
+  #objPill .ob { display: flex; flex-direction: column; min-width: 0; }
+  #objPill .ok { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #ffc53d; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #objPill .ot { font-size: 12.5px; line-height: 1.3; }
+  #objPill .oc { margin-left: auto; color: #8fb7ff; font-size: 11.5px; white-space: nowrap; padding-left: 4px; }
+  @media (prefers-reduced-motion: reduce) { #objPill .oi { animation: none; } }
+  body.clean #objPill { display: none; }
+  /* the yellow arrow's on-screen parts: a tag over the place, or an arrow at the screen edge when it is out of view */
+  .objTag, .objEdge { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 3; will-change: transform; }
+  .objTag { padding: 3px 10px; border-radius: 99px; background: #ffc53d; color: #1a1300; font-size: 12px; font-weight: 800; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+  .objTag small { font-weight: 600; opacity: .75; margin-left: 4px; }
+  .objEdge { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
+  .objEdge i { position: absolute; inset: 0; background: #ffc53d; clip-path: polygon(100% 50%, 20% 8%, 36% 50%, 20% 92%); filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+  .objEdge b { position: absolute; top: 46px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #ffe08a; white-space: nowrap; text-shadow: 0 1px 3px #000, 0 0 6px #000; }
   #missionCard p { margin: 2px 0 6px; font-size: 12.5px; color: #c9d1e6; }
   .goals { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 3px; font-size: 12.5px; }
   .goals li { display: flex; gap: 8px; align-items: center; color: #aeb8cf; }
@@ -664,7 +700,8 @@
     #hudLayer { position: absolute; inset: 0; z-index: 4; pointer-events: none; display: block; }
     #hudLayer > *, .col > * { pointer-events: auto; }
     .col { position: absolute; top: 78px; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-    .leftCol { left: 14px; width: 300px; bottom: 230px; }
+    .leftCol { left: 14px; width: 300px; bottom: 300px; }
+    #objPill { position: absolute; left: 14px; bottom: 224px; width: 300px; max-width: none; }
     .rightCol { right: 14px; width: 360px; bottom: 14px; align-items: flex-end; }
     #crewCard { width: 260px; }
     #detailsWrap { width: 360px; flex: 0 1 auto; }
@@ -687,7 +724,8 @@
   }
   /* laptops and tablets: smaller panels so more of the Moon shows */
   @media (min-width: 901px) and (max-width: 1400px), (min-width: 901px) and (max-height: 860px) {
-    .leftCol { width: 250px; bottom: 170px; }
+    .leftCol { width: 250px; bottom: 236px; }
+    #objPill { bottom: 162px; width: 260px; }
     .rightCol { width: 320px; }
     #detailsWrap { width: 320px; }
     #crewCard { width: auto; }
@@ -705,6 +743,7 @@
   @media (max-width: 900px) {
     .col { display: flex; flex-direction: column; gap: 10px; }
     #minimap { width: 210px; height: 210px; margin: 0 auto; }
+    #objPill { margin: 8px auto; width: min(420px, calc(100% - 16px)); max-width: none; }
     #hotbar { position: fixed; left: 0; right: 0; bottom: 0; border-radius: 0; overflow-x: auto; z-index: 8; }
     .hk { flex-shrink: 0; width: 62px; height: 58px; font-size: 11px; } .hk .ic { font-size: 20px; }
     body { padding-bottom: 84px; }
@@ -781,6 +820,9 @@
   .leftCol { left: 6px; width: 200px; }
   .rightCol { right: 6px; width: 250px; align-items: stretch; }
   #crewCard, #minimap, .walkHint, .stage-note, #keys, #labels3d .lbl3d.info { display: none !important; }
+  #objPill { position: fixed !important; left: 6px !important; top: 56px !important; bottom: auto !important; margin: 0 !important; width: 230px !important; padding: 5px 8px !important; z-index: 8; }
+  #objPill .oi { width: 22px; height: 22px; font-size: 13px; } #objPill .ot { font-size: 11px; } #objPill .oc { display: none; }
+  .leftCol { top: 112px !important; }
   .hudCard { padding: 6px 8px !important; font-size: 11.5px; }
   #missionCard h3 { font-size: 12.5px; } #missionCard { font-size: 11px !important; line-height: 1.3; }
   #detailsWrap { width: 250px; }
@@ -1165,6 +1207,7 @@ function goLandscape() {
       <section class="hudCard" id="crewCard" aria-label="Crew"></section>
       <div id="detailsWrap"><button class="iconBtn" id="detailsClose" aria-label="Close panel" title="Close panel (Esc)">✕</button><div class="card" id="details"></div></div>
     </div>
+    <button id="objPill" aria-controls="missionCard" aria-expanded="false" title="Today's objective. Tap to see all goals (M)"></button>
     <div id="minimap" aria-label="Minimap"></div>
     <nav id="hotbar" aria-label="Actions"></nav>
     <div class="dialog" id="radio" aria-live="polite"></div>
@@ -2509,7 +2552,7 @@ function applyMission(m) {
   STORM_DAYS.splice(0, STORM_DAYS.length, ...m.storms); DARK_DAYS.splice(0, DARK_DAYS.length, ...m.dark);
   CMP.last = m.id; cmpSave(CMP);
 }
-let cmpSel = null;
+let cmpSel = null, cmpDet = false;
 function showCampaign(canClose) {
   let box = $('campaign');
   if (!box) { box = document.createElement('div'); box.id = 'campaign'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Mission map'); document.body.appendChild(box); }
@@ -2573,11 +2616,15 @@ function drawCampaign() {
       <g class="cCompass" transform="translate(${MW - 62} 76)"><circle r="34"/><path d="M0 -26 L9 4 L0 -2 L-9 4 Z" class="nArr"/><path d="M0 26 L9 -4 L0 2 L-9 -4 Z"/><text y="-40">N</text></g>
       <g class="cScale" transform="translate(${MW - 250} ${MH - 34})"><rect width="200" height="8"/><rect width="100" height="8" class="w"/><text x="0" y="-8">0</text><text x="100" y="-8">1</text><text x="200" y="-8">2 km</text></g>
     </svg>
+    <div class="cRow"><div class="cBar"><span class="cbIc" aria-hidden="true">${m.ic}</span>
+      <div class="cbT"><small>Mission ${m.n} · ${m.tag}</small><b>${m.title}${CMP.done[m.id] ? ' ✅' : ''}</b></div>
+      <button class="linkBtn" id="cmpDet" aria-expanded="${cmpDet}" aria-controls="cmpCard">${cmpDet ? 'Hide details' : 'Details ▸'}</button>
+      <button class="cbGo" id="cmpGo" ${u ? '' : 'disabled'}></button></div>
     <div class="cLegend"><b>Map key</b>
       <span><i class="lg av"></i>Ready to play</span><span><i class="lg dn"></i>Completed</span><span><i class="lg lk"></i>Locked</span>
-      <span><i class="lg rt"></i>Route between missions</span><span><i class="lg sh"></i>Always in shadow</span></div>
+      <span><i class="lg rt"></i>Route between missions</span><span><i class="lg sh"></i>Always in shadow</span></div></div>
     <div class="cSrc">Real NASA LRO LOLA heights · 1 km grid · north is away from the south pole</div></div>
-    <div class="cCard">
+    <div class="cCard ${cmpDet ? 'open' : ''}" id="cmpCard" role="region" aria-label="Mission details"><button class="iconBtn cCardX" id="cmpDetX" aria-label="Close mission details">✕</button>
       <div class="kick">Mission ${m.n} · ${m.tag}</div>
       <h2>${m.ic} ${m.title}${CMP.done[m.id] ? ' ✅' : ''}</h2>
       <p>${m.story}</p>
@@ -2595,6 +2642,9 @@ function drawCampaign() {
   box.querySelectorAll('.chJump button').forEach(b => b.onclick = () => story(+b.dataset.ch));
   $('cmpAll').onclick = () => { CMP.all = !CMP.all; cmpSave(CMP); drawCampaign(); };
   const c = $('cmpClose'); if (c) c.onclick = hideCampaign;
+  $('cmpGo').textContent = $('cmpLaunch').textContent; $('cmpGo').onclick = () => $('cmpLaunch').onclick();
+  $('cmpDet').onclick = () => { cmpDet = !cmpDet; drawCampaign(); if (cmpDet) $('cmpDetX').focus(); };
+  $('cmpDetX').onclick = () => { cmpDet = false; drawCampaign(); $('cmpDet').focus(); };
   $('cmpPilot').onclick = () => { const back = box.dataset.close; hideCampaign(); showSetup(back); };
 }
 
@@ -2872,7 +2922,7 @@ const TOUR = [
   { ic: '🌕', t: 'Welcome, Commander!', d: () => `You run a real Moon base at Shackleton crater for ${MISSION_DAYS} days. Win by keeping all 4 astronauts safe and earning ${SCI_GOAL} science points. This quick tour shows you how.` },
   { sel: '.hud', ic: '📊', t: 'Your base at a glance', d: 'Air, power, water, food, shield and radiation. They go down a little every day. Keep every bar out of the red. Tap one to learn what it means.' },
   { sel: '.clock', ic: '🕒', t: 'Days and the Sun', d: 'One turn is one day. At the south pole the Sun stays low and circles the sky. On dark days (6 to 8) the solar panels make no power, so save your battery.' },
-  { sel: '#missionCard', ic: '🎯', t: 'What to do next', d: 'Your goal and today’s training task. Stuck? Follow the 💡 hint.' },
+  { sel: '#objPill', ic: '🎯', t: 'What to do next', d: 'This shows your next task. Tap it to see all your goals and a 💡 hint. In the 3D view, a yellow arrow points to where you need to go.' },
   { sel: '#stage', ic: '🖐', t: 'Look around the Moon', d: 'The ground is real NASA height data. Drag to turn, scroll or pinch to zoom. Tap a place’s name to see what you can do there.', pad: -40 },
   { hk: 'Drive', ic: '🚙', t: 'Drive the rover', d: 'Pick a place, then Drive. The rover MO-01 runs on a battery, so always keep enough to get home.' },
   { hk: 'Work', ic: '🛠', t: 'Do the job there', d: 'When you arrive, Work does that place’s job: collect rocks, build the solar mast, drill ice. Jobs earn science.' },
@@ -3147,7 +3197,7 @@ addEventListener('keydown', e => { if (e.key === 'Enter' && $('title') && $('tit
 // =====================================================================
 function select(id) { if (state.busy || state.view !== 'surface') return; state.selected = id; state.target = null; hud.dismissed = null; render(); }
 function setRoom(id) { if (state.busy || state.view !== 'base') return; state.room = id; render(); }
-window.JAMT = { get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
+window.JAMT = { get objective() { return typeof objectiveNow === 'function' ? objectiveNow() : null; }, get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
   ready3D() { $('loading3d').remove(); render(); },
   no3D(err) { console.warn('3D unavailable:', err); $('loading3d').textContent = '3D view needs an internet connection the first time. Showing the photo map.'; state.surface = 'photo'; render(); } };
 
@@ -3182,7 +3232,7 @@ addEventListener('keydown', e => { const b = $('campaign'); if (e.key === 'Escap
 //  GAME HUD: mission card, crew card, minimap, hotbar, pop-up radio dialog, toasts
 // =====================================================================
 const SMALL = () => innerWidth <= 1400 || innerHeight <= 860;
-const hud = { crewOpen: !SMALL(), clean: false, dismissed: null, missionMini: SMALL(), comm: false, commTab: 'radio', dlg: null, dlgShown: null, dlgTimer: 0, typer: 0, pingSites: false };
+const hud = { crewOpen: !SMALL(), clean: false, dismissed: null, missionMini: false, missionOpen: false, comm: false, commTab: 'radio', dlg: null, dlgShown: null, dlgTimer: 0, typer: 0, pingSites: false };
 const clockOf = () => { const h = 6 + (DAY_HOURS - state.hours); const hh = Math.floor(h), mm = Math.round((h - hh) * 60); return `${String(hh).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`; };
 
 // ---------- pop-up radio dialog ----------
@@ -3261,11 +3311,37 @@ function toast(msg) {
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); }, 5200);
 }
 
+// ---------- the next thing to do, and where (the yellow arrow, the minimap "!" and the mission button all use this) ----------
+function objectiveNow() {
+  if (!state) return null;
+  const f = state.fh;
+  if (ch1On()) {
+    const S = state.story, t = CH1_TASKS.find(x => !(S.tasks && S.tasks[x.id]) && !(x.id === 'dark' && state.day > 8));
+    if (t) { const at = { mast: 'ridge', rim: 'rim' }[t.id] || 'base'; return { at, text: `${t.ic} ${t.t}`, how: t.how }; }
+  }
+  if (f.carried) return { at: 'base', text: '❄ Bring the ice home to the base' };
+  if ((!f.runs || f.stage > 0 || f.ok.some(Boolean) && !f.ok[6]) && !siteLocked('ice')) { const n = f.ok.findIndex(x => !x); return { at: 'ice', text: `❄ ${FH_STEPS[n] || 'Operation Frozen Harvest'}` }; }
+  if (SUPPLY.day <= MISSION_DAYS && state.day >= SUPPLY.day && !state.unloaded) return { at: 'pad', text: '🚀 Unload the cargo lander' };
+  const site = SITES.find(x => !x.supply && !state.visits[x.id] && !siteLocked(x.id));
+  if (site) return { at: site.id, text: `🔬 Visit ${site.name}` };
+  return { at: null, text: SCI_GOAL ? `🔬 Earn science: ${state.sci} / ${SCI_GOAL}` : `🛡 Keep everyone safe until Day ${MISSION_DAYS}` };
+}
+// the small mission button by the minimap: today's objective; tap it to open the full mission card
+function renderObjPill() {
+  const b = $('objPill'); if (!b || !state) return;
+  const o = objectiveNow(), where = o && o.at ? (o.at === 'base' ? 'Shackleton Base' : placeOf(o.at).name) : '';
+  b.innerHTML = `<span class="oi" aria-hidden="true">!</span><span class="ob"><span class="ok">Mission${where ? ` · ${esc(where)}` : ''}</span><span class="ot">${o ? esc(o.text) : ''}</span></span>
+    <span class="oc">${hud.missionOpen ? 'Hide ▴' : 'Goals ▸'}</span>`;
+  b.setAttribute('aria-expanded', !!hud.missionOpen);
+}
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#objPill')) toggleMission(); });
+function toggleMission(on) { hud.missionOpen = on === undefined ? !hud.missionOpen : on; renderMission(); }
+
 // ---------- current mission ----------
 function renderMission() {
   const box = $('missionCard'), f = state.fh, active = f.stage > 0 || f.carried > 0 || f.ok.some(Boolean) && !f.ok[6];
   const head = (t, extra = '') => `<div class="cardHead"><span class="bang">!</span><h2>${t}</h2>${extra}
-    <button class="iconBtn" id="mToggle" aria-expanded="${!hud.missionMini}" title="Show or hide the goals (M)">${hud.missionMini ? '▾' : '▴'}</button></div>`;
+    <button class="iconBtn" id="mToggle" aria-expanded="true" title="Close (M)">✕</button></div>`;
   let html;
   if ((!f.runs || active) && !siteLocked('ice')) {
     const next = f.ok.findIndex(x => !x);
@@ -3291,8 +3367,8 @@ function renderMission() {
   if (ch1On()) html += ch1Html();
   html += `<div class="mNow" style="display:block;color:#8fb7ff;margin-top:8px">${chap ? `📖 Chapter ${STORY.chapters.indexOf(chap) + 1} of 3 · ${chap.title} (Days ${chap.days[0]}–${chap.days[1]})` : `🗺 Mission ${MISSION.n} of ${MISSIONS.length}: ${MISSION.title}`}</div>
     <ul class="goals mGoals">${MISSION.goals.map(g => `<li class="${g.ok(state) ? 'ok' : 'now'}">${g.t}${g.end ? ' (checked on the last day)' : ''}</li>`).join('')}</ul>`;
-  box.innerHTML = html; box.classList.toggle('mini', hud.missionMini);
-  box.querySelector('#mToggle').onclick = () => { hud.missionMini = !hud.missionMini; renderMission(); };
+  box.innerHTML = html; box.hidden = !hud.missionOpen; renderObjPill();
+  box.querySelector('#mToggle').onclick = () => toggleMission(false);
   const go = box.querySelector('#mGo'); if (go) go.onclick = () => select('ice');
 }
 
@@ -3353,7 +3429,7 @@ function moonMap() {
   const R = 92, K = R / 6.2, P = ([o, s]) => [100 + s * K, 100 - o * K];
   const [cx, cy] = P(CRATER.at), f = state.fh, rv = P(state.rover.pos), t = target(), img = LOLA_URL;
   const ev = window.JAMT3D && window.JAMT3D.evaKm && window.JAMT3D.evaKm();
-  const objective = f.carried ? 'base' : (!f.runs || f.stage > 0 || f.ok.some(Boolean) && !f.ok[6]) ? 'ice' : SITES.find(s => !s.supply && !state.visits[s.id])?.id;
+  const objective = (objectiveNow() || {}).at;
   const dark = isDark(state.day);
   return `<svg viewBox="0 0 200 200" role="img" aria-label="Real NASA Moon map: 6 km around the outpost, with the places you can drive to"><defs><clipPath id="mmc"><circle cx="100" cy="100" r="${R}"/></clipPath></defs>
     ${mmFrame(R)}
@@ -3511,7 +3587,7 @@ document.addEventListener('keydown', e => {
   const i = hotItems.findIndex(h => h.k && h.k === e.key);
   if (i >= 0) { const h = hotItems[i]; if (h.on) { e.preventDefault(); h.f(); } return; }
   if (e.key === 'c' || e.key === 'C') { hud.comm = !hud.comm; render(); }
-  if (e.key === 'm' || e.key === 'M') { hud.missionMini = !hud.missionMini; renderMission(); }
+  if (e.key === 'm' || e.key === 'M') toggleMission();
   if ((e.key === 'h' || e.key === 'H') && !evaOn()) setClean(!hud.clean);
   if (e.key === 'Escape' && $('osdrCard') && $('osdrCard').classList.contains('open')) { $('osdrCard').classList.remove('open'); return; }
   if (e.key === 'Escape') { if (hud.dlg) hideDialog(); else if (document.body.classList.contains('detailsOpen')) $('detailsClose').click(); }
@@ -5130,6 +5206,7 @@ function stepPick(now) {
 // ---------- state -> scene ----------
 function update(s) {
   const dark = J.isDark(s.day);
+  J.roverAt = s.rover && s.rover.at; try { setObjective(J.objective); } catch (e) {}
   M.panel.color.setHex(s.dust ? 0x6a655c : 0x14204a); M.panel.metalness = s.dust ? .2 : .7;   // a dusty array looks grey
   setSky(s.day, dark);                              // in a dark spell the Sun sits just below the local horizon
   sun.intensity = dark ? 0 : 3.4;
@@ -5226,6 +5303,58 @@ function watchSpeed(raw) {
   QUAL.ema += (raw / 1000 - QUAL.ema) * .05;
   if (QUAL.ema > 1 / 40) { if ((QUAL.slow += raw) > 3000) { QUAL.slow = 0; QUAL.ema = 1 / 60; setQuality(QUAL.lvl + 1); } } else QUAL.slow = 0;
 }
+// OBJECTIVE ARROW: a big yellow arrow hovering over the place for the next task, with a light beam down to the ground,
+// seen through hills (like a waypoint). When the place is off screen, an arrow at the edge of the screen points to it.
+const OBJ = { at: undefined, g: new THREE.Group(), tag: document.createElement('div'), edge: document.createElement('div'), pos: new THREE.Vector3(), text: '' };
+{
+  const mat = o => new THREE.MeshBasicMaterial({ color: 0xffc53d, transparent: true, opacity: o, depthTest: false, depthWrite: false });
+  const arrow = new THREE.Group();
+  const head = new THREE.Mesh(new THREE.ConeGeometry(1.5, 2.2, 4), mat(.95)); head.rotation.x = Math.PI; arrow.add(head);
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(.7, 1.8, .7), mat(.95)); shaft.position.y = 1.9; arrow.add(shaft);
+  arrow.position.y = 7; OBJ.arrow = arrow; OBJ.g.add(arrow);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, 6, 8, 1, true), mat(.35)); beam.position.y = 3; OBJ.g.add(beam);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.4, .14, 6, 40), mat(.8)); ring.rotation.x = Math.PI / 2; ring.position.y = .2; OBJ.ring = ring; OBJ.g.add(ring);
+  OBJ.g.traverse(o => { o.renderOrder = 20; o.castShadow = false; });
+  OBJ.g.visible = false; scene.add(OBJ.g);
+  OBJ.tag.className = 'objTag'; OBJ.edge.className = 'objEdge'; OBJ.edge.innerHTML = '<i></i><b></b>';
+  OBJ.tag.style.display = OBJ.edge.style.display = 'none'; wrap.appendChild(OBJ.tag); wrap.appendChild(OBJ.edge);
+}
+function setObjective(o) {
+  const at = o && o.at && !(o.at !== 'base' && J.roverAt === o.at) ? o.at : null;
+  OBJ.text = o ? o.text : '';
+  if (at === OBJ.at) return;
+  OBJ.at = at;
+  if (!at) { OBJ.g.visible = false; return; }
+  const [x, z] = at === 'base' ? [BX, BZ] : siteXZ(at);
+  OBJ.pos.set(x, H(x, z), z); OBJ.g.position.copy(OBJ.pos); OBJ.g.visible = true;
+  OBJ.name = at === 'base' ? 'Base' : J.SITES.find(s => s.id === at).name;
+}
+function stepObjective(now) {
+  const on = OBJ.g.visible && !CINE.on;
+  if (!on) { OBJ.tag.style.display = OBJ.edge.style.display = 'none'; return; }
+  const d = camera.position.distanceTo(OBJ.pos), k = Math.max(.7, Math.min(5, d / 38));      // stays a readable size near and far
+  OBJ.g.scale.setScalar(k);
+  OBJ.arrow.position.y = 7 + Math.sin(now / 320) * .8;
+  OBJ.ring.scale.setScalar(1 + .25 * ((now / 1400) % 1)); OBJ.ring.material.opacity = .8 * (1 - (now / 1400) % 1);
+  const w = wrap.clientWidth, h = wrap.clientHeight, p = tmp.copy(OBJ.pos); p.y += 10 * k; p.project(camera);
+  let sx = (p.x * .5 + .5) * w, sy = (-p.y * .5 + .5) * h;
+  const behind = p.z > 1, inView = !behind && sx > 40 && sx < w - 40 && sy > 70 && sy < h - 90;
+  const from = eva.on ? eva.pos : rover.position, km = (Math.hypot(OBJ.pos.x - from.x, OBJ.pos.z - from.z) / KM).toFixed(1);   // distance from you (or the rover)
+  if (inView) {
+    OBJ.tag.style.display = ''; OBJ.edge.style.display = 'none';
+    OBJ.tag.innerHTML = `▼ ${OBJ.name}<small>${OBJ.text.replace(/</g, '&lt;')}</small>`;
+    OBJ.tag.style.transform = `translate(${sx}px, ${Math.max(sy, 130)}px) translate(-50%, -100%)`;   // never under the top bar
+  } else {
+    OBJ.tag.style.display = 'none'; OBJ.edge.style.display = '';
+    let dx = sx - w / 2, dy = sy - h / 2; if (behind) { dx = -dx; dy = -dy; }
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) dy = 1;
+    const top = 120, bot = h - 150, cy = (top + bot) / 2;                   // stay clear of the top bar and the hotbar
+    const sc = Math.min((w / 2 - 50) / Math.abs(dx || 1e-6), ((bot - top) / 2) / Math.abs(dy || 1e-6));
+    const ex = w / 2 + dx * sc, ey = cy + dy * sc, ang = Math.atan2(dy, dx);
+    OBJ.edge.style.transform = `translate(${ex}px, ${ey}px)`; OBJ.edge.firstChild.style.transform = `rotate(${ang}rad)`;
+    OBJ.edge.lastChild.textContent = OBJ.at === 'base' && J.roverAt === 'base' && !eva.on ? `${OBJ.name} · go inside` : `${OBJ.name} · ${km} km`;
+  }
+}
 function frame(now) {
   requestAnimationFrame(frame);
   watchSpeed(now - lastT);
@@ -5236,6 +5365,7 @@ function frame(now) {
   if (eva.on) stepEVA(dt); else controls.update();
   stepDrive(now); stepAct(now, dt); stepLander(now); stepFx(now, dt);
   crewRover.crew.forEach(c => c.pose('sit', dt));
+  stepObjective(now);
   renderer.render(scene, camera);
   const w = wrap.clientWidth, h = wrap.clientHeight;
   for (const l of labels) {
