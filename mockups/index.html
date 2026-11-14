@@ -235,14 +235,68 @@
   #campaign { position: fixed; inset: 0; z-index: 25; display: none; overflow: auto; color: #e6ecf8;
     background: radial-gradient(ellipse at 30% 20%, #16203a 0%, #070a14 60%, #03040a 100%); }
   #campaign.open { display: block; }
-  #campaign .cWrap { min-height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; padding: 20px 24px; max-width: 1280px; margin: 0 auto; align-items: center; }
+  #campaign .cWrap { min-height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px 24px; max-width: 1700px; margin: 0 auto; align-items: center; }
   #campaign .cHead { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   #campaign .cHead h1 { margin: 0; font-size: clamp(22px, 3vw, 32px); letter-spacing: .02em; }
   #campaign .cHead .k { font-size: 11px; letter-spacing: .18em; color: #8fb7ff; text-transform: uppercase; }
   #campaign .cProg { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #b9c6e4; }
   #campaign .cProg .bar { width: 140px; height: 8px; border-radius: 99px; background: #1b2540; overflow: hidden; }
   #campaign .cProg .bar i { display: block; height: 100%; background: linear-gradient(90deg, #5ec8ff, #ffd166); }
-  #campaign .cMap { position: relative; width: 100%; max-width: min(78vh, 760px); aspect-ratio: 1; margin: 0 auto; }
+  #campaign .cMap { position: relative; width: 100%; max-width: calc((100vh - 200px) * 1.66); margin: 0 auto; }
+  #campaign .cRow { display: flex; gap: 12px; align-items: stretch; margin-top: 10px; flex-wrap: wrap; }
+  #campaign .cRow .cLegend { margin-top: 0; flex: 1 1 300px; }
+  #campaign .cBar { flex: 2 1 420px; display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 14px; border-radius: 14px; background: rgba(11,18,34,.94);
+    border: 1px solid rgba(255,209,102,.45); box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  #campaign .cbIc { font-size: 26px; }
+  #campaign .cbT { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+  #campaign .cbT small { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #8fb7ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #campaign .cbT b { font-size: 16px; color: #ffd166; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #campaign .cbGo { padding: 10px 16px; border: 0; border-radius: 10px; font-weight: 800; font-size: 14px; cursor: pointer; white-space: nowrap; color: #1a1300; background: linear-gradient(180deg, #ffd166, #ffb23f); }
+  #campaign .cbGo:disabled { background: #26304a; color: #8a96b3; cursor: not-allowed; }
+  #campaign .cCard { position: fixed; right: 20px; top: 76px; width: min(390px, calc(100vw - 24px)); max-height: calc(100vh - 96px); overflow: auto; z-index: 3;
+    transform: translateX(calc(100% + 40px)); opacity: 0; pointer-events: none; transition: transform .3s ease, opacity .3s; }
+  #campaign .cCard.open { transform: none; opacity: 1; pointer-events: auto; }
+  #campaign .cCardX { position: absolute; top: 10px; right: 10px; }
+  #campaign .cCard .kick { padding-right: 36px; }
+  @media (prefers-reduced-motion: reduce) { #campaign .cCard { transition: none; } }
+  #campaign .cMap svg { aspect-ratio: 1360 / 820; height: auto; border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.55); background: #15171c; }
+  #campaign .cGrid line { stroke: #fff; stroke-opacity: .09; stroke-width: 1; }
+  #campaign .cTicks text { fill: #fff; fill-opacity: .55; font-size: 15px; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: #000; stroke-width: 3px; stroke-opacity: .6; }
+  #campaign .cCrater { fill: #b9c8ff; fill-opacity: .75; font-size: 30px; font-weight: 800; letter-spacing: .5em; text-anchor: middle; }
+  #campaign .cCraterS { fill: #9fb0cf; fill-opacity: .8; font-size: 16px; font-style: italic; text-anchor: middle; }
+  #campaign .cPlace circle { fill: #e8eefc; stroke: #000; stroke-width: 2; }
+  #campaign .cPlace text { fill: #eef2fa; font-size: 17px; font-style: italic; font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: #000; stroke-width: 4px; stroke-opacity: .75; }
+  #campaign .route, #campaign .routeOff { fill: none; stroke-width: 4; stroke-linecap: round; }
+  #campaign .route { stroke: #ffd166; stroke-opacity: .9; stroke-dasharray: 2 12; animation: cDash 1.2s linear infinite; }
+  #campaign .routeOff { stroke: #9aa3b5; stroke-opacity: .35; stroke-dasharray: 2 12; }
+  #campaign .node .gShadow { fill: #000; opacity: .45; }
+  #campaign .node .pin { filter: url(#pinSh); transition: transform .2s; transform-origin: 0 0; }
+  #campaign .node:hover .pin, #campaign .node:focus-visible .pin, #campaign .node.sel .pin { transform: scale(1.18); }
+  #campaign .node .pin path { stroke: #0b1222; stroke-width: 2.5; }
+  #campaign .node .pinIn { fill: #0e1830; }
+  #campaign .node.locked .pinIn { fill: #23262f; }
+  #campaign .node .pinIc { font-size: 20px; text-anchor: middle; pointer-events: none; }
+  #campaign .node .pulse { fill: none; stroke-width: 3; animation: pinPulse 1.8s ease-out infinite; transform-box: view-box; transform-origin: 0 -36px; }
+  @keyframes pinPulse { from { transform: scale(1); opacity: .8; } to { transform: scale(1.9); opacity: 0; } }
+  #campaign .node .okDot { fill: #1f9d5a; stroke: #0b1222; stroke-width: 2; } #campaign .node .okTx { fill: #fff; font-size: 14px; font-weight: 900; text-anchor: middle; }
+  #campaign .node .tagT { fill: #fff; font-size: 19px; font-weight: 800; paint-order: stroke; stroke: #05070d; stroke-width: 5px; stroke-opacity: .85; }
+  #campaign .node .tagS { fill: #c9d4ea; font-size: 14px; font-weight: 600; paint-order: stroke; stroke: #05070d; stroke-width: 4px; stroke-opacity: .8; }
+  #campaign .node.sel .tagT { fill: #ffd166; }
+  #campaign .node.locked .tagT { fill: #a9b1c3; } #campaign .node.locked .tagS { fill: #8a93a6; }
+  #campaign .cCompass circle { fill: rgba(9,14,27,.75); stroke: #ffffff55; stroke-width: 2; }
+  #campaign .cCompass path { fill: #9aa3b5; } #campaign .cCompass .nArr { fill: #ff6b5e; }
+  #campaign .cCompass text { fill: #fff; font-size: 18px; font-weight: 800; text-anchor: middle; paint-order: stroke; stroke: #000; stroke-width: 4px; }
+  #campaign .cScale rect { fill: #0b1222; stroke: #fff; stroke-width: 1.5; } #campaign .cScale rect.w { fill: #fff; }
+  #campaign .cScale text { fill: #fff; font-size: 14px; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: #000; stroke-width: 4px; }
+  #campaign .cLegend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-top: 10px; padding: 8px 14px; border-radius: 12px;
+    background: rgba(9,14,27,.7); border: 1px solid rgba(255,255,255,.12); font-size: 12px; color: #dbe3f3; }
+  #campaign .cLegend b { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #8fb7ff; }
+  #campaign .cLegend span { display: flex; align-items: center; gap: 8px; }
+  #campaign .lg { width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: inline-block; border: 2px solid #0b1222; }
+  #campaign .lg.av { background: #5ec8ff; } #campaign .lg.dn { background: #5ee08a; } #campaign .lg.lk { background: #7a8296; }
+  #campaign .lg.rt { border: 0; border-radius: 0; transform: none; height: 0; border-top: 3px dotted #ffd166; }
+  #campaign .lg.sh { border-radius: 3px; transform: none; background: #0a1022; border-color: #3a4a70; }
+  #campaign .cSrc { margin-top: 6px; font-size: 11px; color: #8f9bb5; text-align: right; }
   #campaign .cMap svg { width: 100%; height: 100%; display: block; }
   #campaign .node { cursor: pointer; outline: none; }
   #campaign .node .ring { transition: r .2s; }
@@ -271,7 +325,8 @@
   .mGoals li::before { content: '🎯 '; }
   @media (max-width: 860px) {
     #campaign .cWrap { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
-    #campaign .cMap { max-width: min(92vw, 60vh); }
+    #campaign .cMap { max-width: 100%; }
+    #campaign .cLegend { font-size: 11px; gap: 4px 10px; }
     #campaign .cProg .bar { width: 90px; }
   }
   .radFx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; mix-blend-mode: screen; }
@@ -487,6 +542,13 @@
     background: rgba(11,16,29,.97); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); z-index: 9; }
   #menu[hidden] { display: none; }
   #menu .seg { display: flex; } #menu .seg button { flex: 1; }
+  #menu .mHead { display: flex; align-items: baseline; justify-content: space-between; font-weight: 800; font-size: 14px; padding: 0 2px 2px; }
+  #menu .mWhere { font-weight: 600; font-size: 11px; color: var(--muted); }
+  #menu .mRow { display: flex; flex-direction: column; gap: 4px; }
+  #menu .mLbl { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-left: 2px; }
+  #menu .mSep { border: 0; border-top: 1px solid rgba(255,255,255,.1); margin: 2px 0; width: 100%; }
+  #menu .mDemo summary { font-size: 11.5px; color: var(--muted); cursor: pointer; padding: 2px; }
+  #menu .mDemo button { width: 100%; margin-top: 6px; }
 
   .hudCard { background: rgba(9,14,27,.88); border: 1px solid rgba(94,200,255,.3); border-radius: 12px; padding: 10px 12px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     box-shadow: 0 10px 28px rgba(0,0,0,.45); }
@@ -496,6 +558,26 @@
   .cardHead .iconBtn { font-size: 12px; padding: 2px 7px; }
   .bang { width: 20px; height: 20px; border-radius: 50%; background: #ffc53d; color: #1a1300; font-weight: 900; display: grid; place-items: center; font-size: 13px; flex-shrink: 0; }
   #missionCard h3 { margin: 6px 0 2px; font-size: 16px; }
+  #missionCard[hidden] { display: none !important; }
+  #objPill { display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 12px 8px 9px; border-radius: 14px; cursor: pointer; font: inherit; color: #eef2fa;
+    background: rgba(9,14,27,.92); border: 1px solid rgba(255,197,61,.6); box-shadow: 0 8px 22px rgba(0,0,0,.45); max-width: 320px; }
+  #objPill:hover { border-color: #ffc53d; }
+  #objPill .oi { width: 30px; height: 30px; border-radius: 50%; background: #ffc53d; color: #1a1300; display: grid; place-items: center; font-weight: 900; font-size: 17px; flex-shrink: 0;
+    box-shadow: 0 0 0 0 rgba(255,197,61,.6); animation: objPing 1.8s ease-out infinite; }
+  @keyframes objPing { to { box-shadow: 0 0 0 10px rgba(255,197,61,0); } }
+  #objPill .ob { display: flex; flex-direction: column; min-width: 0; }
+  #objPill .ok { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #ffc53d; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #objPill .ot { font-size: 12.5px; line-height: 1.3; }
+  #objPill .oc { margin-left: auto; color: #8fb7ff; font-size: 11.5px; white-space: nowrap; padding-left: 4px; }
+  @media (prefers-reduced-motion: reduce) { #objPill .oi { animation: none; } }
+  body.clean #objPill { display: none; }
+  /* the yellow arrow's on-screen parts: a tag over the place, or an arrow at the screen edge when it is out of view */
+  .objTag, .objEdge { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 3; will-change: transform; }
+  .objTag { padding: 3px 10px; border-radius: 99px; background: #ffc53d; color: #1a1300; font-size: 12px; font-weight: 800; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+  .objTag small { font-weight: 600; opacity: .75; margin-left: 4px; }
+  .objEdge { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
+  .objEdge i { position: absolute; inset: 0; background: #ffc53d; clip-path: polygon(100% 50%, 20% 8%, 36% 50%, 20% 92%); filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+  .objEdge b { position: absolute; top: 46px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #ffe08a; white-space: nowrap; text-shadow: 0 1px 3px #000, 0 0 6px #000; }
   #missionCard p { margin: 2px 0 6px; font-size: 12.5px; color: #c9d1e6; }
   .goals { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 3px; font-size: 12.5px; }
   .goals li { display: flex; gap: 8px; align-items: center; color: #aeb8cf; }
@@ -557,6 +639,32 @@
   .dialog .dlgText { margin: 2px 0 0; font-size: 14px; line-height: 1.5; color: #eef2fa; min-height: 2.9em; }
   .dialog .dlgX { position: absolute; top: 6px; right: 6px; font-size: 11px; padding: 1px 6px; }
   .dialog .meta { font-size: 11px; color: var(--muted); }
+  /* game-style radio call: a big portrait on the left, the name on a tab above, the words in a dark grey panel */
+  .dialog { --who: #5ec8ff; align-items: stretch; gap: 0; padding: 0; border-radius: 10px; overflow: visible; margin-top: 22px;
+    background: linear-gradient(180deg, rgba(44,50,60,.94), rgba(28,33,42,.94)); border: 1px solid rgba(214,224,240,.32); box-shadow: 0 14px 34px rgba(0,0,0,.55); }
+  .dialog .portrait { width: 104px; margin: -22px 0 -1px -1px; border-radius: 10px 0 0 10px; overflow: hidden; border: 1px solid rgba(214,224,240,.32); border-right: 0;
+    background: radial-gradient(120% 90% at 50% 20%, #5b6170 0%, #2a2e36 55%, #15181e 100%); display: flex; align-items: flex-end; justify-content: center; box-shadow: inset 0 -18px 24px rgba(0,0,0,.35); }
+  .dialog .portrait::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--who) 55%, transparent); border-radius: inherit; pointer-events: none; }
+  .dialog .portrait .pImg { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; }
+  .dialog .portrait .ava { width: 92px; height: 92px; margin: auto; }
+  .dialog.speaking .portrait .pImg { animation: talkImg .45s ease-in-out infinite alternate; }
+  @keyframes talkImg { from { transform: translateY(0); } to { transform: translateY(-1.5px) scale(1.01); } }
+  .dialog .dlgBody { position: relative; padding: 0 30px 12px 14px; }
+  .dialog .nameRow { display: flex; align-items: baseline; gap: 8px; margin: -22px 0 6px -1px; height: 22px; }
+  .dialog .nameTag { margin: 0; padding: 3px 14px 2px; border-radius: 8px 8px 0 0; font-size: 13px; letter-spacing: .02em; color: #f4f7fc;
+    background: rgba(44,50,60,.96); border: 1px solid rgba(214,224,240,.32); border-bottom: 0; box-shadow: inset 0 2px 0 var(--who); }
+  .dialog .meta { font-size: 10.5px; color: #c9d2e0; background: rgba(18,22,30,.82); padding: 2px 8px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .dialog .dlgText { margin: 4px 0 0; font-size: 14.5px; line-height: 1.5; color: #f2f5fa; min-height: 3em; }
+  .dialog .dlgIc { position: absolute; right: 8px; bottom: 6px; font-size: 14px; opacity: .55; }
+  .dialog .dlgX { top: 4px; right: 4px; }
+  .dialog .replies { margin-top: 8px; }
+  @media (max-width: 760px), (max-height: 520px) {
+    .dialog { margin-top: 0; } .dialog .portrait { width: 64px; margin: -1px 0 -1px -1px; } .dialog .portrait .ava { width: 54px !important; height: 54px !important; }
+    .dialog .dlgBody { padding: 6px 26px 8px 10px; } .dialog .nameRow { margin: 0 0 2px; height: auto; flex-wrap: wrap; }
+    .dialog .nameTag { padding: 0; background: none; border: 0; box-shadow: none; color: var(--who); }
+    .dialog .meta { background: none; padding: 0; white-space: normal; }
+    .dialog .dlgText { font-size: 13px; min-height: 0; }
+  }
 
   /* info toasts */
   #toasts { display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
@@ -592,7 +700,8 @@
     #hudLayer { position: absolute; inset: 0; z-index: 4; pointer-events: none; display: block; }
     #hudLayer > *, .col > * { pointer-events: auto; }
     .col { position: absolute; top: 78px; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-    .leftCol { left: 14px; width: 300px; bottom: 230px; }
+    .leftCol { left: 14px; width: 300px; bottom: 300px; }
+    #objPill { position: absolute; left: 14px; bottom: 224px; width: 300px; max-width: none; }
     .rightCol { right: 14px; width: 360px; bottom: 14px; align-items: flex-end; }
     #crewCard { width: 260px; }
     #detailsWrap { width: 360px; flex: 0 1 auto; }
@@ -615,7 +724,8 @@
   }
   /* laptops and tablets: smaller panels so more of the Moon shows */
   @media (min-width: 901px) and (max-width: 1400px), (min-width: 901px) and (max-height: 860px) {
-    .leftCol { width: 250px; bottom: 170px; }
+    .leftCol { width: 250px; bottom: 236px; }
+    #objPill { bottom: 162px; width: 260px; }
     .rightCol { width: 320px; }
     #detailsWrap { width: 320px; }
     #crewCard { width: auto; }
@@ -633,6 +743,7 @@
   @media (max-width: 900px) {
     .col { display: flex; flex-direction: column; gap: 10px; }
     #minimap { width: 210px; height: 210px; margin: 0 auto; }
+    #objPill { margin: 8px auto; width: min(420px, calc(100% - 16px)); max-width: none; }
     #hotbar { position: fixed; left: 0; right: 0; bottom: 0; border-radius: 0; overflow-x: auto; z-index: 8; }
     .hk { flex-shrink: 0; width: 62px; height: 58px; font-size: 11px; } .hk .ic { font-size: 20px; }
     body { padding-bottom: 84px; }
@@ -671,8 +782,113 @@
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
+<style id="phoneLandscape">
+/* PHONES PLAY SIDEWAYS: held upright, a phone asks you to turn it; held sideways, the Moon fills the screen
+   and the panels float on top of it, small, like a console game. */
+#turnPhone { display: none; }
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 600px) {
+  body:not(.upright) #turnPhone { display: flex; position: fixed; inset: 0; z-index: 100000; background: #05070d; color: #e8edf6; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 24px; font: 600 17px/1.35 system-ui, sans-serif; }
+  #turnPhone .ph { width: 52px; height: 88px; border: 4px solid #5ec8ff; border-radius: 11px; position: relative; animation: turnIt 2.4s ease-in-out infinite; }
+  #turnPhone .ph::after { content: ''; position: absolute; left: 50%; bottom: 5px; width: 10px; height: 3px; margin-left: -5px; border-radius: 2px; background: #5ec8ff; }
+  #turnPhone small { font-weight: 400; color: #9fb0cc; max-width: 280px; }
+  #turnPhone button { font: 600 15px system-ui, sans-serif; color: #04121c; background: #5ec8ff; border: 0; border-radius: 10px; padding: 11px 18px; }
+  #turnPhone .lnk { background: none; color: #9fb0cc; text-decoration: underline; padding: 4px; font-weight: 400; }
+  @keyframes turnIt { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+}
+@media (prefers-reduced-motion: reduce) { #turnPhone .ph { animation: none; transform: rotate(-90deg); } }
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1000px) {
+  html, body { height: 100%; overflow: hidden; }
+  body { padding-bottom: 0 !important; }
+  .topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 6; flex-wrap: nowrap !important; padding: 4px 8px 10px !important; gap: 6px !important;
+    background: linear-gradient(rgba(4,6,12,.94), rgba(4,6,12,.6) 75%, rgba(4,6,12,0)); }
+  .brand small, .brand h1 span { display: none !important; }
+  .brand h1 { display: none !important; } .brand img, .brand svg { width: 24px !important; height: 24px !important; }
+  .clock { white-space: nowrap; font-size: 12px !important; padding: 3px 7px !important; gap: 5px !important; flex: 0 0 auto; }
+  .clock .clockIcon, .clock .sep { display: none !important; } .clock .chip { font-size: 10px !important; padding: 1px 6px !important; }
+  .extras { flex-direction: row !important; } .extras .iconBtn { padding: 2px 6px !important; font-size: 13px !important; }
+  .hud { order: 0 !important; width: auto !important; flex: 1 1 auto; min-width: 0; }
+  .meter { padding: 2px 6px !important; } .meter .mi { font-size: 14px !important; } .meter .bar { min-width: 28px !important; }
+  .extras { flex-wrap: nowrap; gap: 4px !important; }
+  main { position: fixed !important; inset: 0; padding: 0 !important; display: block !important; }
+  .stage { position: absolute !important; inset: 0; border: 0 !important; border-radius: 0 !important; }
+  #view3d, #walk3d { aspect-ratio: auto !important; height: 100% !important; min-height: 0 !important; }
+  svg#map, svg#interior { width: 100%; height: 100%; background: #000; }
+  #hudLayer { position: absolute; inset: 0; z-index: 4; pointer-events: none; display: block; }
+  #hudLayer > *, .col > * { pointer-events: auto; }
+  .col { position: absolute; top: 56px; display: flex; flex-direction: column; gap: 6px; pointer-events: none; max-height: calc(100% - 112px); overflow: auto; }
+  .leftCol { left: 6px; width: 200px; }
+  .rightCol { right: 6px; width: 250px; align-items: stretch; }
+  #crewCard, #minimap, .walkHint, .stage-note, #keys, #labels3d .lbl3d.info { display: none !important; }
+  #objPill { position: fixed !important; left: 6px !important; top: 56px !important; bottom: auto !important; margin: 0 !important; width: 230px !important; padding: 5px 8px !important; z-index: 8; }
+  #objPill .oi { width: 22px; height: 22px; font-size: 13px; } #objPill .ot { font-size: 11px; } #objPill .oc { display: none; }
+  .leftCol { top: 112px !important; }
+  .hudCard { padding: 6px 8px !important; font-size: 11.5px; }
+  #missionCard h3 { font-size: 12.5px; } #missionCard { font-size: 11px !important; line-height: 1.3; }
+  #detailsWrap { width: 250px; }
+  #details { max-height: calc(100vh - 130px); overflow: auto; font-size: 12px; }
+  #hotbar { position: fixed !important; left: 50% !important; right: auto !important; bottom: 4px !important; transform: translateX(-50%); border-radius: 12px !important;
+    max-width: calc(100% - 12px); gap: 4px !important; padding: 4px !important; z-index: 8; }
+  .hk { width: 50px !important; height: 44px !important; font-size: 9.5px !important; } .hk .ic { font-size: 16px !important; }
+  .dialog { position: fixed !important; left: 50% !important; right: auto !important; bottom: 56px !important; transform: translateX(-50%) !important;
+    width: min(520px, calc(100% - 480px)) !important; min-width: 290px !important; max-height: 52vh; overflow: auto; z-index: 9; }
+  .dialog .portrait .ava { width: 36px !important; height: 36px !important; }
+  #toasts { position: fixed !important; top: 44px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); width: min(360px, 46%) !important; }
+  #walkNav { bottom: 56px !important; }
+  .walkPad, .evaPad { bottom: 58px !important; }
+  #planBtn { top: 46px !important; }
+}
+</style>
+<style id="cineTourCss">
+/* story scenes over the live 3D Moon: letterbox bars, the shot's name, subtitles at the bottom */
+#brief.cine { background: #000; place-items: end center; padding: 0; overflow: hidden; }
+#brief.cine .cineBg { position: absolute; inset: 0; z-index: 0; }
+#brief.cine .cineBg canvas { display: block; width: 100% !important; height: 100% !important; }
+#brief.cine::before, #brief.cine::after { content: ''; position: absolute; left: 0; right: 0; height: 6vh; background: #000; z-index: 1; pointer-events: none; }
+#brief.cine::before { top: 0; } #brief.cine::after { bottom: 0; }
+#brief.cine .cineTag { position: absolute; top: calc(6vh + 10px); left: 14px; z-index: 2; font-size: 12px; letter-spacing: .06em; color: #cfe3ff;
+  background: rgba(5,8,16,.55); border: 1px solid rgba(94,200,255,.3); border-radius: 20px; padding: 4px 11px; }
+#brief.cine .in { position: relative; z-index: 2; max-width: 980px; width: calc(100% - 24px); margin: 0 auto calc(6vh + 10px); padding: 0; }
+#brief.cine .panel { background: linear-gradient(rgba(6,10,20,.6), rgba(6,10,20,.88)); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); padding: 14px 18px; }
+#brief.cine .lines { min-height: 0; margin: 10px 0 4px; }
+#brief.cine .lines p { font-size: 16px; } #brief.cine .lines p.old { font-size: 14px; }
+#brief.cine .patch { width: 46px; height: 46px; font-size: 22px; }
+#brief.cine .chap { margin: 6px 0 0; } #brief.cine .chap .t { font-size: clamp(24px, 4vw, 40px); }
+@media (max-height: 520px) { #brief.cine .lines p.old { display: none; } #brief.cine .panel { padding: 8px 12px; } #brief.cine .chap .t { font-size: 22px; } #brief.cine .bTop { display: none; } }
+/* the how-to-play tour */
+#tour { position: fixed; inset: 0; z-index: 30000; display: none; }
+#tour.open { display: block; }
+#tour.dim { background: rgba(2,4,10,.72); }
+#tour .tHi { position: fixed; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(2,4,10,.72), 0 0 0 3px #ffd166, 0 0 24px 6px rgba(255,209,102,.45);
+  transition: left .3s, top .3s, width .3s, height .3s; pointer-events: none; }
+#tour .tCard { position: fixed; background: linear-gradient(#111a30, #0b1222); border: 1px solid rgba(94,200,255,.4); border-radius: 16px; padding: 16px 18px 14px;
+  color: #e6ecf8; box-shadow: 0 18px 50px rgba(0,0,0,.6); transition: left .3s, top .3s; }
+#tour .tIc { font-size: 34px; line-height: 1; margin-bottom: 6px; animation: tBob 1.6s ease-in-out infinite; }
+@keyframes tBob { 50% { transform: translateY(-4px); } }
+#tour .tK { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #8fb7ff; }
+#tour h3 { margin: 4px 0 6px; font-size: 19px; color: #ffd166; }
+#tour p { margin: 0; font-size: 14.5px; line-height: 1.5; color: #d6deee; }
+#tour .tDots { display: flex; gap: 5px; margin: 12px 0 10px; } #tour .tDots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.2); } #tour .tDots i.on { background: #ffd166; }
+#tour .tRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; } #tour .tRow span { display: flex; gap: 6px; align-items: center; }
+#tour .bigBtn { padding: 9px 16px; font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { #tour .tIc { animation: none; } #tour .tHi, #tour .tCard { transition: none; } }
+</style>
+<script>
+// "Play full screen" on Android: full screen, then lock the screen sideways (iPhones can't lock: they just show the prompt)
+function goLandscape() {
+  const el = document.documentElement, lock = () => { try { const p = screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'); if (p && p.catch) p.catch(() => {}); } catch (e) {} };
+  try { const p = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : null; if (p && p.then) p.then(lock).catch(lock); else lock(); } catch (e) { lock(); }
+}
+</script>
 </head>
 <body>
+<div id="turnPhone" role="dialog" aria-label="Turn your phone sideways">
+  <div class="ph" aria-hidden="true"></div>
+  <div>Turn your phone sideways to play</div>
+  <small>Lunar Odyssey is made for a wide screen, so you can see more of the Moon.</small>
+  <button type="button" onclick="goLandscape()">Play full screen</button>
+  <button type="button" class="lnk" onclick="document.body.classList.add('upright')">Play upright anyway</button>
+</div>
 
 <header class="topbar">
   <div class="brand">
@@ -705,21 +921,25 @@
     </div>
   </section>
   <div class="menuWrap">
+    <button id="helpBtn" class="iconBtn" title="How to play" aria-label="How to play">❓</button>
     <button id="cmpBtn" class="iconBtn" title="Mission map">🗺</button>
     <button id="cleanBtn" class="iconBtn" aria-pressed="false" title="Hide the panels for a clear view (H)">👁</button>
     <button id="menuBtn" class="iconBtn" aria-expanded="false" aria-controls="menu" title="View and settings">⚙</button>
     <div id="menu" hidden>
-      <span class="chip" id="whereChip">On the surface</span>
-      <span class="seg" role="group" aria-label="Surface view">
+      <div class="mHead">Settings <span class="mWhere" id="whereChip">On the surface</span></div>
+      <div class="mRow" id="viewRow"><span class="mLbl">Surface view</span><span class="seg" role="group" aria-label="Surface view">
         <button id="v3dBtn" aria-pressed="true">3D</button><button id="vPhotoBtn" aria-pressed="false">Photo map</button>
-      </span>
-      <span class="seg" role="group" aria-label="Detail level">
+      </span></div>
+      <div class="mRow"><span class="mLbl">Detail level</span><span class="seg" role="group" aria-label="Detail level">
         <button id="cadetBtn" aria-pressed="true">Cadet</button><button id="specBtn" aria-pressed="false">Specialist</button>
-      </span>
-      <button id="keysBtn">⌨ Show controls</button>
-      <button id="mapBtn">🗺 Mission map</button>
+      </span></div>
+      <div class="mRow"><span class="mLbl">Crew voices</span><span class="seg" role="group" aria-label="Crew voices">
+        <button id="vOnBtn" aria-pressed="true">🔊 On</button><button id="vOffBtn" aria-pressed="false">🔇 Off</button>
+      </span></div>
+      <hr class="mSep">
+      <button id="keysBtn">⌨ Keyboard controls</button>
       <button id="dataBtn">📚 NASA data used</button>
-      <button id="stormBtn" title="Demo control">Storm today (demo)</button>
+      <details class="mDemo"><summary>For judges / demo</summary><button id="stormBtn" title="Demo control">☀ Start a solar storm today</button></details>
     </div>
   </div>
 </header>
@@ -987,6 +1207,7 @@
       <section class="hudCard" id="crewCard" aria-label="Crew"></section>
       <div id="detailsWrap"><button class="iconBtn" id="detailsClose" aria-label="Close panel" title="Close panel (Esc)">✕</button><div class="card" id="details"></div></div>
     </div>
+    <button id="objPill" aria-controls="missionCard" aria-expanded="false" title="Today's objective. Tap to see all goals (M)"></button>
     <div id="minimap" aria-label="Minimap"></div>
     <nav id="hotbar" aria-label="Actions"></nav>
     <div class="dialog" id="radio" aria-live="polite"></div>
@@ -1694,7 +1915,7 @@ function speakLine(who, text, done, silent) {
   const u = utter(who, text); u.onend = fin; u.onerror = fin; setTimeout(fin, dur + 7000);
   speechSynthesis.speak(u);
 }
-function setVoice(on) { voiceOn = on; try { localStorage.setItem('jamtVoice', on ? 'on' : 'off'); } catch (e) {} if (!on && 'speechSynthesis' in window) speechSynthesis.cancel(); else if (state.radio[0]) speak(state.radio[0]); renderRadio(); }
+function setVoice(on) { voiceOn = on; try { localStorage.setItem('jamtVoice', on ? 'on' : 'off'); } catch (e) {} if (typeof syncVoiceBtns === 'function') syncVoiceBtns(); if (!on && 'speechSynthesis' in window) speechSynthesis.cancel(); else if (state.radio[0]) speak(state.radio[0]); renderRadio(); }
 if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => { voiceMap = null; };
 // browsers only allow sound after the player's first tap, so play the waiting call then
 document.addEventListener('pointerdown', () => { const m = state && state.radio[0]; if (m && !speakingId && 'speechSynthesis' in window && !speechSynthesis.speaking) speak(m); }, { once: true });
@@ -1930,7 +2151,7 @@ function render() {
   $('stormChip').hidden = !storm;
   const fc = !storm && isStorm(state.day + 1);
   $('forecastChip').hidden = !fc; if (fc) $('forecastChip').textContent = `⚠ Storm forecast: Day ${state.day + 1}`;
-  $('whereChip').textContent = inside ? 'Inside the base' : 'On the surface';
+  $('whereChip').textContent = inside ? 'Inside the base' : 'On the surface'; $('viewRow').style.display = inside ? 'none' : '';   // 3D / photo map only matters outside
   $('cadetBtn').setAttribute('aria-pressed', !spec()); $('specBtn').setAttribute('aria-pressed', spec());
   const use3d = state.surface === '3d' && window.JAMT3D;
   $('v3dBtn').setAttribute('aria-pressed', state.surface === '3d'); $('vPhotoBtn').setAttribute('aria-pressed', state.surface === 'photo');
@@ -2331,7 +2552,7 @@ function applyMission(m) {
   STORM_DAYS.splice(0, STORM_DAYS.length, ...m.storms); DARK_DAYS.splice(0, DARK_DAYS.length, ...m.dark);
   CMP.last = m.id; cmpSave(CMP);
 }
-let cmpSel = null;
+let cmpSel = null, cmpDet = false;
 function showCampaign(canClose) {
   let box = $('campaign');
   if (!box) { box = document.createElement('div'); box.id = 'campaign'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Mission map'); document.body.appendChild(box); }
@@ -2341,35 +2562,69 @@ function showCampaign(canClose) {
   const f = box.querySelector('.launch:not([disabled])') || box.querySelector('.node'); if (f) f.focus();
 }
 function hideCampaign() { const b = $('campaign'); if (b) b.classList.remove('open'); }
+// what the mission map shows: 13.6 km side to side and 8.2 km top to bottom, the base near the middle, north (away from the pole) up
+const MAP_VIEW = { s0: -6.8, s1: 6.8, o0: -3.2, o1: 5, w: 820 };
+window.JAMT_MAP_VIEW = MAP_VIEW;
 function drawCampaign() {
-  const box = $('campaign'), R = 92, K = R / 6.2, P = ([o, s]) => [100 + s * K, 100 - o * K];
-  const pos = m => m.at === 'base' ? [100, 100] : P(placeOf(m.at).at);
-  const done = MISSIONS.filter(m => CMP.done[m.id]).length, [cx, cy] = P(CRATER.at);
-  const route = MISSIONS.slice(1).map((m, i) => { const [x0, y0] = pos(MISSIONS[i]), [x1, y1] = pos(m), mx = (x0 + x1) / 2 + (y1 - y0) * .18, my = (y0 + y1) / 2 - (x1 - x0) * .18;
-    return `<path class="${unlocked(i + 1) ? 'route' : ''}" d="M${x0} ${y0} Q${mx} ${my} ${x1} ${y1}" fill="none" stroke="${unlocked(i + 1) ? '#ffd166' : '#5b6684'}" stroke-width="1.3" stroke-opacity="${unlocked(i + 1) ? .9 : .5}"/>`; }).join('');
+  const box = $('campaign'), V = MAP_VIEW, U = 100, MW = (V.s1 - V.s0) * U, MH = (V.o1 - V.o0) * U;
+  const P = ([o, s]) => [(s - V.s0) * U, (V.o1 - o) * U];
+  const pos = m => m.at === 'base' ? P([0, 0]) : P(placeOf(m.at).at);
+  const done = MISSIONS.filter(m => CMP.done[m.id]).length;
+  const rel = window.JAMTRELIEF ? (() => { try { return window.JAMTRELIEF(V, () => { if (box.classList.contains('open')) drawCampaign(); }); } catch (e) { return null; } })() : null;
+  const ground = rel ? `<image href="${rel}" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none"/>`
+    : `<image href="${LOLA_URL}" x="${(-6.75 - V.s0) * U}" y="${(V.o1 - 6.75) * U}" width="${13.5 * U}" height="${13.5 * U}" preserveAspectRatio="none"/>`;
+  // 1 km grid with atlas letters and numbers
+  let grid = '', ticks = '';
+  for (let k = 1; k < MW / U; k++) grid += `<line x1="${k * U}" y1="0" x2="${k * U}" y2="${MH}"/>`;
+  for (let k = 1; k < MH / U; k++) grid += `<line x1="0" y1="${k * U}" x2="${MW}" y2="${k * U}"/>`;
+  for (let k = 0; k < Math.floor(MW / U); k++) ticks += `<text x="${k * U + U / 2}" y="22">${String.fromCharCode(65 + k)}</text>`;
+  for (let k = 1; k < Math.floor(MH / U); k++) ticks += `<text x="16" y="${k * U + U / 2 + 6}">${k + 1}</text>`;
+  // place names that are not a mission stop
+  const missionAt = new Set(MISSIONS.map(m => m.at));
+  const places = SITES.filter(p => !missionAt.has(p.id)).map(p => { const [x, y] = P(p.at);
+    return `<g class="cPlace"><circle cx="${x}" cy="${y}" r="5"/><text x="${x}" y="${y + 26}">${esc(p.name)}</text></g>`; }).join('');
+  const route = MISSIONS.slice(1).map((m, i) => { const [x0, y0] = pos(MISSIONS[i]), [x1, y1] = pos(m), mx = (x0 + x1) / 2 + (y1 - y0) * .2, my = (y0 + y1) / 2 - (x1 - x0) * .2, on = unlocked(i + 1);
+    return `<path class="${on ? 'route' : 'routeOff'}" d="M${x0} ${y0} Q${mx} ${my} ${x1} ${y1}"/>`; }).join('');
   const nodes = MISSIONS.map((m, i) => { const [x, y] = pos(m), u = unlocked(i), d = CMP.done[m.id], sel = m === cmpSel;
-    return `<g class="node ${u ? '' : 'locked'} ${sel ? 'sel' : ''}" data-m="${i}" tabindex="0" role="button" aria-label="Mission ${m.n}: ${m.title}${u ? '' : ' (locked)'}${d ? ' (complete)' : ''}">
-      <circle class="ring" cx="${x}" cy="${y}" r="7.5" fill="${d ? '#1f6b45' : u ? '#13284d' : '#1a1f2d'}" stroke="${sel ? '#ffd166' : d ? '#5ee08a' : u ? '#5ec8ff' : '#4a5470'}" stroke-width="${sel ? 2.2 : 1.4}"/>
-      ${u && !d ? `<circle cx="${x}" cy="${y}" r="7.5" fill="none" stroke="#5ec8ff" opacity=".6"><animate attributeName="r" values="7.5;14" dur="1.8s" repeatCount="indefinite"/><animate attributeName="opacity" values=".6;0" dur="1.8s" repeatCount="indefinite"/></circle>` : ''}
-      <text x="${x}" y="${y + 2.8}" text-anchor="middle" font-size="7.5" style="pointer-events:none">${u ? m.ic : '🔒'}</text>
-      ${d ? `<text x="${x + 5}" y="${y - 5}" font-size="6" style="pointer-events:none">✅</text>` : ''}
-      ${mmText(x, y + 14, sel ? `${m.n}. ${m.title}` : `${m.n}`, sel ? 6.2 : 6, sel ? '#ffd166' : u ? '#fff' : '#8a96b3', sel && x < 60 ? 'start' : sel && x > 140 ? 'end' : 'middle', 800)}</g>`; }).join('');
+    const col = d ? '#5ee08a' : u ? '#5ec8ff' : '#7a8296', right = x < MW - 380, tx = right ? 34 : -34, place = m.at === 'base' ? 'Shackleton Base' : placeOf(m.at).name;
+    return `<g class="node ${u ? '' : 'locked'} ${d ? 'done' : ''} ${sel ? 'sel' : ''}" data-m="${i}" tabindex="0" role="button" transform="translate(${x} ${y})" aria-label="Mission ${m.n}: ${esc(m.title)}${u ? '' : ' (locked)'}${d ? ' (complete)' : ''}">
+      <ellipse class="gShadow" cx="0" cy="2" rx="12" ry="5"/>
+      ${u && !d ? `<circle class="pulse" cx="0" cy="-36" r="24" style="stroke:${col}"/>` : ''}
+      <g class="pin"><path d="M0 0 L-11 -22 A24 24 0 1 1 11 -22 Z" style="fill:${sel ? '#ffd166' : col}"/>
+        <circle cx="0" cy="-36" r="19" class="pinIn"/>
+        <text x="0" y="-29" class="pinIc">${u ? m.ic : '🔒'}</text></g>
+      ${d ? '<circle cx="18" cy="-54" r="10" class="okDot"/><text x="18" y="-49" class="okTx">✓</text>' : ''}
+      <g class="tag" transform="translate(${tx} -48)"><text x="0" y="0" text-anchor="${right ? 'start' : 'end'}" class="tagT">${m.n} · ${esc(m.title)}${u ? '' : ' 🔒'}</text>
+        <text x="0" y="22" text-anchor="${right ? 'start' : 'end'}" class="tagS">${esc(place)}</text></g></g>`; }).join('');
+  const [cx0, cy0] = P([-2.6, 0]);
   const m = cmpSel, i = MISSIONS.indexOf(m), u = unlocked(i);
   box.innerHTML = `<div class="cWrap">
     <div class="cHead"><div><div class="k">Lunar Odyssey · Junior Astronaut Mission Trainer · Moon south pole</div><h1>🗺 Mission map</h1></div>
       <div class="cProg"><button class="linkBtn" id="cmpPilot" style="padding:6px 10px;font-size:12px" title="Change callsign, track or astronaut">${PILOT && PILOT.look ? avatar('you', 22) : '👤'} ${esc(callsign())} · ${PILOT && PILOT.astro ? astroOf(PILOT.astro).role : ''} · ${PILOT && PILOT.track === 'specialist' ? 'Specialist' : 'Cadet'}</button>${done} of ${MISSIONS.length} missions done<div class="bar"><i style="width:${done / MISSIONS.length * 100}%"></i></div>
         ${box.dataset.close ? '<button class="iconBtn cClose" id="cmpClose" title="Back to the current mission">✕</button>' : ''}</div></div>
-    <div class="cMap"><svg viewBox="0 0 200 200" role="img" aria-label="Map of the real ground around Shackleton crater with five missions">
-      <defs><clipPath id="cmc"><rect x="4" y="4" width="192" height="192" rx="10"/></clipPath>
-        <radialGradient id="cmv"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".65"/></radialGradient></defs>
-      <g clip-path="url(#cmc)"><image href="${LOLA_URL}" x="0" y="0" width="200" height="200" preserveAspectRatio="none"/>
-        <rect x="0" y="0" width="200" height="200" fill="url(#cmv)"/>
-        ${mmText(cx, Math.min(188, cy - CRATER.r * K + 30), 'SHACKLETON CRATER · always dark', 5.5, '#b9c8ff')}
-        <g transform="translate(94 94)"><rect width="12" height="12" rx="3" fill="#2a5bd7" stroke="#fff" stroke-width="1.2" opacity=".85"/></g>
-        ${route}${nodes}</g>
-      <rect x="4" y="4" width="192" height="192" rx="10" fill="none" stroke="#5ec8ff" stroke-opacity=".35"/>
-      ${mmText(10, 194, 'Real NASA LRO LOLA heights · 13.5 km across', 5, '#9fb0cf', 'start', 500)}</svg></div>
-    <div class="cCard">
+    <div class="cMap"><svg viewBox="0 0 ${MW} ${MH}" role="img" aria-label="Top-down map of the real ground around Shackleton crater with five missions">
+      <defs><clipPath id="cmc"><rect width="${MW}" height="${MH}" rx="18"/></clipPath>
+        <radialGradient id="cmv" cx=".5" cy=".45" r=".75"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+        <filter id="pinSh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".6"/></filter></defs>
+      <g clip-path="url(#cmc)">${ground}
+        <rect width="${MW}" height="${MH}" fill="url(#cmv)"/>
+        <g class="cGrid">${grid}</g><g class="cTicks">${ticks}</g>
+        <text class="cCrater" x="${cx0}" y="${cy0}">SHACKLETON CRATER</text>
+        <text class="cCraterS" x="${cx0}" y="${cy0 + 30}">floor never sees the Sun · −180 °C · water ice</text>
+        ${route}${places}${nodes}</g>
+      <rect width="${MW}" height="${MH}" rx="18" fill="none" stroke="#5ec8ff" stroke-opacity=".35" stroke-width="2"/>
+      <g class="cCompass" transform="translate(${MW - 62} 76)"><circle r="34"/><path d="M0 -26 L9 4 L0 -2 L-9 4 Z" class="nArr"/><path d="M0 26 L9 -4 L0 2 L-9 -4 Z"/><text y="-40">N</text></g>
+      <g class="cScale" transform="translate(${MW - 250} ${MH - 34})"><rect width="200" height="8"/><rect width="100" height="8" class="w"/><text x="0" y="-8">0</text><text x="100" y="-8">1</text><text x="200" y="-8">2 km</text></g>
+    </svg>
+    <div class="cRow"><div class="cBar"><span class="cbIc" aria-hidden="true">${m.ic}</span>
+      <div class="cbT"><small>Mission ${m.n} · ${m.tag}</small><b>${m.title}${CMP.done[m.id] ? ' ✅' : ''}</b></div>
+      <button class="linkBtn" id="cmpDet" aria-expanded="${cmpDet}" aria-controls="cmpCard">${cmpDet ? 'Hide details' : 'Details ▸'}</button>
+      <button class="cbGo" id="cmpGo" ${u ? '' : 'disabled'}></button></div>
+    <div class="cLegend"><b>Map key</b>
+      <span><i class="lg av"></i>Ready to play</span><span><i class="lg dn"></i>Completed</span><span><i class="lg lk"></i>Locked</span>
+      <span><i class="lg rt"></i>Route between missions</span><span><i class="lg sh"></i>Always in shadow</span></div></div>
+    <div class="cSrc">Real NASA LRO LOLA heights · 1 km grid · north is away from the south pole</div></div>
+    <div class="cCard ${cmpDet ? 'open' : ''}" id="cmpCard" role="region" aria-label="Mission details"><button class="iconBtn cCardX" id="cmpDetX" aria-label="Close mission details">✕</button>
       <div class="kick">Mission ${m.n} · ${m.tag}</div>
       <h2>${m.ic} ${m.title}${CMP.done[m.id] ? ' ✅' : ''}</h2>
       <p>${m.story}</p>
@@ -2387,6 +2642,9 @@ function drawCampaign() {
   box.querySelectorAll('.chJump button').forEach(b => b.onclick = () => story(+b.dataset.ch));
   $('cmpAll').onclick = () => { CMP.all = !CMP.all; cmpSave(CMP); drawCampaign(); };
   const c = $('cmpClose'); if (c) c.onclick = hideCampaign;
+  $('cmpGo').textContent = $('cmpLaunch').textContent; $('cmpGo').onclick = () => $('cmpLaunch').onclick();
+  $('cmpDet').onclick = () => { cmpDet = !cmpDet; drawCampaign(); if (cmpDet) $('cmpDetX').focus(); };
+  $('cmpDetX').onclick = () => { cmpDet = false; drawCampaign(); $('cmpDet').focus(); };
   $('cmpPilot').onclick = () => { const back = box.dataset.close; hideCampaign(); showSetup(back); };
 }
 
@@ -2587,11 +2845,18 @@ function stormFact(b) {
 const sceneOf = b => { const k = STORY.chapters.findIndex(c => c.id === b.chapter), ch = STORY.chapters[k];
   return { ic: b.type === 'climax' ? '⚠' : '📖', kick: ch ? `Lunar Odyssey · Chapter ${k + 1} · Day ${state.day}` : 'Lunar Odyssey',
     chap: b.title ? { n: `Chapter ${k + 1}`, t: ch.title, g: ch.tagline } : null, head: b.title ? '' : b.type === 'climax' ? 'Emergency!' : ch ? ch.title : '', lines: b.lines, card: b.card }; };
-// a cutscene: each line in the speaker's own voice, with subtitles. Skippable.
+// which film shot fits a line of the story (first match wins)
+const SHOT_WORDS = [[/landing|landed|touchdown|made it|arriv|lander|supply ship/i, 'landing'], [/earth|home planet|family|back home/i, 'earth'],
+  [/storm|flare|radiation|proton|the sun\b|sun is/i, 'sun'], [/ridge|mast|solar panel|sunlight|sunny/i, 'ridge'], [/ice|water|cold trap|drill|frozen|harvest/i, 'ice'],
+  [/rover|drive|wheel|battery/i, 'rover'], [/rock|sample|boulder|geolog/i, 'boulders'], [/young crater|bright ray|fresh/i, 'fresh'],
+  [/dark|night|shadow|crater|view|explor|discover|look at/i, 'crater'], [/greenhouse|plant|base|habitat|crew|together/i, 'base']];
+const shotFor = (txt, k) => { for (const [re, s] of SHOT_WORDS) if (re.test(txt)) return s; return ['base', 'crater', 'earth'][k % 3]; };
+// a cutscene: each line in the speaker's own voice, with subtitles over a live 3D shot of the Moon. Skippable.
 function playScene(o, done) {
   const el = ovl('brief'), run = ++briefRun, lines = o.lines || [], voice = voiceOn && 'speechSynthesis' in window;
-  el.setAttribute('aria-label', o.head || (o.chap && o.chap.t) || 'Story'); el.classList.toggle('quiet', !voice);
-  el.innerHTML = `<div class="in"><div class="panel">
+  const cine = o.cine !== false && !!(window.JAMT3D && JAMT3D.cineStart);
+  el.setAttribute('aria-label', o.head || (o.chap && o.chap.t) || 'Story'); el.classList.toggle('quiet', !voice); el.classList.toggle('cine', cine);
+  el.innerHTML = `${cine ? '<div class="cineBg" id="cineBg" aria-hidden="true"></div><div class="cineTag" id="cineTag"></div>' : ''}<div class="in"><div class="panel">
     <div class="bTop"><div class="patch" aria-hidden="true">${o.ic || '📖'}</div>
       <div><div class="k">${o.kick || 'Lunar Odyssey'}</div>${o.head ? `<h2>${o.head}</h2>` : ''}<div class="who" id="sWho"></div></div></div>
     ${o.chap ? `<div class="chap"><div class="n">${o.chap.n}</div><div class="t">${o.chap.t}</div><div class="g">${o.chap.g || ''}</div></div>` : ''}
@@ -2602,13 +2867,18 @@ function playScene(o, done) {
   const box = $('bLines'); let i = 0, typer = null;
   const say = l => `<span class="sp" style="color:${PEOPLE[SPK[l.who] || 'earth'].c}">${avatar(SPK[l.who] || 'earth', 24)}${esc(spkName(l.who))}</span>`;
   const card = () => { if (o.card) $('sCard').innerHTML = `<div class="sCard"><b>${esc(o.card.title)}</b><span>${esc(o.card.text)}</span></div>`; };
-  const end = () => { if (run !== briefRun) return; briefRun++; clearInterval(typer); if ('speechSynthesis' in window) speechSynthesis.cancel(); el.classList.remove('open'); done && done(); };
+  const SHOT_NAME = { base: 'Shackleton Base', landing: 'Landing pad', earth: 'Earth over the crater rim', sun: 'The Sun on the horizon', ridge: 'Connecting Ridge', ice: 'Cold Trap Crater',
+    boulders: 'Boulder Field', fresh: 'Fresh Crater', rover: 'Rover MO-01', crater: 'Shackleton crater' };
+  const shoot = sh => { if (!cine) return; JAMT3D.cineShot(sh); const tg = $('cineTag'); if (tg) tg.textContent = `🎥 Live 3D · ${SHOT_NAME[sh] || ''}`; };
+  if (cine) { JAMT3D.cineStart($('cineBg')); shoot(o.shot || (lines[0] ? shotFor(lines[0].text, 0) : 'crater')); }
+  const end = () => { if (run !== briefRun) return; briefRun++; clearInterval(typer); if ('speechSynthesis' in window) speechSynthesis.cancel(); if (cine) JAMT3D.cineEnd(); el.classList.remove('open', 'cine'); done && done(); };
   const finish = () => { el.classList.add('quiet'); card(); $('bGo').classList.add('pulse'); };
   const next = () => {
     if (run !== briefRun) return;
     if (i >= lines.length) return finish();
     box.querySelectorAll('p').forEach(p => p.classList.add('old'));
     const l = lines[i++], pEl = document.createElement('p'); pEl.innerHTML = say(l) + '<span class="tx"></span>'; box.appendChild(pEl);
+    shoot(shotFor(l.text, i));
     const tx = pEl.querySelector('.tx'); let k = 0; clearInterval(typer); typer = setInterval(() => { k += 2; tx.textContent = l.text.slice(0, k); if (k >= l.text.length) clearInterval(typer); }, 24);
     while (box.children.length > 3) box.removeChild(box.firstChild);
     const after = () => { if (run === briefRun) setTimeout(next, 350); };
@@ -2628,7 +2898,8 @@ function playScene(o, done) {
 // Day 1 briefing card, then the base computer's countdown into the game
 function briefingCard(b, done) {
   const card = { title: b.card.title, text: `Keep all 4 astronauts safe for ${MISSION_DAYS} days and earn ${SCI_GOAL} science points. Watch three things: Power, Air and water, and Radiation. In Chapter 1 you learn the base: Mission Control gives you a training task each morning (7 in all). You can drive to the Rim Lookout and the Connecting Ridge. More places open in Chapter 2.` };
-  playScene({ ic: '🎯', kick: 'Lunar Odyssey · Chapter 1 · Day 1', head: 'Your mission', lines: [], card, go: 'Start the mission 🚀' }, () => countdown(b.countdown, done));
+  playScene({ ic: '🎯', kick: 'Lunar Odyssey · Chapter 1 · Day 1', head: 'Your mission', lines: [], card, go: 'Start the mission 🚀', shot: 'crater' },
+    () => countdown(b.countdown, () => { if (!tourSeen()) showTour(done); else done(); }));
 }
 function countdown(l, done) {
   if (!l) return done();
@@ -2644,6 +2915,64 @@ function countdown(l, done) {
     if (actx) { try { tone(880, 0, .08); tone(660, .1, .08); } catch (e) {} }
     speechSynthesis.cancel(); setTimeout(() => speechSynthesis.speak(u), 250); setTimeout(() => { [0, 1, 2].forEach(show); close(); }, 2500 + l.text.length * 95); }
   else { [0, 1, 2].forEach(n => setTimeout(() => show(n), 1600 + n * 900)); setTimeout(close, 4400); }
+}
+// HOW TO PLAY: a guided tour of the screen. It lights up one part at a time and says what it is for.
+// Shown once after the first countdown, and any time from the ❓ button.
+const TOUR = [
+  { ic: '🌕', t: 'Welcome, Commander!', d: () => `You run a real Moon base at Shackleton crater for ${MISSION_DAYS} days. Win by keeping all 4 astronauts safe and earning ${SCI_GOAL} science points. This quick tour shows you how.` },
+  { sel: '.hud', ic: '📊', t: 'Your base at a glance', d: 'Air, power, water, food, shield and radiation. They go down a little every day. Keep every bar out of the red. Tap one to learn what it means.' },
+  { sel: '.clock', ic: '🕒', t: 'Days and the Sun', d: 'One turn is one day. At the south pole the Sun stays low and circles the sky. On dark days (6 to 8) the solar panels make no power, so save your battery.' },
+  { sel: '#objPill', ic: '🎯', t: 'What to do next', d: 'This shows your next task. Tap it to see all your goals and a 💡 hint. In the 3D view, a yellow arrow points to where you need to go.' },
+  { sel: '#stage', ic: '🖐', t: 'Look around the Moon', d: 'The ground is real NASA height data. Drag to turn, scroll or pinch to zoom. Tap a place’s name to see what you can do there.', pad: -40 },
+  { hk: 'Drive', ic: '🚙', t: 'Drive the rover', d: 'Pick a place, then Drive. The rover MO-01 runs on a battery, so always keep enough to get home.' },
+  { hk: 'Work', ic: '🛠', t: 'Do the job there', d: 'When you arrive, Work does that place’s job: collect rocks, build the solar mast, drill ice. Jobs earn science.' },
+  { hk: 'Enter base', ic: '🏠', t: 'Go inside the base', d: 'Walk from room to room and tap things to use them: grow lights, low-power mode, the storm shelter, regolith bags.' },
+  { hk: 'Spacewalk', ic: '🧑‍🚀', t: 'Walk on the Moon', d: 'Suit up and walk outside yourself. Use WASD or the on-screen pad, and E to pick up rocks. Keep an eye on your suit’s oxygen.' },
+  { hk: 'Comm', ic: '📻', t: 'Talk to Mission Control', d: 'Read the radio log, and tap Ask Earth when you are not sure what to do next.' },
+  { hk: 'End day', ic: '🌙', t: 'End the day', d: 'Done for today? End the day. Overnight the crew uses air, water, food and power, then a new day begins.' },
+  { ic: '🚨', t: 'Emergencies', d: 'Solar storms, broken parts and low oxygen pop up with a timer. Read quickly and pick the safest choice. Good luck, Commander!' }
+];
+const tourSeen = () => { try { return localStorage.getItem('jamtTour') === '1'; } catch (e) { return false; } };
+function showTour(onClose) {
+  let el = $('tour'); if (!el) { el = document.createElement('div'); el.id = 'tour'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); document.body.appendChild(el); }
+  el.innerHTML = '<div class="tHi" id="tHi"></div><div class="tCard" id="tCard" aria-live="polite"></div>';
+  el.classList.add('open'); let k = 0;
+  const target = st => st.sel ? document.querySelector(st.sel) : st.hk ? [...document.querySelectorAll('#hotbar .hk')].find(b => b.textContent.replace(/[\d\s]/g, '').replace(/^[^A-Za-z]+/, '').startsWith(st.hk.replace(/\s/g, ''))) : null;
+  const close = () => { el.classList.remove('open'); document.removeEventListener('keydown', key, true); removeEventListener('resize', draw); try { localStorage.setItem('jamtTour', '1'); } catch (e) {} if (onClose) onClose(); };
+  function draw() {
+    const st = TOUR[k], tg = target(st), hi = $('tHi'), card = $('tCard'), r = tg && tg.getBoundingClientRect(), pad = st.pad || 6;
+    // only point at it if it is really on screen and on top (not hidden behind the mission map or another screen)
+    let shown = !!(r && r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth);
+    if (shown) { el.style.display = 'none';
+      const x = Math.min(innerWidth - 2, Math.max(1, r.left + r.width / 2)), y = Math.min(innerHeight - 2, Math.max(1, r.top + Math.min(r.height / 2, 24))), hit = document.elementFromPoint(x, y);
+      el.style.display = ''; shown = !!hit && (hit === tg || tg.contains(hit) || (st.sel === '#stage' && !hit.closest('.ovl, #campaign'))); }
+    hi.style.display = shown ? 'block' : 'none'; el.classList.toggle('dim', !shown);
+    if (shown) Object.assign(hi.style, { left: `${r.left - pad}px`, top: `${r.top - pad}px`, width: `${r.width + pad * 2}px`, height: `${r.height + pad * 2}px` });
+    card.innerHTML = `<div class="tIc">${st.ic}</div><div class="tK">How to play · ${k + 1} of ${TOUR.length}</div><h3>${st.t}</h3><p>${typeof st.d === 'function' ? st.d() : st.d}</p>
+      <div class="tDots">${TOUR.map((_, n) => `<i class="${n === k ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="tRow"><button class="linkBtn" id="tSkip">Skip tour</button><span>${k ? '<button class="linkBtn" id="tBack">◂ Back</button>' : ''}
+      <button class="bigBtn" id="tNext">${k === TOUR.length - 1 ? 'Let’s play 🚀' : 'Next ▸'}</button></span></div>`;
+    const cw = Math.min(360, innerWidth - 24); card.style.width = `${cw}px`;
+    const ch = card.offsetHeight;
+    if (shown) {
+      const below = r.bottom + pad + 12, above = r.top - pad - 12 - ch, fitsBelow = below + ch < innerHeight - 8;
+      let top = fitsBelow ? below : above >= 8 ? above : Math.max(8, (innerHeight - ch) / 2);
+      if (st.sel === '#stage') top = Math.max(8, (innerHeight - ch) / 2);
+      const left = Math.min(innerWidth - cw - 12, Math.max(12, r.left + r.width / 2 - cw / 2));
+      Object.assign(card.style, { left: `${left}px`, top: `${top}px` });
+    } else Object.assign(card.style, { left: `${(innerWidth - cw) / 2}px`, top: `${Math.max(8, (innerHeight - ch) / 2)}px` });
+    $('tNext').onclick = () => { if (k === TOUR.length - 1) close(); else { k++; draw(); } };
+    $('tSkip').onclick = close; const bk = $('tBack'); if (bk) bk.onclick = () => { k--; draw(); };
+    $('tNext').focus();
+  }
+  function key(e) {
+    if (!el.classList.contains('open')) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); $('tNext').click(); }
+    else if (e.key === 'ArrowLeft' && k) { e.preventDefault(); e.stopPropagation(); k--; draw(); }
+  }
+  document.addEventListener('keydown', key, true); addEventListener('resize', draw);
+  draw();
 }
 // a "Real NASA connection" card that pops up over the game
 function factCard(c) {
@@ -2868,7 +3197,7 @@ addEventListener('keydown', e => { if (e.key === 'Enter' && $('title') && $('tit
 // =====================================================================
 function select(id) { if (state.busy || state.view !== 'surface') return; state.selected = id; state.target = null; hud.dismissed = null; render(); }
 function setRoom(id) { if (state.busy || state.view !== 'base') return; state.room = id; render(); }
-window.JAMT = { get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
+window.JAMT = { get objective() { return typeof objectiveNow === 'function' ? objectiveNow() : null; }, get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
   ready3D() { $('loading3d').remove(); render(); },
   no3D(err) { console.warn('3D unavailable:', err); $('loading3d').textContent = '3D view needs an internet connection the first time. Showing the photo map.'; state.surface = 'photo'; render(); } };
 
@@ -2891,7 +3220,11 @@ $('nextBtn').onclick = () => { $('ending').classList.remove('open'); cmpSel = MI
 $('endMapBtn').onclick = () => { $('ending').classList.remove('open'); cmpSel = null; showCampaign(false); };
 $('failMapBtn').onclick = () => { $('modal').classList.remove('open'); cmpSel = MISSION; showCampaign(false); };
 $('cmpBtn').onclick = () => { cmpSel = MISSION; showCampaign(true); };
-$('mapBtn').onclick = () => { cmpSel = MISSION; showCampaign(true); };
+// crew voices on/off lives in the settings menu too (it used to be only in the Comm panel)
+const syncVoiceBtns = () => { if (!$('vOnBtn')) return; $('vOnBtn').setAttribute('aria-pressed', voiceOn); $('vOffBtn').setAttribute('aria-pressed', !voiceOn); };
+$('vOnBtn').onclick = () => { setVoice(true); syncVoiceBtns(); };
+$('vOffBtn').onclick = () => { setVoice(false); syncVoiceBtns(); };
+syncVoiceBtns();
 addEventListener('keydown', e => { const b = $('campaign'); if (e.key === 'Escape' && b && b.classList.contains('open') && b.dataset.close) { e.stopPropagation(); hideCampaign(); } }, true);
 
 
@@ -2899,7 +3232,7 @@ addEventListener('keydown', e => { const b = $('campaign'); if (e.key === 'Escap
 //  GAME HUD: mission card, crew card, minimap, hotbar, pop-up radio dialog, toasts
 // =====================================================================
 const SMALL = () => innerWidth <= 1400 || innerHeight <= 860;
-const hud = { crewOpen: !SMALL(), clean: false, dismissed: null, missionMini: SMALL(), comm: false, commTab: 'radio', dlg: null, dlgShown: null, dlgTimer: 0, typer: 0, pingSites: false };
+const hud = { crewOpen: !SMALL(), clean: false, dismissed: null, missionMini: false, missionOpen: false, comm: false, commTab: 'radio', dlg: null, dlgShown: null, dlgTimer: 0, typer: 0, pingSites: false };
 const clockOf = () => { const h = 6 + (DAY_HOURS - state.hours); const hh = Math.floor(h), mm = Math.round((h - hh) * 60); return `${String(hh).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`; };
 
 // ---------- pop-up radio dialog ----------
@@ -2938,6 +3271,11 @@ setInterval(() => {
     });
   }
 }, 150);
+// the big picture of who is talking: the real 3D astronaut when it can be drawn, else the painted portrait
+function portraitHTML(id) {
+  const W = window.JAMTWALK, url = W && W.portrait ? W.portrait(id, id === 'you' ? pilotLook() : id === 'earth' ? LOOKS.earth : null) : null;
+  return url ? `<img class="pImg" src="${url}" alt="">` : avatar(id, 92);
+}
 function renderDialog() {
   const box = $('radio'), m = hud.dlg;
   if (!m) { box.classList.remove('show'); return; }
@@ -2946,9 +3284,10 @@ function renderDialog() {
   const fresh = !hud.dlgShown || !hud.dlgShown.startsWith(m.id);
   hud.dlgShown = key;
   const p = PEOPLE[m.who];
-  box.innerHTML = `<div class="portrait">${avatar(m.who, 66)}</div>
-    <div class="dlgBody"><span class="nameTag" style="color:${p.c}">${p.name}</span> <span class="meta">${p.role} · ${CHANNEL[m.ch]}${m.ch === 'earth' ? ` · ${EARTH_DELAY.toFixed(1)} s delay` : ''}</span>
-      <p class="dlgText"></p>
+  box.style.setProperty('--who', p.c);
+  box.innerHTML = `<div class="portrait">${portraitHTML(m.who)}</div>
+    <div class="dlgBody"><div class="nameRow"><span class="nameTag">${p.name}</span><span class="meta">${p.role} · ${CHANNEL[m.ch]}${m.ch === 'earth' ? ` · ${EARTH_DELAY.toFixed(1)} s delay` : ''}</span></div>
+      <p class="dlgText"></p><span class="dlgIc" aria-hidden="true">${m.ch === 'earth' ? '📡' : '📻'}</span>
       ${m.replies.length ? `<div class="replies">${m.replies.map((r, i) => `<button data-reply="${i}">${r.label}</button>`).join('')}</div>` : ''}
       ${m.timer && !m.answered ? `<div class="timer" data-timer="${m.id}" role="timer"><span>⏱</span><span class="tb"><i></i></span><span class="tn"></span></div>` : ''}</div>
     <button class="iconBtn dlgX" aria-label="Close message">✕</button>`;
@@ -2972,11 +3311,37 @@ function toast(msg) {
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); }, 5200);
 }
 
+// ---------- the next thing to do, and where (the yellow arrow, the minimap "!" and the mission button all use this) ----------
+function objectiveNow() {
+  if (!state) return null;
+  const f = state.fh;
+  if (ch1On()) {
+    const S = state.story, t = CH1_TASKS.find(x => !(S.tasks && S.tasks[x.id]) && !(x.id === 'dark' && state.day > 8));
+    if (t) { const at = { mast: 'ridge', rim: 'rim' }[t.id] || 'base'; return { at, text: `${t.ic} ${t.t}`, how: t.how }; }
+  }
+  if (f.carried) return { at: 'base', text: '❄ Bring the ice home to the base' };
+  if ((!f.runs || f.stage > 0 || f.ok.some(Boolean) && !f.ok[6]) && !siteLocked('ice')) { const n = f.ok.findIndex(x => !x); return { at: 'ice', text: `❄ ${FH_STEPS[n] || 'Operation Frozen Harvest'}` }; }
+  if (SUPPLY.day <= MISSION_DAYS && state.day >= SUPPLY.day && !state.unloaded) return { at: 'pad', text: '🚀 Unload the cargo lander' };
+  const site = SITES.find(x => !x.supply && !state.visits[x.id] && !siteLocked(x.id));
+  if (site) return { at: site.id, text: `🔬 Visit ${site.name}` };
+  return { at: null, text: SCI_GOAL ? `🔬 Earn science: ${state.sci} / ${SCI_GOAL}` : `🛡 Keep everyone safe until Day ${MISSION_DAYS}` };
+}
+// the small mission button by the minimap: today's objective; tap it to open the full mission card
+function renderObjPill() {
+  const b = $('objPill'); if (!b || !state) return;
+  const o = objectiveNow(), where = o && o.at ? (o.at === 'base' ? 'Shackleton Base' : placeOf(o.at).name) : '';
+  b.innerHTML = `<span class="oi" aria-hidden="true">!</span><span class="ob"><span class="ok">Mission${where ? ` · ${esc(where)}` : ''}</span><span class="ot">${o ? esc(o.text) : ''}</span></span>
+    <span class="oc">${hud.missionOpen ? 'Hide ▴' : 'Goals ▸'}</span>`;
+  b.setAttribute('aria-expanded', !!hud.missionOpen);
+}
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#objPill')) toggleMission(); });
+function toggleMission(on) { hud.missionOpen = on === undefined ? !hud.missionOpen : on; renderMission(); }
+
 // ---------- current mission ----------
 function renderMission() {
   const box = $('missionCard'), f = state.fh, active = f.stage > 0 || f.carried > 0 || f.ok.some(Boolean) && !f.ok[6];
   const head = (t, extra = '') => `<div class="cardHead"><span class="bang">!</span><h2>${t}</h2>${extra}
-    <button class="iconBtn" id="mToggle" aria-expanded="${!hud.missionMini}" title="Show or hide the goals (M)">${hud.missionMini ? '▾' : '▴'}</button></div>`;
+    <button class="iconBtn" id="mToggle" aria-expanded="true" title="Close (M)">✕</button></div>`;
   let html;
   if ((!f.runs || active) && !siteLocked('ice')) {
     const next = f.ok.findIndex(x => !x);
@@ -3002,8 +3367,8 @@ function renderMission() {
   if (ch1On()) html += ch1Html();
   html += `<div class="mNow" style="display:block;color:#8fb7ff;margin-top:8px">${chap ? `📖 Chapter ${STORY.chapters.indexOf(chap) + 1} of 3 · ${chap.title} (Days ${chap.days[0]}–${chap.days[1]})` : `🗺 Mission ${MISSION.n} of ${MISSIONS.length}: ${MISSION.title}`}</div>
     <ul class="goals mGoals">${MISSION.goals.map(g => `<li class="${g.ok(state) ? 'ok' : 'now'}">${g.t}${g.end ? ' (checked on the last day)' : ''}</li>`).join('')}</ul>`;
-  box.innerHTML = html; box.classList.toggle('mini', hud.missionMini);
-  box.querySelector('#mToggle').onclick = () => { hud.missionMini = !hud.missionMini; renderMission(); };
+  box.innerHTML = html; box.hidden = !hud.missionOpen; renderObjPill();
+  box.querySelector('#mToggle').onclick = () => toggleMission(false);
   const go = box.querySelector('#mGo'); if (go) go.onclick = () => select('ice');
 }
 
@@ -3064,7 +3429,7 @@ function moonMap() {
   const R = 92, K = R / 6.2, P = ([o, s]) => [100 + s * K, 100 - o * K];
   const [cx, cy] = P(CRATER.at), f = state.fh, rv = P(state.rover.pos), t = target(), img = LOLA_URL;
   const ev = window.JAMT3D && window.JAMT3D.evaKm && window.JAMT3D.evaKm();
-  const objective = f.carried ? 'base' : (!f.runs || f.stage > 0 || f.ok.some(Boolean) && !f.ok[6]) ? 'ice' : SITES.find(s => !s.supply && !state.visits[s.id])?.id;
+  const objective = (objectiveNow() || {}).at;
   const dark = isDark(state.day);
   return `<svg viewBox="0 0 200 200" role="img" aria-label="Real NASA Moon map: 6 km around the outpost, with the places you can drive to"><defs><clipPath id="mmc"><circle cx="100" cy="100" r="${R}"/></clipPath></defs>
     ${mmFrame(R)}
@@ -3209,6 +3574,7 @@ $('ffBtn').onclick = () => { if (!state.busy) state.view === 'base' ? ROOM_ACT.s
   fit(); if (window.ResizeObserver) new ResizeObserver(fit).observe(tb); }
 function setClean(on) { hud.clean = on; document.body.classList.toggle('clean', on); $('cleanBtn').setAttribute('aria-pressed', on); $('cleanBtn').title = on ? 'Show the panels again (H)' : 'Hide the panels for a clear view (H)'; }
 $('cleanBtn').onclick = () => setClean(!hud.clean);
+$('helpBtn').onclick = () => showTour();
 $('dataBtn').onclick = () => radio('earth', `Where this game's science comes from: 1) Live solar flares and radiation storms from NASA's DONKI space weather database (ccmc.gsfc.nasa.gov/DONKI-API), checked every time you play. ${SUN.src === 'live' ? 'Connected now.' : 'Not connected right now, so a typical Sun is used.'} 2) Oxygen, water and power numbers from the ISS life support system and NASA Artemis plans. 3) The 8-hour Moon suit from NASA's Artemis AxEMU suit. 4) Radiation doses and the 250 mSv limit from NASA crew health standards. 5) Real astronaut blood tests from NASA's Open Science Data Repository (OSDR, study OSD-569, Inspiration4), saved into the game on ${OSDR.saved}, not live. 6) The dusty-panel risk is real: Apollo 12 found the old Surveyor 3 probe sandblasted by their lander. 7) The Moon map and the 3D ground are real: heights of Shackleton crater measured by the laser on NASA's Lunar Reconnaissance Orbiter (LOLA, 40 m per pixel), saved into the game, not live.`, { instant: true, replies: [copy('Thanks, Mission Control.')] });
 $('sunChip').onclick = () => radio('earth', `Space weather briefing. ${sunText()}${state.flareDays.some(d => d >= state.day) ? ' Stay alert for flare warnings.' : ''}`, { instant: true, replies: [copy()] });
 $('menuBtn').onclick = () => { const m = $('menu'); m.hidden = !m.hidden; $('menuBtn').setAttribute('aria-expanded', !m.hidden); };
@@ -3221,7 +3587,7 @@ document.addEventListener('keydown', e => {
   const i = hotItems.findIndex(h => h.k && h.k === e.key);
   if (i >= 0) { const h = hotItems[i]; if (h.on) { e.preventDefault(); h.f(); } return; }
   if (e.key === 'c' || e.key === 'C') { hud.comm = !hud.comm; render(); }
-  if (e.key === 'm' || e.key === 'M') { hud.missionMini = !hud.missionMini; renderMission(); }
+  if (e.key === 'm' || e.key === 'M') toggleMission();
   if ((e.key === 'h' || e.key === 'H') && !evaOn()) setClean(!hud.clean);
   if (e.key === 'Escape' && $('osdrCard') && $('osdrCard').classList.contains('open')) { $('osdrCard').classList.remove('open'); return; }
   if (e.key === 'Escape') { if (hud.dlg) hideDialog(); else if (document.body.classList.contains('detailsOpen')) $('detailsClose').click(); }
@@ -3410,11 +3776,14 @@ const RIDGE_ANG = Math.atan2(siteXZ('ridge')[1], siteXZ('ridge')[0]);   // the s
 const [RAx, RAz] = polar(RIDGE_ANG, RIM + 4), [RBx, RBz] = polar(RIDGE_ANG, RIM + 120);
 const smalls = [];
 { let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < 0; i++) {                                 // (made-up craters no longer needed: the real ground has its own)
-    const a = rnd() * Math.PI * 2, r = RIM + 12 + rnd() * 120, R = 2 + rnd() * rnd() * 14;
+  // SMALL CRATERS: the NASA height grid is 205 m per point, so craters smaller than that don't show. Real ground is
+  // covered in them (most are small, a few are big), each a bowl with a raised rim of thrown-out rock.
+  const keep = J.SITES.map(st => kmToXZ(st.at)).concat([[BX, BZ]]);
+  for (let i = 0; i < 140; i++) {
+    const a = rnd() * Math.PI * 2, r = RIM + 8 + rnd() * 125, R = 2.4 + rnd() * rnd() * rnd() * 16;
     const [x, z] = polar(a, r);
-    if (Math.hypot(x - BX, z - BZ) < 18) continue;
-    smalls.push({ x, z, R, D: R * .45 });
+    if (keep.some(([kx, kz]) => Math.hypot(x - kx, z - kz) < R * 1.8 + 14)) continue;
+    smalls.push({ x, z, R, D: R * .32 });
   } }
 const [IX, IZ] = siteXZ('ice');                                  // cold trap crater
 smalls.push({ x: IX, z: IZ, R: 8, D: 7 });
@@ -3453,6 +3822,53 @@ function H(x, z) {
   const k = d < 15 ? 1 : Math.max(0, 1 - (d - 15) / 8);         // flattened ground around the base
   return h + (BH - h) * k * k * (3 - 2 * k) - pitDepth(x, z);
 }
+// Mission map picture: the same ground as the 3D world (real LOLA heights + small craters), seen from straight above,
+// lit like a relief map, with contour lines and the permanently shadowed crater floor. Drawn once, then kept.
+const RELIEF = {}, RELIEF_JOB = {};
+// returns the finished picture, or null while it is still being drawn (it is drawn a few rows at a time so the game never freezes)
+function relief(v, onDone) {
+  const key = [v.s0, v.s1, v.o0, v.o1, v.w].join(',');
+  if (RELIEF[key]) return RELIEF[key];
+  if (RELIEF_JOB[key]) { if (onDone) RELIEF_JOB[key].cbs.push(onDone); return null; }
+  const job = RELIEF_JOB[key] = { cbs: onDone ? [onDone] : [] };
+  const W = v.w, Hh = Math.round(W * (v.o1 - v.o0) / (v.s1 - v.s0)), hs = new Float32Array((W + 2) * (Hh + 2)), kmPx = (v.s1 - v.s0) / W;
+  let row = 0;
+  const heights = () => {                                                  // the natural ground (no flattened building site)
+    const stop = Math.min(Hh + 2, row + 24);
+    for (; row < stop; row++) for (let i = 0; i < W + 2; i++) {
+      const [x, z] = kmToXZ([v.o1 - (row - .5) * kmPx, v.s0 + (i - .5) * kmPx]);
+      hs[row * (W + 2) + i] = Hraw(x, z) / KM * 1000;                       // metres
+    }
+    if (row < Hh + 2) return setTimeout(heights, 0);
+    paint();
+  };
+  const paint = () => {
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = Hh;
+    const g = cv.getContext('2d'), img = g.createImageData(W, Hh), d = img.data, px = kmPx * 1000;
+    const L = [-.55, .62, .56], ln = Math.hypot(...L); L[0] /= ln; L[1] /= ln; L[2] /= ln;   // light from the upper left, like a printed map
+    for (let j = 0; j < Hh; j++) for (let i = 0; i < W; i++) {
+      const k = (j + 1) * (W + 2) + i + 1, h = hs[k];
+      const dx = (hs[k + 1] - hs[k - 1]) / (2 * px) * 2, dy = (hs[k - W - 2] - hs[k + W + 2]) / (2 * px) * 2;   // a little height exaggeration
+      const nl = Math.hypot(dx, dy, 1), sh = Math.max(0, (-dx * L[0] + -dy * L[1] + L[2]) / nl);
+      const tone = .5 + .5 * Math.max(-1, Math.min(1, h / 900));            // high ground a bit lighter
+      let r = 62 + 160 * sh * (.82 + .18 * tone), gg = r - 3, b = r - 9;
+      const [x, z] = kmToXZ([v.o1 - j * kmPx, v.s0 + i * kmPx]), dc = Math.hypot(x, z);   // Shackleton's centre is the world origin
+      if (dc < RIM * .99) { const t = Math.min(1, (RIM * .99 - dc) / 8); r = r * (1 - .74 * t) + 5 * t; gg = gg * (1 - .72 * t) + 11 * t; b = b * (1 - .64 * t) + 32 * t; }   // never sees the Sun
+      const c = Math.floor(h / 100), cr = Math.floor(hs[k + 1] / 100), cd = Math.floor(hs[k + W + 2] / 100);
+      if (c !== cr || c !== cd) { const major = Math.floor(h / 500) !== Math.floor(hs[k + 1] / 500) || Math.floor(h / 500) !== Math.floor(hs[k + W + 2] / 500), a = major ? .66 : .86;
+        r *= a; gg *= a; b *= a; }
+      const p = (j * W + i) * 4; d[p] = r; d[p + 1] = gg; d[p + 2] = b; d[p + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    RELIEF[key] = cv.toDataURL('image/jpeg', .9); delete RELIEF_JOB[key];
+    job.cbs.forEach(f => { try { f(RELIEF[key]); } catch (e) {} });
+  };
+  setTimeout(heights, 0);
+  return null;
+}
+window.JAMTRELIEF = relief;
+// start drawing it once the page is quiet, so the mission map is ready when it opens (and redraw the map if it is open)
+setTimeout(() => { if (window.JAMT_MAP_VIEW) relief(window.JAMT_MAP_VIEW, () => { if (document.querySelector('#campaign.open') && window.drawCampaign) window.drawCampaign(); }); }, 1500);
 // The base is dug into a pit and covered with moon soil: the soil is a radiation shield and keeps the
 // temperature steady, while the solar arrays stay up in the sunlight. A ramp leads out to the rover dock.
 const PIT = 2.0;
@@ -3486,7 +3902,9 @@ const P = geo.attributes.position, col = new Float32Array(P.count * 3);
 for (let i = 0; i < P.count; i++) {
   const x = P.getX(i), z = P.getZ(i);
   P.setY(i, H(x, z));
-  let n = .5 + fbm(x * .25, z * .25, 3) * .16 + fbm(x * .03, z * .03, 3) * .1;
+  const mo = Math.max(0, Math.min(1, (fbm(x * .03, z * .03, 4) + .5 - .38) * 1.6));   // light and dark patches
+  let n = .62 - mo * .2 + fbm(x * .25, z * .25, 3) * .1;
+  for (const c of smalls) { const t = Math.hypot(x - c.x, z - c.z) / c.R; if (t < 2.4) n += t < 1 ? -.05 : .07 * Math.exp(-(((t - 1.1) / .45) ** 2)); }   // shaded bowls, bright rims
   const fd = Math.hypot(x - FX, z - FZ);                          // bright fresh ejecta rays
   if (fd < 14) n += (fd < 3.4 ? .22 : .3 * Math.max(0, Math.cos(Math.atan2(z - FZ, x - FX) * 7)) ** 3 * (1 - fd / 14));
   col[i * 3] = n; col[i * 3 + 1] = n * .985; col[i * 3 + 2] = n * .955;
@@ -3495,12 +3913,25 @@ geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
 geo.computeVertexNormals();
 const tc = document.createElement('canvas'); tc.width = tc.height = 512;
 { const g = tc.getContext('2d'), img = g.createImageData(512, 512);
-  for (let i = 0; i < 512 * 512; i++) { const v = 205 + Math.random() * 50; img.data.set([v, v, v, 255], i * 4); }
+  // tileable noise (wraps every 8 cells) so the repeated texture has no seams
+  const tn = (x, y, o) => { let f = 0, a = .5, fr = 1; for (let k = 0; k < o; k++) { const P = 8 * fr, xi = Math.floor(x * fr), yi = Math.floor(y * fr), xf = x * fr - xi, yf = y * fr - yi,
+      u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), h = (i, j) => hash(((i % P) + P) % P + k * 31, ((j % P) + P) % P),
+      A = h(xi, yi), B = h(xi + 1, yi), C = h(xi, yi + 1), D = h(xi + 1, yi + 1);
+    f += a * (A + (B - A) * u + (C - A) * v + (A - B - C + D) * u * v); a *= .5; fr *= 2; } return f; };
+  for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
+    const v = Math.max(0, Math.min(255, 196 + (tn(x / 64, y / 64, 5) - .48) * 110 + (Math.random() - .5) * 16));
+    img.data.set([v, v, v, 255], (y * 512 + x) * 4); }
   g.putImageData(img, 0, 0);
-  for (let i = 0; i < 260; i++) { const r = 1 + Math.random() * Math.random() * 9; g.fillStyle = `rgba(60,60,60,${.15 + Math.random() * .2})`; g.beginPath(); g.arc(Math.random() * 512, Math.random() * 512, r, 0, 7); g.fill(); } }
+  for (let i = 0; i < 1100; i++) { const r = .5 + Math.random() * Math.random() * 3, c = 70 + Math.random() * 110, x = Math.random() * 512, y = Math.random() * 512;
+    g.fillStyle = `rgba(${c},${c},${c},${.35 + Math.random() * .4})`; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.arc(x - r * .3, y - r * .3, r * .45, 0, 7); g.fill(); }   // pebbles with a lit top
+  for (let i = 0; i < 70; i++) { const r = 3 + Math.random() * 10, x = Math.random() * 512, y = Math.random() * 512;   // tiny craters in the dust
+    g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 1.2; g.beginPath(); g.arc(x, y, r, 0, 7); g.stroke();
+    g.fillStyle = 'rgba(40,40,40,.16)'; g.beginPath(); g.arc(x + r * .15, y + r * .15, r * .8, 0, 7); g.fill(); } }
 const detail = new THREE.CanvasTexture(tc);
-detail.wrapS = detail.wrapT = THREE.RepeatWrapping; detail.repeat.set(70, 70); detail.colorSpace = THREE.SRGBColorSpace;
-const ground = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, roughness: 1, metalness: 0 }));
+detail.wrapS = detail.wrapT = THREE.RepeatWrapping; detail.repeat.set(90, 90); detail.colorSpace = THREE.SRGBColorSpace; detail.anisotropy = 8;
+const bumpTex = new THREE.CanvasTexture(tc); bumpTex.wrapS = bumpTex.wrapT = THREE.RepeatWrapping; bumpTex.repeat.set(90, 90); bumpTex.anisotropy = 8;
+const ground = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, bumpMap: bumpTex, bumpScale: 1.3, roughness: 1, metalness: 0 }));
 ground.castShadow = ground.receiveShadow = true;
 scene.add(ground);
 
@@ -3526,12 +3957,13 @@ earthshine.position.set(-Math.cos(BASE_ANG) * 100, 30, -Math.sin(BASE_ANG) * 100
 scene.add(earthshine);
 
 // stars
-{ const n = 4000, p = new Float32Array(n * 3);
+{ const n = 5000, p = new Float32Array(n * 3), c = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) { const u = Math.random() * 2 - 1, t = Math.random() * Math.PI * 2, r = 3000;
-    p.set([Math.sqrt(1 - u * u) * Math.cos(t) * r, Math.abs(u) * r * .9 + 20, Math.sqrt(1 - u * u) * Math.sin(t) * r], i * 3); }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3));
-  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 1.3, sizeAttenuation: false }))); }
-
+    p.set([Math.sqrt(1 - u * u) * Math.cos(t) * r, Math.abs(u) * r * .9 + 20, Math.sqrt(1 - u * u) * Math.sin(t) * r], i * 3);
+    const k = Math.random(), b = .45 + Math.random() * .55;
+    c.set(k > .86 ? [b, b * .84, b * .66] : k < .12 ? [b * .74, b * .84, b] : [b, b, b], i * 3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3)); g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ vertexColors: true, size: 1.6, sizeAttenuation: false, transparent: true, depthWrite: false }))); }
 // Earth, low on the horizon as seen from the south pole. The Moon keeps one face to Earth, so Earth
 // stays in nearly the same spot; as the Moon orbits, Earth shows phases, wobbles a little (libration)
 // and the Sun circles the horizon once every 29.5 days.
@@ -3724,6 +4156,82 @@ const SUIT = {
   eye: new THREE.MeshStandardMaterial({ color: 0x15100c, roughness: .25 }),
   vent: new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: .6, metalness: .4 })
 };
+// SUIT CLOTH: real moon suits have an outer layer of white Beta cloth (a fireproof glass-fibre weave) over the
+// pressure bladder. It is quilted, wrinkles at every bend, and Moon dust sticks to it, mostly on the legs and boots.
+// All painted here in code (no image files): a weave, stitched seams, soft folds, and a dusty copy for the lower legs.
+const SUITTEX = (() => {
+  const W = 512, can = () => { const c = document.createElement('canvas'); c.width = c.height = W; return c; };
+  let sd = 4242; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const base = can(), g = base.getContext('2d');
+  g.fillStyle = '#ecebe6'; g.fillRect(0, 0, W, W);
+  const img = g.getImageData(0, 0, W, W), d = img.data;
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {                // the weave
+    const i = (y * W + x) * 4, w = (((x >> 1) + (y >> 1)) & 1 ? 5 : -5) + (rnd() - .5) * 12;
+    d[i] += w; d[i + 1] += w; d[i + 2] += w; }
+  g.putImageData(img, 0, 0);
+  const folds = can(), f = folds.getContext('2d');                         // soft folds: a lit ridge with a shaded side
+  f.filter = 'blur(4px)';
+  for (let k = 0; k < 60; k++) {
+    const y0 = rnd() * W, x0 = rnd() * W, len = 40 + rnd() * 140, amp = (rnd() - .5) * 40, th = 3 + rnd() * 7, tilt = (rnd() - .5) * 1.4;
+    for (const ox of [-W, 0, W]) for (const oy of [-W, 0, W]) for (const [dy, col] of [[-th * .6, 'rgba(255,255,255,.26)'], [th * .6, 'rgba(70,66,60,.2)']]) {
+      f.strokeStyle = col; f.lineWidth = th; f.lineCap = 'round'; f.beginPath();
+      for (let t = 0; t <= 1.001; t += .05) { const px = x0 + ox + (t - .5) * len, py = y0 + oy + dy + Math.sin(t * Math.PI) * amp + (t - .5) * len * tilt; t ? f.lineTo(px, py) : f.moveTo(px, py); }
+      f.stroke(); } }
+  g.drawImage(folds, 0, 0);
+  g.setLineDash([5, 4]); g.lineWidth = 1.4;                                // stitched quilting seams
+  for (const [x, a] of [[64, .3], [256, .22], [448, .3]]) { g.strokeStyle = `rgba(80,76,70,${a})`; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, W); g.stroke(); }
+  for (const y of [120, 380]) { g.strokeStyle = 'rgba(80,76,70,.2)'; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+  g.setLineDash([]);
+  const dust = can(), q = dust.getContext('2d'); q.drawImage(base, 0, 0);    // dusty copy: grey dust rising from the bottom
+  const gr = q.createLinearGradient(0, W, 0, 0); gr.addColorStop(0, 'rgba(105,100,94,.85)'); gr.addColorStop(.35, 'rgba(120,116,110,.45)'); gr.addColorStop(.75, 'rgba(130,126,120,0)');
+  q.fillStyle = gr; q.fillRect(0, 0, W, W);
+  for (let k = 0; k < 900; k++) { const y = W - rnd() ** 2 * W * .8, x = rnd() * W, r = .6 + rnd() * 2.4; q.fillStyle = `rgba(90,86,80,${.15 + rnd() * .35})`; q.beginPath(); q.arc(x, y, r, 0, 7); q.fill(); }
+  const tex = (c, srgb) => { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+  // the face: painted in greys on white, so the skin colour you choose tints it
+  const face = document.createElement('canvas'); face.width = 512; face.height = 256; const h = face.getContext('2d');
+  h.fillStyle = '#fff'; h.fillRect(0, 0, 512, 256);
+  const shade = h.createRadialGradient(128, 128, 20, 128, 128, 150); shade.addColorStop(0, 'rgba(0,0,0,0)'); shade.addColorStop(1, 'rgba(0,0,0,.22)');
+  h.fillStyle = shade; h.fillRect(0, 0, 512, 256);
+  h.filter = 'blur(3px)';
+  for (const s2 of [-1, 1]) {
+    h.fillStyle = 'rgba(40,25,20,.22)'; h.beginPath(); h.ellipse(128 + s2 * 29, 116, 15, 9, 0, 0, 7); h.fill();        // eye sockets
+    h.fillStyle = 'rgba(200,80,70,.12)'; h.beginPath(); h.ellipse(128 + s2 * 36, 140, 14, 10, 0, 0, 7); h.fill(); }    // cheeks
+  h.fillStyle = 'rgba(40,25,20,.18)'; h.beginPath(); h.ellipse(128, 132, 6, 14, 0, 0, 7); h.fill();                      // nose shadow
+  h.fillStyle = 'rgba(40,25,20,.25)'; h.beginPath(); h.ellipse(128, 176, 26, 8, 0, 0, 7); h.fill();                       // under the chin
+  h.filter = 'blur(1px)';
+  for (const s2 of [-1, 1]) { h.strokeStyle = 'rgba(25,16,12,.85)'; h.lineWidth = 4.5; h.lineCap = 'round'; h.beginPath();   // eyebrows
+    h.moveTo(128 + s2 * 18, 103); h.quadraticCurveTo(128 + s2 * 29, 97, 128 + s2 * 41, 103); h.stroke();
+    h.fillStyle = 'rgba(30,18,14,.55)'; h.beginPath(); h.arc(128 + s2 * 4, 143, 2.6, 0, 7); h.fill(); }                   // nostrils
+  h.fillStyle = 'rgba(150,70,64,.55)'; h.beginPath(); h.ellipse(128, 160, 13, 4.8, 0, 0, 7); h.fill();                  // lips
+  h.strokeStyle = 'rgba(60,25,22,.7)'; h.lineWidth = 1.6; h.beginPath(); h.moveTo(116, 160); h.quadraticCurveTo(128, 163, 140, 160); h.stroke();
+  return { cloth: tex(base, true), clothBump: tex(base), dust: tex(dust, true), dustBump: tex(dust), face: tex(face, true) };
+})();
+const clothMat = (col, dusty) => new THREE.MeshStandardMaterial({ color: col, map: dusty ? SUITTEX.dust : SUITTEX.cloth, bumpMap: dusty ? SUITTEX.dustBump : SUITTEX.clothBump, bumpScale: 1.1, roughness: .93 });
+SM.eva = clothMat(0xf4f2ec); SM.evaDust = clothMat(0xf4f2ec, true);
+SM.under = clothMat(0xe6e9ee); SM.under.bumpScale = .7;                          // the cooling undersuit is cloth too
+SUIT.orange = clothMat(0xd8692a); SUIT.orangeDust = clothMat(0xd8692a, true);
+SUIT.glove = new THREE.MeshStandardMaterial({ color: 0x4b4a47, roughness: .8, bumpMap: SUITTEX.clothBump, bumpScale: 2 });
+SUIT.rubber = new THREE.MeshStandardMaterial({ color: 0x3d3f42, roughness: .95, bumpMap: SUITTEX.dustBump, bumpScale: 2.5 });
+SUIT.white = new THREE.MeshStandardMaterial({ color: 0xe9e8e3, roughness: .5, metalness: .05 });
+SUIT.visorGold = new THREE.MeshStandardMaterial({ color: 0xe0b04a, roughness: .12, metalness: .95, emissive: 0x3a2606, emissiveIntensity: .5, side: THREE.DoubleSide });   // gold film blocks the Sun's glare
+SUIT.sclera = new THREE.MeshStandardMaterial({ color: 0xf2efe8, roughness: .3 });
+// a box with rounded edges (backpack, chest box, boots)
+const rbox = (w, h, d, r) => {
+  const S = new THREE.Shape(), x0 = -w / 2 + r, y0 = -h / 2 + r, x1 = w / 2 - r, y1 = h / 2 - r;
+  S.moveTo(x0, -h / 2); S.lineTo(x1, -h / 2); S.quadraticCurveTo(w / 2, -h / 2, w / 2, y0); S.lineTo(w / 2, y1); S.quadraticCurveTo(w / 2, h / 2, x1, h / 2);
+  S.lineTo(x0, h / 2); S.quadraticCurveTo(-w / 2, h / 2, -w / 2, y1); S.lineTo(-w / 2, y0); S.quadraticCurveTo(-w / 2, -h / 2, x0, -h / 2);
+  const g = new THREE.ExtrudeGeometry(S, { depth: Math.max(.001, d - 2 * r), bevelEnabled: true, bevelThickness: r, bevelSize: r * .9, bevelSegments: 3, curveSegments: 4 });
+  g.translate(0, 0, -Math.max(.001, d - 2 * r) / 2); return g; };
+// a sleeve or leg: a tapering tube of cloth from 0 down to -len, with soft bumps, and accordion folds ("bellows") at a joint
+const sleeve = (rT, rB, len, at = -1, amp = 0, folds = 4) => {
+  const pts = [], N = 26;
+  for (let i = 0; i <= N; i++) {
+    const t = 1 - i / N; let r = rT + (rB - rT) * t;
+    if (at >= 0) { const u = (t - at) / .2; if (Math.abs(u) < 1) r += amp * Math.cos(u * Math.PI / 2) * (.5 + .5 * Math.cos(u * folds * Math.PI)); }
+    r *= 1 + .025 * Math.sin(t * 19 + rT * 40);
+    pts.push(new THREE.Vector2(r, -t * len)); }
+  pts.unshift(new THREE.Vector2(.001, -len)); pts.push(new THREE.Vector2(.001, 0));
+  return new THREE.LatheGeometry(pts, 18); };
 const ACC = ROLE.map(r => new THREE.MeshStandardMaterial({ color: r.col, roughness: .6 }));
 // original mission patch (role colour ring, "JAMT", role) and a name tape
 const BADGE = ROLE.map(r => {
@@ -3745,112 +4253,170 @@ function makeCrew(i, outfit = 'base') {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   const k4 = i % 4, acc = ACC[k4], badge = BADGE[k4];
   const skin = new THREE.MeshStandardMaterial({ color: SKIN[k4], roughness: .65 }); root.userData.skin = skin;
-  const fabric = k4 === 1 ? SUIT.orange : SM.eva;          // the engineer wears an orange suit
+  const faceM = new THREE.MeshStandardMaterial({ map: SUITTEX.face, roughness: .6 }); faceM.color = skin.color;   // same colour object: choosing a skin tone tints the face too
+  const fabric = k4 === 1 ? SUIT.orange : SM.eva, dust = k4 === 1 ? SUIT.orangeDust : SM.evaDust;   // the engineer wears an orange suit
   const evaSet = [], baseSet = [];
   const E = (geo, mat, x, y, z, p) => { const m = mk(geo, mat, x, y, z, p); evaSet.push(m); return m; };
   const U = (geo, mat, x, y, z, p) => { const m = mk(geo, mat, x, y, z, p); baseSet.push(m); return m; };
   const ringY = (R, t, mat, x, y, z, p, set) => { const m = set(new THREE.TorusGeometry(R, t, 6, 20), mat, x, y, z, p); m.rotation.x = Math.PI / 2; return m; };
   const plane = (w, h, mat, x, y, z, ry, p, set) => { const m = set(new THREE.PlaneGeometry(w, h), mat, x, y, z, p); m.rotation.y = ry; m.castShadow = false; return m; };
 
-  // head and face (seen through the helmet glass)
-  mk(new THREE.CylinderGeometry(.05, .06, .1, 8), skin, 0, 1.5, 0, body);
-  mk(new THREE.SphereGeometry(.115, 18, 14), skin, 0, 1.63, 0, body);
-  for (const s of [-1, 1]) mk(new THREE.SphereGeometry(.014, 8, 6), SUIT.eye, s * .04, 1.648, .1, body);
-  mk(new THREE.SphereGeometry(.02, 8, 6), skin, 0, 1.62, .112, body);
-  mk(new THREE.BoxGeometry(.045, .008, .01), SUIT.eye, 0, 1.585, .108, body);
-  U(new THREE.SphereGeometry(.122, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), SM.hair, 0, 1.645, -.012, body);
+  // head and face (seen through the helmet glass); an empty suit hides all of these
+  const headSet = [], Hd = (geo, mat, x, y, z) => { const m = mk(geo, mat, x, y, z, body); headSet.push(m); return m; };
+  Hd(new THREE.CylinderGeometry(.045, .055, .12, 12), skin, 0, 1.5, -.005);                                  // neck
+  const headM = Hd(new THREE.SphereGeometry(.115, 28, 20), faceM, 0, 1.63, 0); headM.scale.set(.92, 1.06, 1);
+  for (const s of [-1, 1]) {
+    Hd(new THREE.SphereGeometry(.0145, 12, 8), SUIT.sclera, s * .037, 1.648, .093).scale.set(1.25, .8, .6);
+    Hd(new THREE.SphereGeometry(.0078, 10, 8), SUIT.eye, s * .037, 1.648, .1015);
+    Hd(new THREE.SphereGeometry(.018, 8, 6), skin, s * .106, 1.628, -.005).scale.set(.45, 1.1, .8);         // ears
+  }
+  Hd(new THREE.ConeGeometry(.017, .045, 10), skin, 0, 1.625, .113).rotation.x = .25;                      // nose
+  // HAIR: six styles (the same ones you pick on the "choose your astronaut" screen), in any hair colour
+  const hairM = new THREE.MeshStandardMaterial({ color: 0x1d1611, roughness: .82, bumpMap: SUITTEX.clothBump, bumpScale: 4 });
+  const hair = new THREE.Group(); body.add(hair);
+  function setHair(style, col) {
+    if (col) hairM.color.set(col);
+    for (const m of [...hair.children]) { hair.remove(m); m.geometry.dispose(); }
+    const H = (geo, x, y, z, sx = 1, sy = 1, sz = 1) => { const m = mk(geo, hairM, x, y, z, hair); m.scale.set(sx, sy, sz); return m; };
+    const top = (th, r) => H(new THREE.SphereGeometry(r, 24, 12, 0, Math.PI * 2, 0, Math.PI * th), 0, 1.632, -.004, .95, 1.07, 1.04);
+    const back = (r, th0, th) => H(new THREE.SphereGeometry(r, 20, 10, Math.PI, Math.PI, Math.PI * th0, Math.PI * th), 0, 1.632, -.004, .95, 1.07, 1.04);
+    const st = style || 'short';
+    if (st === 'crop') { top(.33, .119); back(.119, .25, .3); }
+    else if (st === 'curly') { top(.4, .123); back(.123, .3, .28);
+      for (let k = 0; k < 18; k++) { const a = k * 2.4, t = .12 + (k % 6) * .07, r = .128;
+        if (Math.sin(a) > .55 && t > .3) continue;                                        // keep the forehead clear
+        H(new THREE.SphereGeometry(.03, 8, 6), Math.cos(a) * Math.sin(t * Math.PI) * r * .95, 1.632 + Math.cos(t * Math.PI) * r * 1.07, Math.sin(a) * Math.sin(t * Math.PI) * r * 1.04); } }
+    else if (st === 'puff') { top(.36, .122); back(.122, .3, .2); H(new THREE.SphereGeometry(.085, 18, 12), 0, 1.75, -.045, 1.1, .85, 1); }
+    else if (st === 'pony') { top(.4, .124); back(.124, .3, .32);
+      H(new THREE.SphereGeometry(.022, 8, 6), 0, 1.665, -.125);
+      H(new THREE.CapsuleGeometry(.028, .15, 4, 8), 0, 1.57, -.15).rotation.x = .3; }
+    else { top(.4, .124); back(.124, .3, .32);                                              // short, and side part with a swept fringe
+      if (st === 'side') H(new THREE.SphereGeometry(.055, 14, 8), .035, 1.725, .06, 1.5, .45, .9).rotation.z = -.35; }
+    hair.userData.style = st;
+  }
+  setHair(['puff', 'short', 'pony', 'crop', 'short'][i % 5], [0x1d1611, 0x3b2516, 0x1b1210, 0x120d0b, 0x1d1611][i % 5]);
 
   // ---------- cooling undersuit (inside the base) ----------
-  const torsoU = U(cap(.17, .36), SM.under, 0, 1.22, 0, body); torsoU.scale.z = .72;
-  U(new THREE.CylinderGeometry(.13, .15, .16, 12), SM.under, 0, .97, 0, body);
-  U(new THREE.CylinderGeometry(.15, .15, .035, 14), acc, 0, 1.04, 0, body);               // role-colour belt
-  ringY(.065, .014, acc, 0, 1.47, 0, body, U);                                              // collar
-  plane(.13, .033, badge.tape, .045, 1.33, .126, 0, body, U);
-  for (const s of [-1, 1]) U(new THREE.CylinderGeometry(.012, .012, .3, 6), SM.tube, s * .07, 1.2, .124, body);
+  // a human shape: chest wider than the waist, hips, sloping shoulders (lathe profile, flattened front to back)
+  const bodyPts = [[.001, .82], [.11, .825], [.15, .87], [.155, .95], [.142, 1.0], [.124, 1.07], [.128, 1.13], [.15, 1.22], [.168, 1.3], [.172, 1.36], [.15, 1.415], [.085, 1.45], [.05, 1.47], [.001, 1.475]];
+  const torsoU = U(new THREE.LatheGeometry(bodyPts.map(([r, y]) => new THREE.Vector2(r, y)), 24), SM.under, 0, 0, 0, body); torsoU.scale.z = .66;
+  U(new THREE.CylinderGeometry(.128, .13, .035, 18), acc, 0, 1.06, 0, body).scale.z = .68;  // role-colour belt
+  ringY(.06, .012, acc, 0, 1.455, 0, body, U);                                              // collar
+  plane(.11, .028, badge.tape, .055, 1.3, .104, .25, body, U);
+  for (const s of [-1, 1]) U(new THREE.CylinderGeometry(.009, .009, .3, 6), SM.tube, s * .065, 1.2, .1, body);
 
   // ---------- spacesuit ----------
-  const torsoE = E(cap(.21, .28), fabric, 0, 1.24, 0, body); torsoE.scale.set(1.1, 1, .82);
-  E(new THREE.BoxGeometry(.38, .3, .07), SUIT.hard, 0, 1.31, .15, body);                   // hard upper torso
-  plane(.13, .033, badge.tape, -.09, 1.42, .186, 0, body, E);
-  E(new THREE.CylinderGeometry(.17, .16, .2, 14), fabric, 0, .95, 0, body);
-  ringY(.18, .022, SUIT.ring, 0, 1.05, 0, body, E);                                         // waist bearing
-  ringY(.15, .026, SUIT.ring, 0, 1.47, 0, body, E);                                         // neck ring
-  // chest control box with a little screen and two knobs
-  E(new THREE.BoxGeometry(.22, .13, .12), SUIT.hard, 0, 1.19, .24, body);
-  E(new THREE.BoxGeometry(.15, .065, .01), SM.lens, 0, 1.2, .302, body);
-  for (const s of [-1, 1]) { const kn = E(new THREE.CylinderGeometry(.018, .018, .03, 10), SUIT.ring, s * .085, 1.27, .26, body); }
-  // hose connectors (blue = oxygen in, red = out) and hoses round to the backpack
-  [[-.09, SUIT.blue], [-.03, SUIT.blue], [.03, SUIT.red], [.09, SUIT.red]].forEach(([x, m]) => { const c = E(new THREE.CylinderGeometry(.022, .022, .045, 10), m, x, 1.08, .19, body); c.rotation.x = Math.PI / 2; });
+  // torso: a bulky pressure garment, broad at the chest, narrower at the waist
+  const torsoPts = [[.001, .8], [.12, .805], [.165, .85], [.18, .93], [.176, 1.0], [.184, 1.07], [.208, 1.16], [.228, 1.26], [.232, 1.35], [.214, 1.43], [.17, 1.48], [.14, 1.5], [.001, 1.5]];
+  const torsoE = E(new THREE.LatheGeometry(torsoPts.map(([r, y]) => new THREE.Vector2(r, y)), 24), fabric, 0, 0, 0, body); torsoE.scale.z = .74;
+  E(new THREE.TorusGeometry(.172, .014, 6, 24), fabric, 0, .99, 0, body).rotation.x = Math.PI / 2;          // waist fold
+  E(new THREE.TorusGeometry(.18, .016, 6, 24), SUIT.white, 0, .94, 0, body).rotation.x = Math.PI / 2;     // waist ring
+  plane(.12, .03, badge.tape, -.1, 1.385, .163, -.3, body, E);
+  ringY(.15, .024, SUIT.ring, 0, 1.47, 0, body, E);                                         // neck ring
+  // chest box (display and control module): switches, a small screen, a pressure gauge
+  const dcm = E(rbox(.2, .12, .085, .015), SUIT.white, 0, 1.2, .175, body);
+  E(new THREE.BoxGeometry(.11, .045, .006), SM.lens, -.02, 1.215, .218, body);
+  for (const x of [.055, .075]) E(new THREE.CylinderGeometry(.009, .009, .02, 8), SM.dark, x, 1.215, .222, body).rotation.x = Math.PI / 2;
+  for (const s of [-1, 1]) E(new THREE.CylinderGeometry(.016, .016, .035, 10), SUIT.ring, s * .07, 1.275, .19, body);
+  E(new THREE.BoxGeometry(.05, .07, .02), SUIT.white, 0, 1.31, .17, body);                   // strap to the box
+  // hose connectors (blue = oxygen in, red = out) and white hoses round to the backpack
+  [[-.085, SUIT.blue], [-.03, SUIT.blue], [.03, SUIT.red], [.085, SUIT.red]].forEach(([x, m]) => {
+    const c = E(new THREE.CylinderGeometry(.021, .024, .04, 12), m, x, 1.085, .152, body); c.rotation.x = Math.PI / 2;
+    E(new THREE.TorusGeometry(.021, .006, 6, 12), SUIT.ring, x, 1.085, .172, body); });
   for (const s of [-1, 1]) {
-    const curve = new THREE.CatmullRomCurve3([[s * .06, 1.08, .21], [s * .2, 1.02, .17], [s * .28, 1.12, .02], [s * .22, 1.3, -.17]].map(p => new THREE.Vector3(...p)));
-    E(new THREE.TubeGeometry(curve, 16, .016, 6), SUIT.cap, 0, 0, 0, body);
+    const curve = new THREE.CatmullRomCurve3([[s * .058, 1.085, .175], [s * .17, 1.04, .15], [s * .25, 1.1, .02], [s * .2, 1.25, -.17]].map(p => new THREE.Vector3(...p)));
+    E(new THREE.TubeGeometry(curve, 20, .017, 8), SUIT.white, 0, 0, 0, body);
   }
-  // helmet: clear bubble, hard shell at the back, gold sun visor half raised, two lamps
-  E(new THREE.SphereGeometry(.2, 24, 16), SUIT.glass, 0, 1.64, 0, body).castShadow = false;
-  E(new THREE.SphereGeometry(.212, 20, 12, Math.PI * .85, Math.PI * 1.3, 0, Math.PI * .78), SUIT.hard, 0, 1.64, 0, body);
-  E(new THREE.SphereGeometry(.214, 20, 8, Math.PI * .18, Math.PI * .64, Math.PI * .1, Math.PI * .27), SM.visor, 0, 1.64, 0, body);
-  E(new THREE.BoxGeometry(.03, .025, .3), acc, 0, 1.855, -.02, body);                       // role stripe on the helmet
+  // helmet: clear bubble, a white cloth hood over it, gold sun visor raised, small lamps
+  E(new THREE.SphereGeometry(.2, 28, 18), SUIT.glass, 0, 1.64, 0, body).castShadow = false;
+  E(new THREE.SphereGeometry(.222, 28, 16, Math.PI * .84, Math.PI * 1.32, 0, Math.PI * .66), fabric, 0, 1.64, 0, body);
+  E(new THREE.SphereGeometry(.226, 28, 10, Math.PI * .17, Math.PI * .66, Math.PI * .1, Math.PI * .19), SUIT.visorGold, 0, 1.64, 0, body);
+  E(new THREE.SphereGeometry(.228, 28, 4, Math.PI * .15, Math.PI * .7, Math.PI * .085, Math.PI * .03), SUIT.white, 0, 1.64, 0, body);   // visor frame
+  const stripe = E(new THREE.TorusGeometry(.2235, .007, 4, 24, Math.PI * .8), acc, 0, 1.64, 0, body); stripe.rotation.y = Math.PI / 2;   // role stripe over the top
   for (const s of [-1, 1]) {
-    E(new THREE.BoxGeometry(.05, .06, .09), SUIT.hard, s * .2, 1.72, .03, body);
-    const l = E(new THREE.CylinderGeometry(.02, .02, .01, 10), SUIT.lamp, s * .2, 1.72, .08, body); l.rotation.x = Math.PI / 2;
-    const ear = E(new THREE.CylinderGeometry(.035, .035, .03, 10), SM.dark, s * .118, 1.62, -.01, body); ear.rotation.z = Math.PI / 2;
+    E(rbox(.035, .045, .06, .01), SUIT.white, s * .215, 1.69, .04, body);
+    const l = E(new THREE.CylinderGeometry(.013, .013, .008, 10), SUIT.lamp, s * .215, 1.69, .072, body); l.rotation.x = Math.PI / 2;
   }
-  E(new THREE.SphereGeometry(.125, 16, 10, 0, Math.PI * 2, 0, Math.PI * .55), SUIT.cap, 0, 1.635, -.008, body);   // comm cap
-  E(new THREE.SphereGeometry(.127, 16, 10, Math.PI * 1.35, Math.PI * .3, 0, Math.PI * .55), SUIT.capBrown, 0, 1.635, -.008, body);
-  // life-support backpack: oxygen tanks, vents, role panel, radio antenna
-  E(new THREE.BoxGeometry(.5, .62, .25), SUIT.hard, 0, 1.26, -.31, body);
-  E(new THREE.BoxGeometry(.42, .13, .22), SUIT.hard, 0, 1.64, -.3, body);
-  E(new THREE.BoxGeometry(.32, .16, .012), acc, 0, 1.43, -.44, body);
-  for (let v = 0; v < 3; v++) E(new THREE.BoxGeometry(.3, .022, .012), SUIT.vent, 0, 1.06 + v * .05, -.44, body);
-  for (const s of [-1, 1]) E(new THREE.CylinderGeometry(.05, .05, .5, 12), SUIT.ring, s * .27, 1.25, -.3, body);
-  E(new THREE.CylinderGeometry(.008, .008, .26, 6), SM.dark, .16, 1.83, -.36, body);
+  const cc = E(new THREE.SphereGeometry(.123, 20, 10, 0, Math.PI * 2, 0, Math.PI * .34), SUIT.cap, 0, 1.64, -.006, body); cc.scale.set(.95, 1.06, 1.02);   // comm cap
+  E(new THREE.SphereGeometry(.124, 16, 10, Math.PI * .9, Math.PI * 1.2, Math.PI * .3, Math.PI * .3), SUIT.capBrown, 0, 1.64, -.006, body).scale.set(.95, 1.06, 1.02);
+  for (const s of [-1, 1]) E(new THREE.CylinderGeometry(.03, .03, .022, 12), SUIT.capBrown, s * .108, 1.625, -.005, body).rotation.z = Math.PI / 2;
+  // life-support backpack: a cloth-covered pack with a smaller oxygen-purge pack on top, straps, antenna
+  E(rbox(.46, .5, .2, .045), fabric, 0, 1.23, -.3, body);
+  E(rbox(.44, .17, .19, .04), fabric, 0, 1.585, -.3, body);
+  E(new THREE.BoxGeometry(.46, .012, .2), SUIT.white, 0, 1.495, -.3, body);
+  E(new THREE.BoxGeometry(.2, .1, .008), acc, 0, 1.3, -.402, body);
+  for (let v = 0; v < 3; v++) E(new THREE.BoxGeometry(.24, .016, .01), SUIT.vent, 0, 1.06 + v * .04, -.402, body);
+  for (const s of [-1, 1]) {
+    E(new THREE.BoxGeometry(.05, .3, .012), SUIT.white, s * .15, 1.32, -.198, body);          // shoulder straps
+    E(new THREE.CylinderGeometry(.012, .012, .05, 8), SUIT.ring, s * .2, 1.06, -.22, body);
+  }
+  E(new THREE.CylinderGeometry(.006, .006, .24, 6), SM.dark, .17, 1.78, -.36, body);
 
   // limbs: both outfits hang off the same joints so the poses work for either
   const limb = (side, y, isArm) => {
     const up = isArm ? .24 : .36, lo = isArm ? .22 : .34, r = isArm ? .055 : .075, R = isArm ? .08 : .1;
     const pivot = new THREE.Group(); pivot.position.set(side * (isArm ? .25 : .095), y, 0); body.add(pivot);
     const joint = new THREE.Group(); joint.position.y = -up - r; pivot.add(joint);
-    // undersuit
-    U(cap(r, up), SM.under, 0, -up / 2 - r * .5, 0, pivot);
-    U(cap(r * .9, lo), SM.under, 0, -lo / 2 - r * .4, 0, joint);
-    U(new THREE.CylinderGeometry(.014, .014, up, 6), SM.tube, 0, -up / 2 - r * .5, r * .97, pivot);
-    U(new THREE.CylinderGeometry(.014, .014, lo, 6), SM.tube, 0, -lo / 2 - r * .4, r * .9, joint);
-    if (isArm) { U(new THREE.SphereGeometry(r * 1.05, 10, 8), skin, 0, -lo - r * 1.4, 0, joint); if (side < 0) plane(.06, .06, badge.patch, side * (r + .004), -.07, 0, side * Math.PI / 2, pivot, U); }
-    else U(new THREE.BoxGeometry(.13, .08, .26), SM.boot, 0, -lo - r * 1.1, .05, joint);
+    // undersuit: tapered limbs with muscle shape, real hands, soft shoes
+    if (isArm) {
+      U(new THREE.SphereGeometry(.058, 14, 10), SM.under, -side * .014, -.008, 0, pivot).scale.set(1.05, .8, .9);           // shoulder
+      U(sleeve(.056, .043, .3, .45, .006, 1), SM.under, 0, 0, 0, pivot);                                          // upper arm (biceps)
+      U(sleeve(.045, .033, .25, .3, .006, 1), SM.under, 0, .03, 0, joint);                                        // forearm
+      U(new THREE.CylinderGeometry(.008, .008, .26, 6), SM.tube, 0, -.15, .052, pivot);
+      if (side < 0) plane(.055, .055, badge.patch, side * .058, -.08, 0, side * Math.PI / 2, pivot, U);
+      const hd = new THREE.Group(); hd.position.set(0, -.27, 0); joint.add(hd);
+      U(rbox(.028, .07, .06, .012), skin, 0, 0, 0, hd);
+      for (let k = 0; k < 4; k++) { const fg = U(new THREE.CapsuleGeometry(.0085, .036 + (k === 1 || k === 2 ? .008 : 0), 3, 6), skin, -side * .002, -.058, -.021 + k * .014, hd); fg.rotation.z = side * .2; }
+      U(new THREE.CapsuleGeometry(.009, .03, 3, 6), skin, -side * .01, -.015, .036, hd).rotation.x = .6;
+    } else {
+      U(sleeve(.09, .058, .48, .35, .006, 1), SM.under, 0, .06, 0, pivot);                                       // thigh
+      U(sleeve(.06, .04, .4, .35, .012, 1), SM.under, 0, .04, 0, joint);                                          // calf
+      U(new THREE.CylinderGeometry(.008, .008, .4, 6), SM.tube, 0, -.2, .075, pivot);
+      U(rbox(.09, .07, .24, .03), SM.boot, 0, -.42, .045, joint);                                                 // soft shoe
+    }
     // spacesuit
     if (isArm) {
-      const sh = E(new THREE.TorusGeometry(.085, .022, 6, 18), SUIT.ring, 0, 0, 0, pivot); sh.rotation.y = Math.PI / 2;
-      E(cap(R, up - .1), fabric, 0, -.14, 0, pivot);
-      E(new THREE.CylinderGeometry(R * 1.05, R * 1.05, .05, 14), acc, 0, -.08, 0, pivot);
-      if (side < 0) plane(.085, .085, badge.patch, side * (R * 1.06), -.17, 0, side * Math.PI / 2, pivot, E);
-      ringY(R * .95, .016, SUIT.ring, 0, .0, 0, joint, E);
-      E(cap(R * .9, lo - .1), fabric, 0, -.11, 0, joint);
-      E(new THREE.CylinderGeometry(.062, .052, .07, 12), SUIT.glove, 0, -.25, 0, joint);       // gauntlet
-      ringY(.066, .014, SUIT.ring, 0, -.215, 0, joint, E);
-      E(new THREE.BoxGeometry(.085, .1, .05), SUIT.glove, 0, -.31, 0, joint);
-      const f = E(new THREE.BoxGeometry(.08, .065, .042), SUIT.glove, 0, -.37, .008, joint); f.rotation.x = .35;
-      const th = E(new THREE.BoxGeometry(.026, .06, .03), SUIT.glove, -side * .045, -.31, .03, joint); th.rotation.z = -side * .4;
+      E(new THREE.SphereGeometry(.105, 16, 12), fabric, 0, -.02, 0, pivot).scale.set(1, .95, .95);            // shoulder
+      E(sleeve(.088, .076, .31), fabric, 0, .0, 0, pivot);
+      E(new THREE.CylinderGeometry(.087, .087, .028, 16), acc, 0, -.1, 0, pivot);                               // role band
+      if (side < 0) plane(.085, .085, badge.patch, side * .091, -.17, 0, side * Math.PI / 2, pivot, E);
+      E(sleeve(.08, .064, .23, .12, .013), fabric, 0, .035, 0, joint);                                          // forearm with elbow folds
+      ringY(.066, .012, SUIT.ring, 0, -.2, 0, joint, E);                                                      // wrist ring
+      E(new THREE.CylinderGeometry(.064, .074, .075, 14, 1, true), SUIT.glove, 0, -.235, 0, joint);            // glove cuff
+      const hand = new THREE.Group(); hand.position.set(0, -.3, 0); joint.add(hand);
+      E(rbox(.04, .08, .075, .016), SUIT.glove, 0, 0, 0, hand);                                                // palm (faces the body)
+      for (let k = 0; k < 4; k++) {
+        const fg = E(new THREE.CapsuleGeometry(.0105, .042, 3, 8), SUIT.glove, -side * .004, -.065, -.026 + k * .0175, hand);
+        fg.rotation.z = side * .25; fg.rotation.x = (k - 1.5) * .06; }
+      const th = E(new THREE.CapsuleGeometry(.012, .035, 3, 8), SUIT.glove, -side * .012, -.02, .045, hand); th.rotation.x = .6;
     } else {
-      E(cap(R, up - .12), fabric, 0, -.2, 0, pivot);
-      E(new THREE.CylinderGeometry(R * 1.05, R * 1.05, .06, 14), acc, 0, -.1, 0, pivot);
-      E(new THREE.BoxGeometry(.03, .11, .09), fabric, side * R, -.26, .01, pivot);           // thigh pocket
-      E(new THREE.BoxGeometry(.13, .14, .05), SUIT.hard, 0, -.01, R * .92, joint);            // knee pad
-      E(cap(R * .95, lo - .16), fabric, 0, -.15, 0, joint);
-      ringY(R * .95, .018, SUIT.ring, 0, -.3, 0, joint, E);
-      E(new THREE.CylinderGeometry(.094, .1, .12, 14), SUIT.hard, 0, -.36, 0, joint);         // boot
-      E(new THREE.BoxGeometry(.15, .06, .3), SUIT.sole, 0, -.42, .04, joint);
-      E(new THREE.BoxGeometry(.14, .06, .09), SUIT.hard, 0, -.37, .15, joint);
+      E(sleeve(.11, .094, .46), fabric, 0, .03, 0, pivot);
+      E(new THREE.CylinderGeometry(.103, .103, .03, 16), acc, 0, -.1, 0, pivot);                               // role band
+      E(rbox(.022, .11, .09, .008), fabric, side * .103, -.27, .01, pivot);                                         // thigh pocket
+      E(sleeve(.098, .084, .33, .1, .015), dust, 0, .045, 0, joint);                                            // lower leg with knee folds
+      // moon boot: a dusty cloth overshoe on a thick ribbed rubber sole
+      E(rbox(.15, .12, .27, .045), dust, 0, -.365, .035, joint);
+      E(rbox(.165, .05, .3, .02), SUIT.rubber, 0, -.42, .04, joint);
+      for (let k = 0; k < 7; k++) E(new THREE.BoxGeometry(.15, .012, .022), SUIT.rubber, 0, -.449, -.09 + k * .043, joint);
+      E(new THREE.SphereGeometry(.075, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), SUIT.rubber, 0, -.4, .14, joint).scale.set(1.05, .7, .9);   // toe cap
     }
     return { pivot, joint, side, isArm };
   };
   const legs = [limb(-1, .91, false), limb(1, .91, false)];
   const arms = [limb(-1, 1.42, true), limb(1, 1.42, true)];
+  // an EMPTY suit (on a rack, or plugged into a suitport) has no one inside: no head, no face, no hair
+  const capSet = evaSet.filter(m => m.material === SUIT.cap || m.material === SUIT.capBrown);
+  function showHead() {
+    const empty = !!root.userData.empty, eva = root.userData.outfit === 'eva';
+    headSet.forEach(m => m.visible = !empty); capSet.forEach(m => m.visible = eva && !empty); hair.visible = !empty && !eva;
+  }
+  function setEmpty(b) { root.userData.empty = !!b; showHead(); }
   function setOutfit(o) {
     const eva = o === 'eva';
     evaSet.forEach(m => m.visible = eva); baseSet.forEach(m => m.visible = !eva);
-    arms.forEach(a => a.pivot.position.x = a.side * (eva ? .3 : .25));
+    arms.forEach(a => a.pivot.position.x = a.side * (eva ? .3 : .205));
     legs.forEach(l => l.pivot.position.x = l.side * (eva ? .11 : .095));
-    root.userData.outfit = o;
+    root.userData.outfit = o; showHead();
   }
   setOutfit(outfit);
   let ph = Math.random() * 6;
@@ -3885,7 +4451,7 @@ function makeCrew(i, outfit = 'base') {
     arms.forEach((a, k) => { a.pivot.rotation.x = sh[k]; a.joint.rotation.x = el[k]; a.pivot.rotation.z = (k ? 1 : -1) * (root.userData.outfit === 'eva' ? .18 : .06); });
   }
   pose('stand', 0);
-  return { root, body, pose, setOutfit };
+  return { root, body, pose, setOutfit, setHair, setEmpty };
 }
 
 // Six-wheeled helper robot with a camera mast and solar wings. Front faces -X.
@@ -3990,7 +4556,7 @@ function makeRover() {
   mk(new THREE.CylinderGeometry(.025, .025, 1.1, 6).rotateZ(Math.PI / 2), SM.gold, 1.75, 1.9, -1.05, g);
   mk(new THREE.BoxGeometry(.25, .35, .5), RM.dark, 2.15, 1.5, 0, g);                          // chariot driving console
   const suits = [makeCrew(0, 'eva'), makeCrew(3, 'eva')];
-  const dockSuit = (c, k) => { c.root.position.set(1.62, 1.0, k ? .52 : -.52); c.root.rotation.y = Math.PI / 2; c.root.scale.setScalar(.92); c.pose('stand', 0); };
+  const dockSuit = (c, k) => { c.root.position.set(1.62, 1.0, k ? .52 : -.52); c.root.rotation.y = Math.PI / 2; c.root.scale.setScalar(.92); c.pose('stand', 0); c.setEmpty(true); };
   suits.forEach((c, k) => { dockSuit(c, k); g.add(c.root); });
   return { g, wheels, crew: cabinCrew, suits, dockSuit };
 }
@@ -4010,6 +4576,27 @@ scene.add(rover);
     b.position.set(x, H(x, z) + r * .5, z); b.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3); b.scale.y = .7;
     b.castShadow = b.receiveShadow = true; scene.add(b);
   } }
+// BOULDER FIELD: one instanced mesh (cheap to draw). Small near the base and the places so walking and driving stay clear.
+{ let s = 11; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const geo = new THREE.DodecahedronGeometry(1, 1), pa = geo.attributes.position;
+  for (let v = 0; v < pa.count; v++) { const f = .78 + hash(Math.round(pa.getX(v) * 9), Math.round(pa.getY(v) * 9 + pa.getZ(v) * 5)) * .38; pa.setXYZ(v, pa.getX(v) * f, pa.getY(v) * f * .72, pa.getZ(v) * f); }
+  geo.computeVertexNormals();
+  const N = 720, inst = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: 0x8d8a85, map: detail, roughness: .95, flatShading: true }), N);
+  const keep = J.SITES.map(st => kmToXZ(st.at)), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+  let n = 0;
+  for (let i = 0; i < N * 3 && n < N; i++) {
+    let x, z;
+    if (rnd() < .45 && smalls.length) { const c = smalls[Math.floor(rnd() * smalls.length)], a = rnd() * Math.PI * 2, d = c.R * (.95 + rnd() * .7); x = c.x + Math.cos(a) * d; z = c.z + Math.sin(a) * d; }
+    else { const a = rnd() * Math.PI * 2, d = RIM - 30 + rnd() ** .8 * 170; x = Math.cos(a) * d; z = Math.sin(a) * d; }
+    if (Math.abs(x) > SIZE / 2 - 4 || Math.abs(z) > SIZE / 2 - 4) continue;
+    const near = Math.min(Math.hypot(x - BX, z - BZ) - 6, Math.hypot(x - PX, z - PZ), ...keep.map(([kx, kz]) => Math.hypot(x - kx, z - kz) + 4));
+    if (near < 14) continue;
+    const r = (.12 + rnd() ** 3 * 1.9) * (near < 30 ? .45 : 1);
+    e.set(rnd() * 3, rnd() * 3, rnd() * 3); q.setFromEuler(e);
+    m4.compose(new THREE.Vector3(x, H(x, z) + r * .18, z), q, new THREE.Vector3(r, r * (.65 + rnd() * .4), r));
+    inst.setMatrixAt(n++, m4);
+  }
+  inst.count = n; inst.castShadow = inst.receiveShadow = true; scene.add(inst); }
 
 
 // ---------- landing pad and cargo lander (original design) ----------
@@ -4077,7 +4664,7 @@ function stepLander(now) {
   const blast = Math.round(36 * near * burn * (reduced() ? .3 : 1));          // exhaust hits the ground: grit sprays out flat and fast
   for (let i = 0; i < blast; i++) { const a = Math.random() * Math.PI * 2, sp = 9 + Math.random() * 20;
     kick(PX + Math.cos(a) * 1.4, PH + .15, PZ + Math.sin(a) * 1.4, Math.cos(a) * sp, .2 + Math.random() * 1.6, Math.sin(a) * sp, 3.5); }
-  if (t >= 1) { landerAnim = null; flame.visible = false; landerLight.intensity = 0; dust.material.opacity = 0; cargo.visible = !J.state.unloaded; }
+  if (t >= 1) { const wasCine = landerAnim.cine; landerAnim = null; flame.visible = false; landerLight.intensity = 0; dust.material.opacity = 0; cargo.visible = !wasCine && !J.state.unloaded; }
 }
 
 // ---------- sites, routes, labels ----------
@@ -4224,7 +4811,7 @@ function act(id, a, done) {
   const S = J.state;
   if (a.anim === 'down') { actAnim.from = rover.localToWorld(new THREE.Vector3(2.6, 0, 0)); actAnim.to = botPark.clone(); surfBot.g.visible = true; }
   else if (a.anim === 'up') { actAnim.from = botPark.clone(); actAnim.to = rover.localToWorld(new THREE.Vector3(2.6, 0, 0)); }
-  else if (!a.anim) crewRover.suits.forEach((c, k) => { c.root.position.set(2.9 + k * .4, 0, k ? 1.3 : -1.1); c.root.rotation.y = k ? .6 : 2.4; c.root.scale.setScalar(1); });
+  else if (!a.anim) crewRover.suits.forEach((c, k) => { c.root.position.set(2.9 + k * .4, 0, k ? 1.3 : -1.1); c.root.rotation.y = k ? .6 : 2.4; c.root.scale.setScalar(1); c.setEmpty(false); });
   if (a.anim === 'heat') actAnim.kw = J.HEAT[S.fh.heat].kw;
 }
 function stepAct(now, dt) {
@@ -4619,6 +5206,7 @@ function stepPick(now) {
 // ---------- state -> scene ----------
 function update(s) {
   const dark = J.isDark(s.day);
+  J.roverAt = s.rover && s.rover.at; try { setObjective(J.objective); } catch (e) {}
   M.panel.color.setHex(s.dust ? 0x6a655c : 0x14204a); M.panel.metalness = s.dust ? .2 : .7;   // a dusty array looks grey
   setSky(s.day, dark);                              // in a dark spell the Sun sits just below the local horizon
   sun.intensity = dark ? 0 : 3.4;
@@ -4646,6 +5234,58 @@ function update(s) {
   showRig(s);
 }
 
+// ---------- CINEMATIC SHOTS: the story scenes play over the real 3D Moon ----------
+// The game's own renderer moves behind the subtitles and a film camera flies slow shots that match what the crew
+// is talking about (the landing, Earth, a storm, the ridge, the ice crater...). When the scene ends it moves back.
+const CINE = { on: false, shot: '', t0: 0, cam: new THREE.PerspectiveCamera(34, 16 / 9, .1, 6000), host: null, prev: null, w: 0, h: 0 };
+const cv = (x, z, up) => new THREE.Vector3(x, H(x, z) + up, z);
+const orbitShot = (c, r, h, a0, spd, lookUp) => t => { const a = a0 + t * spd; return [cv(c.x + Math.cos(a) * r, c.z + Math.sin(a) * r, h), new THREE.Vector3(c.x, H(c.x, c.z) + lookUp, c.z)]; };
+const B0 = () => new THREE.Vector3(BX, BH, BZ);
+const SHOTS = {
+  base: t => orbitShot(B0(), 30, 10, BASE_ANG + .5, .03, 2)(t),
+  landing: t => { const d = new THREE.Vector3(PX - BX, 0, PZ - BZ).normalize(), a = Math.atan2(d.z, d.x) + .45 + t * .015;   // beyond the pad, looking back at the base
+    return [cv(PX + Math.cos(a) * 26, PZ + Math.sin(a) * 26, 4 + t * .2), new THREE.Vector3(PX, PH + 3 + lander.position.y * .8, PZ)]; },
+  earth: t => { const e = EARTH.mesh.position, d = e.clone().sub(B0()).setY(0).normalize(), c = B0().addScaledVector(d, -34 - t * .6);
+    const p = cv(c.x, c.z, 6); return [p, p.clone().lerp(e, .02).add(new THREE.Vector3(0, -.6, 0))]; },
+  sun: t => { const d = sun.position.clone().setY(0).normalize(), c = B0().addScaledVector(d, -30 - t * .5);
+    const p = cv(c.x, c.z, 5); return [p, B0().addScaledVector(sun.position.clone().normalize(), 600)]; },
+  ridge: t => orbitShot(SITE_POS.ridge, 18, 7, RIDGE_ANG + 1.2, .04, 2.5)(t),
+  ice: t => orbitShot(SITE_POS.ice, 26, 16, BASE_ANG + 2.4, .03, -3)(t),
+  boulders: t => orbitShot(SITE_POS.boulders, 14, 4, BASE_ANG - 1, .05, .8)(t),
+  fresh: t => orbitShot(SITE_POS.fresh, 13, 5, BASE_ANG + .4, .05, .3)(t),
+  rover: t => { const c = rover.position.clone(); return orbitShot(c, 9, 3, BASE_ANG + 2.6, .07, 1.2)(t); },
+  crater: t => { const a = BASE_ANG + .25 + t * .012, p = cv(BX + Math.cos(a) * 48, BZ + Math.sin(a) * 48, 34 - t * .3);
+    return [p, new THREE.Vector3(0, H(0, 0) + 10, 0).lerp(B0(), .35)]; }
+};
+function cineSize() {
+  const w = (CINE.host && CINE.host.clientWidth) || innerWidth, h = (CINE.host && CINE.host.clientHeight) || innerHeight;
+  if (w === CINE.w && h === CINE.h) return; CINE.w = w; CINE.h = h;
+  renderer.setSize(w, h, false); CINE.cam.aspect = w / h; CINE.cam.updateProjectionMatrix();
+}
+function cineStart(host) {
+  if (CINE.on) cineEnd();
+  CINE.on = true; CINE.host = host; CINE.w = CINE.h = 0; CINE.shot = '';
+  CINE.prev = { lv: lander.visible, cv: cargo.visible, ly: lander.position.y };
+  host.appendChild(renderer.domElement); cineSize();
+}
+function cineShot(name) {
+  if (!CINE.on) return; if (!SHOTS[name]) name = 'base';
+  if (CINE.shot === name) return; CINE.shot = name; CINE.t0 = performance.now();
+  if (name === 'landing' && !landerAnim) { lander.visible = true; cargo.visible = false; landerAnim = { t0: performance.now(), cine: true }; }   // a lander comes down
+}
+function cineFrame(now) {
+  cineSize();
+  const [p, l] = (SHOTS[CINE.shot] || SHOTS.base)((now - CINE.t0) / 1000);
+  CINE.cam.position.copy(p); CINE.cam.lookAt(l);
+  renderer.render(scene, CINE.cam);
+}
+function cineEnd() {
+  if (!CINE.on) return; CINE.on = false; CINE.shot = '';
+  if (landerAnim && landerAnim.cine) landerAnim = null;
+  if (CINE.prev) { flame.visible = false; landerLight.intensity = 0; dust.material.opacity = 0; lander.position.y = CINE.prev.ly; lander.visible = CINE.prev.lv; cargo.visible = CINE.prev.cv; }
+  wrap.prepend(renderer.domElement); resize();
+}
+
 // ---------- loop ----------
 const tmp = new THREE.Vector3();
 let lastT = performance.now();
@@ -4663,15 +5303,69 @@ function watchSpeed(raw) {
   QUAL.ema += (raw / 1000 - QUAL.ema) * .05;
   if (QUAL.ema > 1 / 40) { if ((QUAL.slow += raw) > 3000) { QUAL.slow = 0; QUAL.ema = 1 / 60; setQuality(QUAL.lvl + 1); } } else QUAL.slow = 0;
 }
+// OBJECTIVE ARROW: a big yellow arrow hovering over the place for the next task, with a light beam down to the ground,
+// seen through hills (like a waypoint). When the place is off screen, an arrow at the edge of the screen points to it.
+const OBJ = { at: undefined, g: new THREE.Group(), tag: document.createElement('div'), edge: document.createElement('div'), pos: new THREE.Vector3(), text: '' };
+{
+  const mat = o => new THREE.MeshBasicMaterial({ color: 0xffc53d, transparent: true, opacity: o, depthTest: false, depthWrite: false });
+  const arrow = new THREE.Group();
+  const head = new THREE.Mesh(new THREE.ConeGeometry(1.5, 2.2, 4), mat(.95)); head.rotation.x = Math.PI; arrow.add(head);
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(.7, 1.8, .7), mat(.95)); shaft.position.y = 1.9; arrow.add(shaft);
+  arrow.position.y = 7; OBJ.arrow = arrow; OBJ.g.add(arrow);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, 6, 8, 1, true), mat(.35)); beam.position.y = 3; OBJ.g.add(beam);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.4, .14, 6, 40), mat(.8)); ring.rotation.x = Math.PI / 2; ring.position.y = .2; OBJ.ring = ring; OBJ.g.add(ring);
+  OBJ.g.traverse(o => { o.renderOrder = 20; o.castShadow = false; });
+  OBJ.g.visible = false; scene.add(OBJ.g);
+  OBJ.tag.className = 'objTag'; OBJ.edge.className = 'objEdge'; OBJ.edge.innerHTML = '<i></i><b></b>';
+  OBJ.tag.style.display = OBJ.edge.style.display = 'none'; wrap.appendChild(OBJ.tag); wrap.appendChild(OBJ.edge);
+}
+function setObjective(o) {
+  const at = o && o.at && !(o.at !== 'base' && J.roverAt === o.at) ? o.at : null;
+  OBJ.text = o ? o.text : '';
+  if (at === OBJ.at) return;
+  OBJ.at = at;
+  if (!at) { OBJ.g.visible = false; return; }
+  const [x, z] = at === 'base' ? [BX, BZ] : siteXZ(at);
+  OBJ.pos.set(x, H(x, z), z); OBJ.g.position.copy(OBJ.pos); OBJ.g.visible = true;
+  OBJ.name = at === 'base' ? 'Base' : J.SITES.find(s => s.id === at).name;
+}
+function stepObjective(now) {
+  const on = OBJ.g.visible && !CINE.on;
+  if (!on) { OBJ.tag.style.display = OBJ.edge.style.display = 'none'; return; }
+  const d = camera.position.distanceTo(OBJ.pos), k = Math.max(.7, Math.min(5, d / 38));      // stays a readable size near and far
+  OBJ.g.scale.setScalar(k);
+  OBJ.arrow.position.y = 7 + Math.sin(now / 320) * .8;
+  OBJ.ring.scale.setScalar(1 + .25 * ((now / 1400) % 1)); OBJ.ring.material.opacity = .8 * (1 - (now / 1400) % 1);
+  const w = wrap.clientWidth, h = wrap.clientHeight, p = tmp.copy(OBJ.pos); p.y += 10 * k; p.project(camera);
+  let sx = (p.x * .5 + .5) * w, sy = (-p.y * .5 + .5) * h;
+  const behind = p.z > 1, inView = !behind && sx > 40 && sx < w - 40 && sy > 70 && sy < h - 90;
+  const from = eva.on ? eva.pos : rover.position, km = (Math.hypot(OBJ.pos.x - from.x, OBJ.pos.z - from.z) / KM).toFixed(1);   // distance from you (or the rover)
+  if (inView) {
+    OBJ.tag.style.display = ''; OBJ.edge.style.display = 'none';
+    OBJ.tag.innerHTML = `▼ ${OBJ.name}<small>${OBJ.text.replace(/</g, '&lt;')}</small>`;
+    OBJ.tag.style.transform = `translate(${sx}px, ${Math.max(sy, 130)}px) translate(-50%, -100%)`;   // never under the top bar
+  } else {
+    OBJ.tag.style.display = 'none'; OBJ.edge.style.display = '';
+    let dx = sx - w / 2, dy = sy - h / 2; if (behind) { dx = -dx; dy = -dy; }
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) dy = 1;
+    const top = 120, bot = h - 150, cy = (top + bot) / 2;                   // stay clear of the top bar and the hotbar
+    const sc = Math.min((w / 2 - 50) / Math.abs(dx || 1e-6), ((bot - top) / 2) / Math.abs(dy || 1e-6));
+    const ex = w / 2 + dx * sc, ey = cy + dy * sc, ang = Math.atan2(dy, dx);
+    OBJ.edge.style.transform = `translate(${ex}px, ${ey}px)`; OBJ.edge.firstChild.style.transform = `rotate(${ang}rad)`;
+    OBJ.edge.lastChild.textContent = OBJ.at === 'base' && J.roverAt === 'base' && !eva.on ? `${OBJ.name} · go inside` : `${OBJ.name} · ${km} km`;
+  }
+}
 function frame(now) {
   requestAnimationFrame(frame);
   watchSpeed(now - lastT);
   const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
   if (walkWrap.style.display !== 'none') frameWalk(now, dt);
+  if (CINE.on) { stepLander(now); stepFx(now, dt); cineFrame(now); return; }
   if (wrap.style.display === 'none') return;
   if (eva.on) stepEVA(dt); else controls.update();
   stepDrive(now); stepAct(now, dt); stepLander(now); stepFx(now, dt);
   crewRover.crew.forEach(c => c.pose('sit', dt));
+  stepObjective(now);
   renderer.render(scene, camera);
   const w = wrap.clientWidth, h = wrap.clientHeight;
   for (const l of labels) {
@@ -4705,7 +5399,7 @@ setTimeout(function drawMap() {
   }
   g.putImageData(im, 0, 0); MAP_IMG = cv.toDataURL();
 }, 1200);
-window.JAMT3D = { get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
+window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get cineOn() { return CINE.on; }, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
   get mapImg() { return MAP_IMG; }, evaKm: () => eva.on ? xzToKm(eva.pos.x, eva.pos.z) : null };
 // =====================================================================
 //  INSIDE THE BASE: first-person walk-through
@@ -5412,7 +6106,7 @@ const rackSuits = [-1.6, 1.6].map((x, k) => {
   for (let i = 0; i < 4; i++) B(.08, .05, .02, WM.cellOn, x - .2 + i * .13, 2.06, 6.92);
   sign(`EVA ${k + 1} · O₂ 100%`, '#5ee08a', x, 2.62, 6.93, Math.PI, .8, .18);
   C(.03, .55, ALM.hose, x + .2, 1.85, 6.85, 'y');
-  const c = makeCrew(k, 'eva'); c.root.position.set(x, .02, 6.45); c.root.rotation.y = Math.PI; c.pose('stand', 0); ws.add(c.root);
+  const c = makeCrew(k, 'eva'); c.root.position.set(x, .02, 6.45); c.root.rotation.y = Math.PI; c.pose('stand', 0); c.setEmpty(true); ws.add(c.root);
   return c;
 });
 // the Commander's suit: hangs in a frame by the side wall of the airlock
@@ -5424,7 +6118,7 @@ const tapeCanvas = (text, hex) => { const t = document.createElement('canvas'); 
 const ME_TAPE = new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(tapeCanvas('CDR', '#2a5bd7')), roughness: .7 }); ME_TAPE.map.colorSpace = THREE.SRGBColorSpace;
 const dressAsMe = (root, acc, tape) => root.traverse(o => { if (!o.isMesh) return; if (o.material === ACC[0]) o.material = acc; else if (o.material === BADGE[0].tape) o.material = tape; });
 const spareSuit = new THREE.Group(); ws.add(spareSuit);
-{ const c = makeCrew(4, 'eva'); c.pose('stand', 0); spareSuit.add(c.root);
+{ const c = makeCrew(4, 'eva'); c.pose('stand', 0); c.setEmpty(true); spareSuit.add(c.root);
   dressAsMe(c.root, ME_ACC, ME_TAPE); spareSuit.userData.skin = c.root.userData.skin;
   c.root.position.set(-2.0, .02, 3.3); c.root.rotation.y = Math.PI / 2;
   for (const dz of [-.45, .45]) B(.07, 2.4, .07, ALM.frame, -2.35, 1.2, 3.3 + dz);
@@ -6115,6 +6809,7 @@ function frameWalk(now, dt) {
 function setLook(L, name) {
   if (!L) return;
   ME_ACC.color.set(L.stripe); me.root.userData.skin.color.set(L.skin); if (spareSuit.userData.skin) spareSuit.userData.skin.color.set(L.skin);
+  me.setHair(L.style, L.hair);
   ME_TAPE.map.image = tapeCanvas(name || 'CDR', L.stripe); ME_TAPE.map.needsUpdate = true;
 }
 setTimeout(() => { if (J.pilotLook) setLook(J.pilotLook, J.callsign); }, 0);
@@ -6132,7 +6827,7 @@ function preview(canvas) {
   const acc = new THREE.MeshStandardMaterial({ color: 0x2a5bd7, roughness: .55 });
   const tape = new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(tapeCanvas('CDR', '#2a5bd7')), roughness: .7 }); tape.map.colorSpace = THREE.SRGBColorSpace;
   let c = null, wear = null, look = null, ang = .5, spin = .25, raf = 0, last = performance.now(), drag = null;
-  const build = w => { if (c) sc.remove(c.root); wear = w; c = makeCrew(4, w); dressAsMe(c.root, acc, tape); c.pose('stand', 0); sc.add(c.root); if (look) c.root.userData.skin.color.set(look.skin); };
+  const build = w => { if (c) sc.remove(c.root); wear = w; c = makeCrew(4, w); dressAsMe(c.root, acc, tape); c.pose('stand', 0); sc.add(c.root); if (look) { c.root.userData.skin.color.set(look.skin); c.setHair(look.style, look.hair); } };
   const loop = now => {
     raf = requestAnimationFrame(loop); const dt = Math.min(.05, (now - last) / 1000); last = now;
     const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
@@ -6146,11 +6841,41 @@ function preview(canvas) {
   canvas.addEventListener('pointerup', () => { drag = null; });
   raf = requestAnimationFrame(loop);
   return {
-    set(L, name, w) { look = L; if (w !== wear) build(w); acc.color.set(L.stripe); c.root.userData.skin.color.set(L.skin); tape.map.image = tapeCanvas(name || 'CDR', L.stripe); tape.map.needsUpdate = true; },
+    set(L, name, w) { look = L; if (w !== wear) build(w); acc.color.set(L.stripe); c.root.userData.skin.color.set(L.skin); c.setHair(L.style, L.hair); tape.map.image = tapeCanvas(name || 'CDR', L.stripe); tape.map.needsUpdate = true; },
+    face(a, still) { ang = a; if (still) spin = 0; },                                      // turn to an angle (for screenshots)
     stop() { cancelAnimationFrame(raf); r.dispose(); try { r.forceContextLoss(); } catch (e) {} }
   };
 }
-window.JAMTWALK = { setLook, preview, setPR: pr => { wr.setPixelRatio(pr); resizeWalk(); }, get solids() { return SOLIDS; }, canStand, onFloor, buildInSolids, update: updateWalk, sleep, suitUp, crew: CREW, me, walk, uses: USES };
+// head-and-shoulders portraits for the radio box: the real 3D astronaut, drawn once into a picture and kept
+const PORT = { r: null, cache: {} };
+const PORT_I = { ama: 0, leo: 1, mira: 2, kofi: 3, you: 4, earth: 2 };
+function portrait(id, L) {
+  const key = id + '|' + (L ? [L.skin, L.hair, L.style, L.stripe].join(',') : '');
+  if (PORT.cache[key]) return PORT.cache[key];
+  if (!(id in PORT_I)) return null;
+  try {
+    if (!PORT.r) { const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+      PORT.r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true });
+      PORT.r.setSize(256, 256, false); PORT.r.outputColorSpace = THREE.SRGBColorSpace; PORT.r.toneMapping = THREE.ACESFilmicToneMapping; PORT.r.toneMappingExposure = 1.2; }
+    const sc = new THREE.Scene(), earth = id === 'earth';
+    sc.add(new THREE.HemisphereLight(0xdfe8ff, 0x2a2420, 1.2));
+    const key = new THREE.DirectionalLight(0xfff1dc, 2.8); key.position.set(1.6, 2.4, 2.6); sc.add(key);
+    const rim = new THREE.DirectionalLight(earth ? 0x5ec8ff : 0x9fc4ff, 2); rim.position.set(-2.2, 2, -1.5); sc.add(rim);
+    const c = makeCrew(PORT_I[id], earth ? 'base' : 'eva'); c.pose('stand', 0); sc.add(c.root);
+    if (L) { c.root.userData.skin.color.set(L.skin); c.setHair(L.style, L.hair); }
+    if (id === 'you') { const acc = new THREE.MeshStandardMaterial({ color: (L && L.stripe) || 0x2a5bd7, roughness: .55 });
+      const tape = new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(tapeCanvas(J.callsign || 'CDR', (L && L.stripe) || '#2a5bd7')), roughness: .7 }); tape.map.colorSpace = THREE.SRGBColorSpace;
+      dressAsMe(c.root, acc, tape); }
+    c.root.rotation.y = .42;
+    const cam = new THREE.PerspectiveCamera(26, 1, .05, 10);
+    cam.position.set(.34, earth ? 1.68 : 1.7, earth ? 1.08 : 1.42); cam.lookAt(.02, earth ? 1.6 : 1.6, 0);
+    PORT.r.render(sc, cam);
+    const url = PORT.r.domElement.toDataURL('image/png');
+    sc.traverse(o => { if (o.geometry && o.geometry.dispose) o.geometry.dispose(); });
+    return PORT.cache[key] = url;
+  } catch (e) { return null; }
+}
+window.JAMTWALK = { setLook, preview, portrait, setPR: pr => { wr.setPixelRatio(pr); resizeWalk(); }, get solids() { return SOLIDS; }, canStand, onFloor, buildInSolids, update: updateWalk, sleep, suitUp, crew: CREW, me, walk, uses: USES };
 J.ready3D();
 </script>
 </body>

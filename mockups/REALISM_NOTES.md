@@ -158,3 +158,59 @@ There are eight original astronauts, each with a real job and one small specialt
 | Malik | Life-Support Specialist | 25% less daily water loss |
 
 Skin, hair and suit-stripe colour are your choice. Your Commander in the base wears your look and a name tape with your callsign.
+
+## Realistic outside view (ground detail)
+
+The big shapes still come from NASA LRO LOLA heights (205 m per point). Detail smaller than that is added on top:
+
+| What | Why it's real |
+|---|---|
+| ~100 small craters, each a bowl with a raised bright rim | Real lunar ground is covered in craters of every size; the data grid is too coarse to show the small ones. |
+| ~700 boulders, more of them on crater rims | Impacts throw out blocks of rock (ejecta), so boulders gather around craters. Kept small near the base and the places so walking and driving stay clear. |
+| Grainy regolith texture with pebbles, also used as a bump map | Moon dust is fine and sharp; with the Sun this low, every grain and pebble casts a tiny shadow. |
+| Light and dark patches | Fresher, brighter highland dust next to older, darker (space-weathered) ground. |
+| Coloured stars in a black sky | No air, so no blue sky; stars are white, blue-white and orange depending on how hot they are. |
+
+## Realistic spacesuits
+
+Every astronaut in the game (the walker outside, the suit racks, the crew, the "choose your astronaut" turntable) uses one suit model, now built like a real moonwalking suit, all in code:
+
+| Part | Real-world reason |
+|---|---|
+| White quilted cloth with folds and stitched seams | The outer layer is Beta cloth (fireproof glass-fibre weave) that wrinkles at every bend. |
+| Accordion folds at elbows and knees | Pressurised suits need "bellows" joints, or the limbs would be too stiff to bend. |
+| Grey dust on the lower legs and boots | Moon dust is sharp and clingy; Apollo suits came back grey from the knees down. |
+| Cloth hood over the clear bubble helmet, gold visor | The gold film blocks the Sun's glare and heat; the hood protects the bubble. |
+| Chest control box, blue and red hose connectors | Oxygen goes in through the blue connectors, used gas comes out of the red. |
+| Two-part backpack | Life support below, an emergency oxygen-purge pack on top. |
+| Ribbed rubber moon boots, gloves with fingers | Overshoes grip loose dust; gloves are thick but still let astronauts hold tools. |
+
+## Bodies, hair, empty suits and phones
+
+- **Body shape:** the cooling undersuit now has a human shape (chest wider than the waist, hips, shoulders), tapered arms and legs with muscle curves, hands with fingers, and soft shoes.
+- **Hair:** the six styles you pick (short, crop, side part, ponytail, puff, curly) now show on your 3D astronaut and on the turntable, in your hair colour. The other crew each have their own style.
+- **Empty suits:** suits hanging on the airlock racks, the spare suit and the suits plugged into the rover's suitports have no one inside, just like real stored suits. When the crew go out from the rover, the suits fill up.
+- **Phones:** the game plays sideways. Held upright, a phone shows "Turn your phone sideways" with a **Play full screen** button (Android also locks the screen sideways; iPhones can't lock, so you just turn the phone) and a "Play upright anyway" link.
+
+## Story scenes you can see, and a how-to-play tour
+
+- **Story scenes play over the live 3D Moon.** A film camera flies slow shots that match each line: the lander touching down on the pad, Earth above the crater rim, the Sun during storms, the solar mast on the ridge, the ice crater, the rover, the boulders, the base. The subtitles sit at the bottom, with letterbox bars and a "🎥 Live 3D" label naming the place.
+- **How to play:** a 12-step guided tour lights up each part of the screen (status bars, day and Sun, mission card, the 3D view, Drive, Work, Enter base, Spacewalk, Comm, End day, emergencies). It plays once after the first countdown, and the ❓ button in the top bar replays it any time.
+
+## Radio calls look like a game dialog
+- When someone talks to you, a box shows a big picture of them on the left, their name on a tab above, and their words in a dark grey panel.
+- The picture is the real 3D astronaut from the game (helmet, suit colour, name tape), drawn once and reused. Mission Control's Esi is shown without a helmet.
+- On phones and small windows the box gets smaller and keeps the name inside it.
+- The how-to-play tour now only points at things you can actually see. If a screen like the mission map is covering the game, the tour card sits in the middle instead. The tour also points at the hotbar buttons correctly now.
+
+## A real map and a tidier menu
+- The mission map is now drawn from the same real NASA LOLA heights as the 3D world, seen from straight above. It is shaded like a relief map, with 100 m contour lines and the crater floor that never sees the Sun.
+- It has a 1 km grid with letters and numbers, a compass (north points away from the south pole), a 2 km scale bar and a map key. Each mission has a pin with its name and place, and places without a mission are labelled too.
+- The map is drawn a few rows at a time in the background, so the game never freezes. Until it is ready, the old picture shows.
+- The settings menu has labelled rows (surface view, detail level, crew voices). The duplicate "Mission map" button is gone because the 🗺 button already opens it. The storm demo sits under "For judges / demo".
+
+## A yellow arrow to the next task, and a bigger mission map
+- The game works out one "next thing to do" and where it is: today's training task in Chapter 1, then the ice run, the cargo lander, or the next place to visit. The minimap "!", the mission button and the 3D arrow all use it.
+- In the 3D view, a big yellow arrow bobs over that place with a beam and a pulsing ring on the ground, and can be seen through hills. When the place is off screen, an arrow at the edge of the screen points to it with the distance.
+- The Current Mission card is now folded into a small button above the minimap that shows the next task. Tap it (or press M) to open all the goals.
+- On the mission map, the map gets most of the screen. The chosen mission shows in a small bar under it with Details and Start buttons. Details slides the full mission card in from the right.
