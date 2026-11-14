@@ -837,7 +837,8 @@
     max-width: calc(100% - 12px); gap: 4px !important; padding: 4px !important; z-index: 8; }
   .hk { width: 50px !important; height: 44px !important; font-size: 9.5px !important; } .hk .ic { font-size: 16px !important; }
   .dialog { position: fixed !important; left: 50% !important; right: auto !important; bottom: 56px !important; transform: translateX(-50%) !important;
-    width: min(520px, calc(100% - 480px)) !important; min-width: 290px !important; max-height: 52vh; overflow: auto; z-index: 9; }
+    width: min(520px, max(290px, calc(100% - 320px))) !important; min-width: 0 !important; max-height: 62vh; overflow: auto; z-index: 9; }
+  .dialog .dlgText { font-size: 12.5px; line-height: 1.35; min-height: 0; } .dialog .dlgMeta { margin-top: 2px; } .dialog .replies { margin-top: 4px; }
   .dialog .portrait .ava { width: 36px !important; height: 36px !important; }
   #toasts { position: fixed !important; top: 44px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); width: min(360px, 46%) !important; }
   #walkNav { bottom: 56px !important; }
