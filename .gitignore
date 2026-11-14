@@ -1,0 +1,5 @@
+# local backups and builds (not shared)
+mockups/index.before-*.html
+*.zip
+*.exe
+.claude/
