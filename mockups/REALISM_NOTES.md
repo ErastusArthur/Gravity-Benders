@@ -196,3 +196,9 @@ Every astronaut in the game (the walker outside, the suit racks, the crew, the "
 
 - **Story scenes play over the live 3D Moon.** A film camera flies slow shots that match each line: the lander touching down on the pad, Earth above the crater rim, the Sun during storms, the solar mast on the ridge, the ice crater, the rover, the boulders, the base. The subtitles sit at the bottom, with letterbox bars and a "🎥 Live 3D" label naming the place.
 - **How to play:** a 12-step guided tour lights up each part of the screen (status bars, day and Sun, mission card, the 3D view, Drive, Work, Enter base, Spacewalk, Comm, End day, emergencies). It plays once after the first countdown, and the ❓ button in the top bar replays it any time.
+
+## Radio calls look like a game dialog
+- When someone talks to you, a box shows a big picture of them on the left, their name on a tab above, and their words in a dark grey panel.
+- The picture is the real 3D astronaut from the game (helmet, suit colour, name tape), drawn once and reused. Mission Control's Esi is shown without a helmet.
+- On phones and small windows the box gets smaller and keeps the name inside it.
+- The how-to-play tour now only points at things you can actually see. If a screen like the mission map is covering the game, the tour card sits in the middle instead. The tour also points at the hotbar buttons correctly now.

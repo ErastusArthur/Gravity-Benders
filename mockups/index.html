@@ -557,6 +557,32 @@
   .dialog .dlgText { margin: 2px 0 0; font-size: 14px; line-height: 1.5; color: #eef2fa; min-height: 2.9em; }
   .dialog .dlgX { position: absolute; top: 6px; right: 6px; font-size: 11px; padding: 1px 6px; }
   .dialog .meta { font-size: 11px; color: var(--muted); }
+  /* game-style radio call: a big portrait on the left, the name on a tab above, the words in a dark grey panel */
+  .dialog { --who: #5ec8ff; align-items: stretch; gap: 0; padding: 0; border-radius: 10px; overflow: visible; margin-top: 22px;
+    background: linear-gradient(180deg, rgba(44,50,60,.94), rgba(28,33,42,.94)); border: 1px solid rgba(214,224,240,.32); box-shadow: 0 14px 34px rgba(0,0,0,.55); }
+  .dialog .portrait { width: 104px; margin: -22px 0 -1px -1px; border-radius: 10px 0 0 10px; overflow: hidden; border: 1px solid rgba(214,224,240,.32); border-right: 0;
+    background: radial-gradient(120% 90% at 50% 20%, #5b6170 0%, #2a2e36 55%, #15181e 100%); display: flex; align-items: flex-end; justify-content: center; box-shadow: inset 0 -18px 24px rgba(0,0,0,.35); }
+  .dialog .portrait::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--who) 55%, transparent); border-radius: inherit; pointer-events: none; }
+  .dialog .portrait .pImg { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; }
+  .dialog .portrait .ava { width: 92px; height: 92px; margin: auto; }
+  .dialog.speaking .portrait .pImg { animation: talkImg .45s ease-in-out infinite alternate; }
+  @keyframes talkImg { from { transform: translateY(0); } to { transform: translateY(-1.5px) scale(1.01); } }
+  .dialog .dlgBody { position: relative; padding: 0 30px 12px 14px; }
+  .dialog .nameRow { display: flex; align-items: baseline; gap: 8px; margin: -22px 0 6px -1px; height: 22px; }
+  .dialog .nameTag { margin: 0; padding: 3px 14px 2px; border-radius: 8px 8px 0 0; font-size: 13px; letter-spacing: .02em; color: #f4f7fc;
+    background: rgba(44,50,60,.96); border: 1px solid rgba(214,224,240,.32); border-bottom: 0; box-shadow: inset 0 2px 0 var(--who); }
+  .dialog .meta { font-size: 10.5px; color: #c9d2e0; background: rgba(18,22,30,.82); padding: 2px 8px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .dialog .dlgText { margin: 4px 0 0; font-size: 14.5px; line-height: 1.5; color: #f2f5fa; min-height: 3em; }
+  .dialog .dlgIc { position: absolute; right: 8px; bottom: 6px; font-size: 14px; opacity: .55; }
+  .dialog .dlgX { top: 4px; right: 4px; }
+  .dialog .replies { margin-top: 8px; }
+  @media (max-width: 760px), (max-height: 520px) {
+    .dialog { margin-top: 0; } .dialog .portrait { width: 64px; margin: -1px 0 -1px -1px; } .dialog .portrait .ava { width: 54px !important; height: 54px !important; }
+    .dialog .dlgBody { padding: 6px 26px 8px 10px; } .dialog .nameRow { margin: 0 0 2px; height: auto; flex-wrap: wrap; }
+    .dialog .nameTag { padding: 0; background: none; border: 0; box-shadow: none; color: var(--who); }
+    .dialog .meta { background: none; padding: 0; white-space: normal; }
+    .dialog .dlgText { font-size: 13px; min-height: 0; }
+  }
 
   /* info toasts */
   #toasts { display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
@@ -2782,11 +2808,15 @@ function showTour(onClose) {
   let el = $('tour'); if (!el) { el = document.createElement('div'); el.id = 'tour'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); document.body.appendChild(el); }
   el.innerHTML = '<div class="tHi" id="tHi"></div><div class="tCard" id="tCard" aria-live="polite"></div>';
   el.classList.add('open'); let k = 0;
-  const target = st => st.sel ? document.querySelector(st.sel) : st.hk ? [...document.querySelectorAll('#hotbar .hk')].find(b => b.textContent.replace(/\d/g, '').trim().startsWith(st.hk)) : null;
+  const target = st => st.sel ? document.querySelector(st.sel) : st.hk ? [...document.querySelectorAll('#hotbar .hk')].find(b => b.textContent.replace(/[\d\s]/g, '').replace(/^[^A-Za-z]+/, '').startsWith(st.hk.replace(/\s/g, ''))) : null;
   const close = () => { el.classList.remove('open'); document.removeEventListener('keydown', key, true); removeEventListener('resize', draw); try { localStorage.setItem('jamtTour', '1'); } catch (e) {} if (onClose) onClose(); };
   function draw() {
     const st = TOUR[k], tg = target(st), hi = $('tHi'), card = $('tCard'), r = tg && tg.getBoundingClientRect(), pad = st.pad || 6;
-    const shown = r && r.width > 0 && r.height > 0;
+    // only point at it if it is really on screen and on top (not hidden behind the mission map or another screen)
+    let shown = !!(r && r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth);
+    if (shown) { el.style.display = 'none';
+      const x = Math.min(innerWidth - 2, Math.max(1, r.left + r.width / 2)), y = Math.min(innerHeight - 2, Math.max(1, r.top + Math.min(r.height / 2, 24))), hit = document.elementFromPoint(x, y);
+      el.style.display = ''; shown = !!hit && (hit === tg || tg.contains(hit) || (st.sel === '#stage' && !hit.closest('.ovl, #campaign'))); }
     hi.style.display = shown ? 'block' : 'none'; el.classList.toggle('dim', !shown);
     if (shown) Object.assign(hi.style, { left: `${r.left - pad}px`, top: `${r.top - pad}px`, width: `${r.width + pad * 2}px`, height: `${r.height + pad * 2}px` });
     card.innerHTML = `<div class="tIc">${st.ic}</div><div class="tK">How to play · ${k + 1} of ${TOUR.length}</div><h3>${st.t}</h3><p>${typeof st.d === 'function' ? st.d() : st.d}</p>
@@ -3108,6 +3138,11 @@ setInterval(() => {
     });
   }
 }, 150);
+// the big picture of who is talking: the real 3D astronaut when it can be drawn, else the painted portrait
+function portraitHTML(id) {
+  const W = window.JAMTWALK, url = W && W.portrait ? W.portrait(id, id === 'you' ? pilotLook() : id === 'earth' ? LOOKS.earth : null) : null;
+  return url ? `<img class="pImg" src="${url}" alt="">` : avatar(id, 92);
+}
 function renderDialog() {
   const box = $('radio'), m = hud.dlg;
   if (!m) { box.classList.remove('show'); return; }
@@ -3116,9 +3151,10 @@ function renderDialog() {
   const fresh = !hud.dlgShown || !hud.dlgShown.startsWith(m.id);
   hud.dlgShown = key;
   const p = PEOPLE[m.who];
-  box.innerHTML = `<div class="portrait">${avatar(m.who, 66)}</div>
-    <div class="dlgBody"><span class="nameTag" style="color:${p.c}">${p.name}</span> <span class="meta">${p.role} · ${CHANNEL[m.ch]}${m.ch === 'earth' ? ` · ${EARTH_DELAY.toFixed(1)} s delay` : ''}</span>
-      <p class="dlgText"></p>
+  box.style.setProperty('--who', p.c);
+  box.innerHTML = `<div class="portrait">${portraitHTML(m.who)}</div>
+    <div class="dlgBody"><div class="nameRow"><span class="nameTag">${p.name}</span><span class="meta">${p.role} · ${CHANNEL[m.ch]}${m.ch === 'earth' ? ` · ${EARTH_DELAY.toFixed(1)} s delay` : ''}</span></div>
+      <p class="dlgText"></p><span class="dlgIc" aria-hidden="true">${m.ch === 'earth' ? '📡' : '📻'}</span>
       ${m.replies.length ? `<div class="replies">${m.replies.map((r, i) => `<button data-reply="${i}">${r.label}</button>`).join('')}</div>` : ''}
       ${m.timer && !m.answered ? `<div class="timer" data-timer="${m.id}" role="timer"><span>⏱</span><span class="tb"><i></i></span><span class="tn"></span></div>` : ''}</div>
     <button class="iconBtn dlgX" aria-label="Close message">✕</button>`;
@@ -6550,7 +6586,36 @@ function preview(canvas) {
     stop() { cancelAnimationFrame(raf); r.dispose(); try { r.forceContextLoss(); } catch (e) {} }
   };
 }
-window.JAMTWALK = { setLook, preview, setPR: pr => { wr.setPixelRatio(pr); resizeWalk(); }, get solids() { return SOLIDS; }, canStand, onFloor, buildInSolids, update: updateWalk, sleep, suitUp, crew: CREW, me, walk, uses: USES };
+// head-and-shoulders portraits for the radio box: the real 3D astronaut, drawn once into a picture and kept
+const PORT = { r: null, cache: {} };
+const PORT_I = { ama: 0, leo: 1, mira: 2, kofi: 3, you: 4, earth: 2 };
+function portrait(id, L) {
+  const key = id + '|' + (L ? [L.skin, L.hair, L.style, L.stripe].join(',') : '');
+  if (PORT.cache[key]) return PORT.cache[key];
+  if (!(id in PORT_I)) return null;
+  try {
+    if (!PORT.r) { const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+      PORT.r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true });
+      PORT.r.setSize(256, 256, false); PORT.r.outputColorSpace = THREE.SRGBColorSpace; PORT.r.toneMapping = THREE.ACESFilmicToneMapping; PORT.r.toneMappingExposure = 1.2; }
+    const sc = new THREE.Scene(), earth = id === 'earth';
+    sc.add(new THREE.HemisphereLight(0xdfe8ff, 0x2a2420, 1.2));
+    const key = new THREE.DirectionalLight(0xfff1dc, 2.8); key.position.set(1.6, 2.4, 2.6); sc.add(key);
+    const rim = new THREE.DirectionalLight(earth ? 0x5ec8ff : 0x9fc4ff, 2); rim.position.set(-2.2, 2, -1.5); sc.add(rim);
+    const c = makeCrew(PORT_I[id], earth ? 'base' : 'eva'); c.pose('stand', 0); sc.add(c.root);
+    if (L) { c.root.userData.skin.color.set(L.skin); c.setHair(L.style, L.hair); }
+    if (id === 'you') { const acc = new THREE.MeshStandardMaterial({ color: (L && L.stripe) || 0x2a5bd7, roughness: .55 });
+      const tape = new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(tapeCanvas(J.callsign || 'CDR', (L && L.stripe) || '#2a5bd7')), roughness: .7 }); tape.map.colorSpace = THREE.SRGBColorSpace;
+      dressAsMe(c.root, acc, tape); }
+    c.root.rotation.y = .42;
+    const cam = new THREE.PerspectiveCamera(26, 1, .05, 10);
+    cam.position.set(.34, earth ? 1.68 : 1.7, earth ? 1.08 : 1.42); cam.lookAt(.02, earth ? 1.6 : 1.6, 0);
+    PORT.r.render(sc, cam);
+    const url = PORT.r.domElement.toDataURL('image/png');
+    sc.traverse(o => { if (o.geometry && o.geometry.dispose) o.geometry.dispose(); });
+    return PORT.cache[key] = url;
+  } catch (e) { return null; }
+}
+window.JAMTWALK = { setLook, preview, portrait, setPR: pr => { wr.setPixelRatio(pr); resizeWalk(); }, get solids() { return SOLIDS; }, canStand, onFloor, buildInSolids, update: updateWalk, sleep, suitUp, crew: CREW, me, walk, uses: USES };
 J.ready3D();
 </script>
 </body>
