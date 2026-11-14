@@ -5538,15 +5538,17 @@ let lastT = performance.now();
 // Level 1: fewer pixels. Level 2: smaller shadows. Level 3: even fewer pixels. (Hidden tabs and pauses don't count.)
 const QUAL = { lvl: 0, slow: 0, ema: 1 / 60 };
 function setQuality(l) {
-  QUAL.lvl = l; const pr = Math.min(devicePixelRatio, 1.5) * [1, .75, .75, .55][l];
+  QUAL.lvl = l;   // never drop below the screen's own pixel size (that is what made the picture blurry), only the extra sharpness of high-DPI screens
+  const dpr = Math.min(devicePixelRatio, 1.5), pr = Math.max(Math.min(1, dpr), dpr * [1, .8, .8, .7][l]);
   renderer.setPixelRatio(pr); if (window.JAMTWALK && window.JAMTWALK.setPR) window.JAMTWALK.setPR(pr);
   if (l >= 2 && sun.shadow.mapSize.x > 1024) { sun.shadow.mapSize.set(1024, 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
   const w = wrap.clientWidth, h = wrap.clientHeight; if (w && h) renderer.setSize(w, h, false);
 }
 function watchSpeed(raw) {
-  if (document.visibilityState !== 'visible' || raw > 250 || QUAL.lvl >= 3) return;
+  if (document.visibilityState !== 'visible' || raw > 250) return;
   QUAL.ema += (raw / 1000 - QUAL.ema) * .05;
-  if (QUAL.ema > 1 / 40) { if ((QUAL.slow += raw) > 3000) { QUAL.slow = 0; QUAL.ema = 1 / 60; setQuality(QUAL.lvl + 1); } } else QUAL.slow = 0;
+  if (QUAL.ema > 1 / 40) { QUAL.fast = 0; if ((QUAL.slow += raw) > 3000) { QUAL.slow = 0; QUAL.ema = 1 / 60; if (QUAL.lvl < 3) setQuality(QUAL.lvl + 1); } }
+  else { QUAL.slow = 0; if (QUAL.lvl > 0 && QUAL.ema < 1 / 55 && (QUAL.fast = (QUAL.fast || 0) + raw) > 15000) { QUAL.fast = 0; setQuality(QUAL.lvl - 1); } }   // fast again: sharpen back up
 }
 // OBJECTIVE ARROW: a big yellow arrow hovering over the place for the next task, with a light beam down to the ground,
 // seen through hills (like a waypoint). When the place is off screen, an arrow at the edge of the screen points to it.
