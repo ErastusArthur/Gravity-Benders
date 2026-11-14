@@ -4594,6 +4594,8 @@ scene.add(rover);
     b.castShadow = b.receiveShadow = true; scene.add(b);
   } }
 // BOULDER FIELD: one instanced mesh (cheap to draw). Small near the base and the places so walking and driving stay clear.
+// Every boulder bigger than a pebble is also kept in BOULDERS, so a spacewalker bumps into it instead of walking through.
+const BOULDERS = [];
 { let s = 11; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const geo = new THREE.DodecahedronGeometry(1, 1), pa = geo.attributes.position;
   for (let v = 0; v < pa.count; v++) { const f = .78 + hash(Math.round(pa.getX(v) * 9), Math.round(pa.getY(v) * 9 + pa.getZ(v) * 5)) * .38; pa.setXYZ(v, pa.getX(v) * f, pa.getY(v) * f * .72, pa.getZ(v) * f); }
@@ -4612,6 +4614,7 @@ scene.add(rover);
     e.set(rnd() * 3, rnd() * 3, rnd() * 3); q.setFromEuler(e);
     m4.compose(new THREE.Vector3(x, H(x, z) + r * .18, z), q, new THREE.Vector3(r, r * (.65 + rnd() * .4), r));
     inst.setMatrixAt(n++, m4);
+    if (r > .3) BOULDERS.push({ x, z, r: r * .8 });
   }
   inst.count = n; inst.castShadow = inst.receiveShadow = true; scene.add(inst); }
 
@@ -4966,7 +4969,7 @@ function buildSolids() {
   solids = J.solidsIn(scene, skip, f => { const g = H(f.cx, f.cz); return f.hu < 25 && f.hw < 25 && f.y1 > g + .45 && f.y0 < g + 1.7; }, _sv);
   solidsT = performance.now();
 }
-const hitSolid = (x, z) => solids.some(f => J.inFoot(f, x, z, R_KOFI));
+const hitSolid = (x, z) => solids.some(f => J.inFoot(f, x, z, R_KOFI)) || BOULDERS.some(b => (x - b.x) ** 2 + (z - b.z) ** 2 < (b.r + R_KOFI) ** 2);
 function startEVA() {
   if (eva.on || driveAnim || actAnim) return;
   const s = J.state; if (s.busy || s.view !== 'surface') return;
@@ -5418,7 +5421,7 @@ setTimeout(function drawMap() {
   }
   g.putImageData(im, 0, 0); MAP_IMG = cv.toDataURL();
 }, 1200);
-window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get cineOn() { return CINE.on; }, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
+window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get cineOn() { return CINE.on; }, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, boulders: BOULDERS, hitSolid, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
   get mapImg() { return MAP_IMG; }, evaKm: () => eva.on ? xzToKm(eva.pos.x, eva.pos.z) : null };
 // =====================================================================
 //  INSIDE THE BASE: first-person walk-through
@@ -6567,15 +6570,83 @@ function place(c, key) {
   const s = SPOT[key]; c.spot = s; c.path = null; c.root.visible = true;
   c.root.position.set(s.p[0], s.y || 0, s.p[1]); c.root.rotation.y = s.yaw; c.say = s.say;
 }
+// ---- the crew find their own way: a grid over the floor, with the furniture marked as blocked (the same floor and
+// furniture that stop you), and A* path finding around it. Then the path is pulled straight where nothing is in the way.
+const NAV = { x0: -9, z0: -47.5, st: .25, nx: 0, nz: 0, free: null };
+const R_CREW = .26;
+function navFree(x, z) {
+  if (!onFloor(x, z)) return false;
+  if (BLOCK.some(r => x > r[0] - R_CREW && x < r[1] + R_CREW && z > r[2] - R_CREW && z < r[3] + R_CREW)) return false;
+  return !SOLIDS.some(f => J.inFoot(f, x, z, R_CREW));
+}
+function buildNav() {
+  if (!SOLIDS) buildInSolids();
+  NAV.nx = Math.ceil(18 / NAV.st); NAV.nz = Math.ceil(56 / NAV.st); NAV.free = new Uint8Array(NAV.nx * NAV.nz);
+  for (let j = 0; j < NAV.nz; j++) for (let i = 0; i < NAV.nx; i++) NAV.free[j * NAV.nx + i] = navFree(NAV.x0 + (i + .5) * NAV.st, NAV.z0 + (j + .5) * NAV.st) ? 1 : 0;
+}
+const navCell = (x, z) => [Math.floor((x - NAV.x0) / NAV.st), Math.floor((z - NAV.z0) / NAV.st)];
+const navOk = (i, j) => i >= 0 && j >= 0 && i < NAV.nx && j < NAV.nz && NAV.free[j * NAV.nx + i] === 1;
+const navXZ = (i, j) => [NAV.x0 + (i + .5) * NAV.st, NAV.z0 + (j + .5) * NAV.st];
+function navNearest(x, z) {                                   // the closest free cell (a chair or a bed is itself "blocked")
+  const [ci, cj] = navCell(x, z);
+  for (let r = 0; r < 12; r++) {
+    let best = null, bd = 1e9;
+    for (let j = cj - r; j <= cj + r; j++) for (let i = ci - r; i <= ci + r; i++) {
+      if (Math.max(Math.abs(i - ci), Math.abs(j - cj)) !== r || !navOk(i, j)) continue;
+      const [px, pz] = navXZ(i, j), d = Math.hypot(px - x, pz - z); if (d < bd) { bd = d; best = [i, j]; }
+    }
+    if (best) return best;
+  }
+  return null;
+}
+function navLine(a, b) {                                       // can you walk straight from a to b?
+  const d = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(d / (NAV.st * .5)));
+  for (let k = 0; k <= n; k++) { const [i, j] = navCell(a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n); if (!navOk(i, j)) return false; }
+  return true;
+}
+function navPath(a, b) {                                       // A* from point a to point b; null if there is no way through
+  if (!NAV.free) buildNav();
+  const s0 = navNearest(a[0], a[1]), g0 = navNearest(b[0], b[1]); if (!s0 || !g0) return null;
+  const N = NAV.nx, key = (i, j) => j * N + i, goal = key(g0[0], g0[1]);
+  const gS = new Float32Array(NAV.nx * NAV.nz).fill(Infinity), from = new Int32Array(NAV.nx * NAV.nz).fill(-1), done = new Uint8Array(NAV.nx * NAV.nz);
+  const h = (i, j) => { const dx = Math.abs(i - g0[0]), dz = Math.abs(j - g0[1]); return Math.max(dx, dz) + .414 * Math.min(dx, dz); };
+  const open = [[h(s0[0], s0[1]), key(s0[0], s0[1])]]; gS[key(s0[0], s0[1])] = 0;
+  const push = it => { open.push(it); let k = open.length - 1; while (k > 0) { const p = (k - 1) >> 1; if (open[p][0] <= open[k][0]) break; [open[p], open[k]] = [open[k], open[p]]; k = p; } };
+  const pop = () => { const top = open[0], last = open.pop(); if (open.length) { open[0] = last; let k = 0; for (;;) { const l = 2 * k + 1, r = l + 1; let m = k;
+      if (l < open.length && open[l][0] < open[m][0]) m = l; if (r < open.length && open[r][0] < open[m][0]) m = r; if (m === k) break; [open[m], open[k]] = [open[k], open[m]]; k = m; } } return top; };
+  let found = false;
+  while (open.length) {
+    const [, cur] = pop(); if (done[cur]) continue; done[cur] = 1;
+    if (cur === goal) { found = true; break; }
+    const ci = cur % N, cj = (cur / N) | 0;
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      if (!di && !dj) continue; const i = ci + di, j = cj + dj;
+      if (!navOk(i, j) || (di && dj && (!navOk(ci + di, cj) || !navOk(ci, cj + dj)))) continue;   // no cutting corners
+      const k = key(i, j), g = gS[cur] + (di && dj ? 1.414 : 1);
+      if (g < gS[k]) { gS[k] = g; from[k] = cur; push([g + h(i, j), k]); }
+    }
+  }
+  if (!found) return null;
+  const cells = []; for (let k = goal; k !== -1; k = from[k]) cells.push(navXZ(k % N, (k / N) | 0)); cells.reverse();
+  // pull the path straight: from each point, jump to the furthest point you can walk to in a straight line
+  const pts = [a]; let i = 0; const all = [a, ...cells];
+  while (i < all.length - 1) { let j = all.length - 1; while (j > i + 1 && !navLine(all[i], all[j])) j--; pts.push(all[j]); i = j; }
+  return pts;
+}
 function sendTo(c, key, say, then, speed = 1.7) {
   const s = SPOT[key];
   if (c.spot === s && !c.path) { if (then) then(); return; }
-  const x = c.root.position.x, z = c.root.position.z, from = roomAt(x, z), pts = [[x, z]];
-  if (c.spot && c.spot.at && !c.path && c.spot.room === from) pts.push(c.spot.at);
-  if (from !== s.room) {
-    if (from) { const a = ENTRY[from]; for (let k = a.length - 1; k >= 0; k--) pts.push(a[k]); }
-    else pts.push([0, z]);
-    pts.push(...ENTRY[s.room]);
+  const x = c.root.position.x, z = c.root.position.z, from = roomAt(x, z);
+  let pts = [[x, z]];
+  if (c.spot && c.spot.at && !c.path && c.spot.room === from) pts.push(c.spot.at);   // first stand up and step away from the chair or bed
+  const goal = s.at || s.p, route = navPath(pts[pts.length - 1], goal);
+  if (route) pts = pts.concat(route.slice(1));
+  else {                                                         // (no grid route found: the old way, through the doors)
+    if (from !== s.room) {
+      if (from) { const a = ENTRY[from]; for (let k = a.length - 1; k >= 0; k--) pts.push(a[k]); }
+      else pts.push([0, z]);
+      pts.push(...ENTRY[s.room]);
+    }
   }
   if (s.at) pts.push(s.at); pts.push(s.p);
   const clean = pts.filter((q, k) => !k || Math.hypot(q[0] - pts[k - 1][0], q[1] - pts[k - 1][1]) > .05);
@@ -6593,6 +6664,25 @@ function stepCrew(dt) {
     }
     const [tx, tz] = P.pts[P.i], pos = c.root.position, dx = tx - pos.x, dz = tz - pos.z, d = Math.hypot(dx, dz), step = dt * c.speed;
     if (d > .01) c.root.rotation.y += wrapA(Math.atan2(dx, dz) - c.root.rotation.y) * Math.min(1, dt * 10);
+    // someone in the way? (another crew member, or you) wait a moment, then step around them
+    if (d > .3) {
+      const ux = dx / d, uz = dz / d, nx = pos.x + ux * .5, nz = pos.z + uz * .5;
+      const others = CREW.filter(o => o !== c && o.root.visible).map(o => o.root.position);
+      if (me.root.visible && walkWrap.style.display !== 'none') others.push(mePos);
+      const block = others.find(o => Math.hypot(o.x - nx, o.z - nz) < .5 && Math.hypot(o.x - pos.x, o.z - pos.z) < 1);
+      if (block) {
+        c.wait = (c.wait || 0) + dt;
+        if (c.wait > .8) {                                      // still blocked: walk around on whichever side is free
+          c.wait = 0;
+          for (const side of [1, -1]) {
+            const sx = pos.x - uz * .6 * side + ux * .3, sz = pos.z + ux * .6 * side + uz * .3;
+            if (navFree(sx, sz) && !others.some(o => Math.hypot(o.x - sx, o.z - sz) < .5)) { P.pts.splice(P.i, 0, [sx, sz]); break; }
+          }
+        }
+        c.pose('stand', dt); continue;
+      }
+      c.wait = 0;
+    }
     if (d <= step) {
       pos.x = tx; pos.z = tz;
       if (++P.i >= P.pts.length) {
@@ -6894,7 +6984,7 @@ function portrait(id, L) {
     return PORT.cache[key] = url;
   } catch (e) { return null; }
 }
-window.JAMTWALK = { setLook, preview, portrait, setPR: pr => { wr.setPixelRatio(pr); resizeWalk(); }, get solids() { return SOLIDS; }, canStand, onFloor, buildInSolids, update: updateWalk, sleep, suitUp, crew: CREW, me, walk, uses: USES };
+window.JAMTWALK = { setLook, preview, portrait, navPath, navFree, sendTo, SPOT, setPR: pr => { wr.setPixelRatio(pr); resizeWalk(); }, get solids() { return SOLIDS; }, canStand, onFloor, buildInSolids, update: updateWalk, sleep, suitUp, crew: CREW, me, walk, uses: USES };
 J.ready3D();
 </script>
 </body>
