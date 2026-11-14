@@ -184,3 +184,10 @@ Every astronaut in the game (the walker outside, the suit racks, the crew, the "
 | Chest control box, blue and red hose connectors | Oxygen goes in through the blue connectors, used gas comes out of the red. |
 | Two-part backpack | Life support below, an emergency oxygen-purge pack on top. |
 | Ribbed rubber moon boots, gloves with fingers | Overshoes grip loose dust; gloves are thick but still let astronauts hold tools. |
+
+## Bodies, hair, empty suits and phones
+
+- **Body shape:** the cooling undersuit now has a human shape (chest wider than the waist, hips, shoulders), tapered arms and legs with muscle curves, hands with fingers, and soft shoes.
+- **Hair:** the six styles you pick (short, crop, side part, ponytail, puff, curly) now show on your 3D astronaut and on the turntable, in your hair colour. The other crew each have their own style.
+- **Empty suits:** suits hanging on the airlock racks, the spare suit and the suits plugged into the rover's suitports have no one inside, just like real stored suits. When the crew go out from the rover, the suits fill up.
+- **Phones:** the game plays sideways. Held upright, a phone shows "Turn your phone sideways" with a **Play full screen** button (Android also locks the screen sideways; iPhones can't lock, so you just turn the phone) and a "Play upright anyway" link.
