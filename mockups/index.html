@@ -1936,7 +1936,7 @@ function speak(m) {
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) { actx = null; }
   const earth = m.who === 'earth';
   if (actx) earth ? tone(2525, 0, .25) : staticBurst(0);          // Apollo-style "Quindar" beep from Earth, static from crew radios
-  const u = utter(m.who, m.text);
+  const u = utter(m.who, m.text); CAPS[m.id] = capSync(u);
   u.onstart = () => { speakingId = m.id; $('radio').classList.toggle('speaking', !!hud.dlg && hud.dlg.id === m.id); };
   u.onend = () => { if (speakingId === m.id) speakingId = null; $('radio').classList.remove('speaking');
     if (actx) earth ? tone(2475, 0, .25) : staticBurst(0, .08); };
@@ -1982,6 +1982,33 @@ function utter(who, text) {
   if (!nat && !state.said.voiceTip && voice) { state.said.voiceTip = true;
     setTimeout(() => toast('🎙 This browser only has basic computer voices. Open JAMT in Microsoft Edge (or Chrome) to hear natural, human-sounding voices.'), 1500); }
   return u;
+}
+// CAPTIONS IN STEP WITH THE VOICE: the words appear as they are spoken. Browsers that report each word (Edge) are
+// followed word by word; others (Chrome's Google voices) are followed at normal speaking speed from the moment the
+// voice starts. When the voice ends, the whole line shows. No voice: the line types out quickly, as before.
+const CAPS = {};
+function capSync(u) {
+  const c = { t0: 0, b: -1, done: false, L: u.text.length || 1, cps: 14 * (u.rate || 1) };
+  u.addEventListener('start', () => { c.t0 = c.t0 || performance.now(); });
+  u.addEventListener('boundary', e => { c.t0 = c.t0 || performance.now(); if (e.name && e.name !== 'word') return;   // (sentence marks span the whole sentence)
+    const w = e.charLength || ((u.text.slice(e.charIndex).match(/^\S*/) || [''])[0].length); c.b = Math.max(c.b, (e.charIndex + w) / c.L); });
+  const fin = () => { c.done = true; }; u.addEventListener('end', fin); u.addEventListener('error', fin);
+  return c;
+}
+function capType(el, text, src) {                                          // src: a capSync, a function giving one, or null. Returns stop()
+  let shown = 0, c = typeof src === 'function' ? undefined : src; const born = performance.now();
+  el.textContent = '';
+  const put = n => { n = Math.min(text.length, Math.round(n)); if (n > shown) { shown = n; el.textContent = text.slice(0, n); } };
+  const iv = setInterval(() => {
+    if (c === undefined) c = src() || null;
+    if (!c) put(shown + 2);
+    else if (c.done) put(text.length);
+    else if (c.b >= 0) put(c.b * text.length);
+    else { const t0 = c.t0 || (performance.now() - born > 3000 ? born + 3000 : 0);   // (no start event at all? go anyway)
+      if (t0) put((performance.now() - t0) / 1000 * c.cps * text.length / c.L); }
+    if (shown >= text.length) clearInterval(iv);
+  }, 40);
+  return () => clearInterval(iv);
 }
 // a line said out loud in the room (no radio beeps); done() runs when it has been said
 function speakLine(who, text, done, silent) {
@@ -3102,7 +3129,7 @@ function playScene(o, done) {
     boulders: 'Boulder Field', fresh: 'Fresh Crater', rover: 'Rover MO-01', crater: 'Shackleton crater', impact: 'Meteorite strike', quake: 'Moonquake' };
   const shoot = sh => { if (!cine) return; JAMT3D.cineShot(sh); const tg = $('cineTag'); if (tg) tg.textContent = `🎥 Live 3D · ${SHOT_NAME[sh] || ''}`; };
   if (cine) { JAMT3D.cineStart($('cineBg')); shoot(o.shot || (lines[0] ? shotFor(lines[0].text, 0) : 'crater')); }
-  const end = () => { if (run !== briefRun) return; briefRun++; clearInterval(typer); if ('speechSynthesis' in window) speechSynthesis.cancel(); if (cine) JAMT3D.cineEnd(); el.classList.remove('open', 'cine'); done && done(); };
+  const end = () => { if (run !== briefRun) return; briefRun++; typer && typer(); if ('speechSynthesis' in window) speechSynthesis.cancel(); if (cine) JAMT3D.cineEnd(); el.classList.remove('open', 'cine'); done && done(); };
   const finish = () => { el.classList.add('quiet'); card(); $('bGo').classList.add('pulse'); };
   const next = () => {
     if (run !== briefRun) return;
@@ -3110,17 +3137,18 @@ function playScene(o, done) {
     box.querySelectorAll('p').forEach(p => p.classList.add('old'));
     const l = lines[i++], pEl = document.createElement('p'); pEl.innerHTML = say(l) + '<span class="tx"></span>'; box.appendChild(pEl);
     shoot(o.lock ? o.shot : shotFor(l.text, i));
-    const tx = pEl.querySelector('.tx'); let k = 0; clearInterval(typer); typer = setInterval(() => { k += 2; tx.textContent = l.text.slice(0, k); if (k >= l.text.length) clearInterval(typer); }, 24);
+    const tx = pEl.querySelector('.tx'), id = SPK[l.who] || 'earth', u = voice ? utter(id, l.text) : null;
+    if (typer) typer(); typer = capType(tx, l.text, u && capSync(u));
     while (box.children.length > 3) box.removeChild(box.firstChild);
     const after = () => { if (run === briefRun) setTimeout(next, 350); };
-    if (voice) { const id = SPK[l.who] || 'earth', u = utter(id, l.text); let fired = false; const f = () => { if (!fired) { fired = true; after(); } };
+    if (voice) { let fired = false; const f = () => { if (!fired) { fired = true; after(); } };
       u.onend = f; u.onerror = f; setTimeout(f, 2500 + l.text.length * 90);
       if (actx) { try { id === 'earth' ? tone(2525, 0, .25) : id === 'comp' ? (tone(880, 0, .08), tone(660, .1, .08)) : null; } catch (e) {} }
       setTimeout(() => { if (run === briefRun) speechSynthesis.speak(u); }, actx && (id === 'earth' || id === 'comp') ? 300 : 0); }
     else setTimeout(after, 1500 + l.text.length * 45);
   };
   $('bGo').onclick = end;
-  $('bSkip').onclick = () => { if (run !== briefRun) return; clearInterval(typer); if ('speechSynthesis' in window) speechSynthesis.cancel(); i = lines.length;
+  $('bSkip').onclick = () => { if (run !== briefRun) return; typer && typer(); if ('speechSynthesis' in window) speechSynthesis.cancel(); i = lines.length;
     box.innerHTML = lines.slice(-3).map(l => `<p class="old">${say(l)}${esc(l.text)}</p>`).join(''); if (box.lastChild) box.lastChild.classList.remove('old'); finish(); $('bGo').focus(); };
   el.onkeydown = e => { if (e.key === 'Escape') { e.preventDefault(); end(); } };
   if ('speechSynthesis' in window) speechSynthesis.cancel();
@@ -3406,22 +3434,22 @@ function showBriefing(m, done) {
       <span><button class="linkBtn" id="bSkip">Skip ⏭</button> <button class="bigBtn" id="bGo">Begin mission 🚀</button></span></div></div></div>`;
   el.classList.add('open'); $('bGo').focus();
   const box = $('bLines'); let i = 0, typer = null;
-  const end = () => { if (run !== briefRun) return; briefRun++; clearInterval(typer); if ('speechSynthesis' in window) speechSynthesis.cancel(); el.classList.remove('open'); done(); };
+  const end = () => { if (run !== briefRun) return; briefRun++; typer && typer(); if ('speechSynthesis' in window) speechSynthesis.cancel(); el.classList.remove('open'); done(); };
   const next = () => {
     if (run !== briefRun) return;
     if (i >= lines.length) { el.classList.add('quiet'); $('bGo').classList.add('pulse'); return; }
     box.querySelectorAll('p').forEach(p => p.classList.add('old'));
     const t = lines[i++], pEl = document.createElement('p'); box.appendChild(pEl);
-    let k = 0; clearInterval(typer); typer = setInterval(() => { k += 2; pEl.textContent = t.slice(0, k); if (k >= t.length) clearInterval(typer); }, 24);
+    const u = voice ? utter('earth', t) : null; if (typer) typer(); typer = capType(pEl, t, u && capSync(u));
     while (box.children.length > 3) box.removeChild(box.firstChild);
     const after = () => { if (run === briefRun) setTimeout(next, 450); };
-    if (voice) { const u = utter('earth', t); let fired = false; const f = () => { if (!fired) { fired = true; after(); } };
+    if (voice) { let fired = false; const f = () => { if (!fired) { fired = true; after(); } };
       u.onend = f; u.onerror = f; setTimeout(f, 2500 + t.length * 90);
       if (i === 1 && actx) { try { tone(2525, 0, .25); } catch (e) {} setTimeout(() => speechSynthesis.speak(u), 300); } else speechSynthesis.speak(u); }
     else setTimeout(after, 1600 + t.length * 45);
   };
   $('bGo').onclick = end;
-  $('bSkip').onclick = () => { if (run !== briefRun) return; clearInterval(typer); if ('speechSynthesis' in window) speechSynthesis.cancel(); i = lines.length; box.innerHTML = lines.map(t => `<p class="old">${esc(t)}</p>`).join(''); box.lastChild.classList.remove('old'); el.classList.add('quiet'); $('bGo').focus(); };
+  $('bSkip').onclick = () => { if (run !== briefRun) return; typer && typer(); if ('speechSynthesis' in window) speechSynthesis.cancel(); i = lines.length; box.innerHTML = lines.map(t => `<p class="old">${esc(t)}</p>`).join(''); box.lastChild.classList.remove('old'); el.classList.add('quiet'); $('bGo').focus(); };
   el.onkeydown = e => { if (e.key === 'Escape') { e.preventDefault(); end(); } };
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   next();
@@ -3496,7 +3524,7 @@ function armDialogHide(m, extra = 0) {
     hideDialog();
   }, ms);
 }
-function hideDialog() { hud.dlg = null; clearTimeout(hud.dlgTimer); clearInterval(hud.typer); $('radio').classList.remove('show', 'speaking', 'urgent'); hud.dlgShown = null;
+function hideDialog() { hud.dlg = null; clearTimeout(hud.dlgTimer); hud.typer && hud.typer(); $('radio').classList.remove('show', 'speaking', 'urgent'); hud.dlgShown = null;
   if (hud.queue && hud.queue.length) setTimeout(() => { if (!hud.dlg && hud.queue.length) showDialog(hud.queue.shift()); }, 900); }   // messages that waited behind a question
 // one clock for every emergency call (the pop-up and the radio panel both show the bar)
 setInterval(() => {
@@ -3535,9 +3563,9 @@ function renderDialog() {
       ${m.timer && !m.answered ? `<div class="timer" data-timer="${m.id}" role="timer"><span>⏱</span><span class="tb"><i></i></span><span class="tn"></span></div>` : ''}</div>
     <button class="iconBtn dlgX" aria-label="Close message">✕</button>`;
   box.classList.add('show'); box.classList.toggle('urgent', !!(m.timer && !m.answered));
-  const t = box.querySelector('.dlgText'); clearInterval(hud.typer);
+  const t = box.querySelector('.dlgText'); hud.typer && hud.typer();
   if (fresh && !matchMedia('(prefers-reduced-motion: reduce)').matches) {         // typewriter, like a game dialog
-    let i = 0; hud.typer = setInterval(() => { i += 2; t.textContent = m.text.slice(0, i); if (i >= m.text.length) clearInterval(hud.typer); }, 22);
+    hud.typer = capType(t, m.text, voiceOn && 'speechSynthesis' in window && m.who !== 'you' ? () => CAPS[m.id] : null);
   } else t.textContent = m.text;
   if (!box.querySelector('.pImg') && PORTRAIT_3D.includes(m.who)) {
     let tries = 0; clearInterval(hud.portT);
