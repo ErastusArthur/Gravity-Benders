@@ -2124,7 +2124,7 @@ function impactScene(o, strike, then) {
   const lines = [
     { who: 'computer', text: `Impact detected! A meteorite just hit the ground ${where}.` },
     { who: 'mission_control', text: 'There was no warning. The Moon has no air to slow it down or burn it up, so there is no shooting star. It hit at about 20 kilometres a second, and all you see is the flash.' },
-    { who: o.eva ? 'kofi' : 'ama', text: 'Look at the thrown-out rock. It flies in clean arcs and drops straight back down. With no air there is no dust cloud and no wind to carry it.' },
+    { who: o.eva ? 'scientist' : 'medic', text: 'Look at the thrown-out rock. It flies in clean arcs and drops straight back down. With no air there is no dust cloud and no wind to carry it.' },
     { who: 'mission_control', text: 'NASA’s LRO spacecraft has found hundreds of brand-new impact sites like this, each with bright rays of fresh rock.' }];
   sqPush(next => {
     const cine = !window.JAMT_LITE && window.JAMT3D && JAMT3D.cineStart;
@@ -2133,13 +2133,29 @@ function impactScene(o, strike, then) {
       () => { if (!cine) strike(); next(); then(); });
   });
 }
+// MOONQUAKE SCENE: the film camera watches a slope while the ground shakes and loose rocks roll down. No sound:
+// with no air there is no rumble, you only feel it. Apollo's seismometers found quakes that ring for over 10 minutes.
+function quakeScene(o, start, then) {
+  const lines = [
+    { who: 'computer', text: 'Seismic alert! A moonquake is shaking the ground.' },
+    { who: 'mission_control', text: 'Apollo astronauts left seismometers on the Moon. They recorded shallow moonquakes up to about magnitude 5.' },
+    { who: o.eva ? 'scientist' : 'medic', text: o.eva ? 'Listen… nothing! With no air there is no rumble at all. I only feel it through my boots.'
+                                              : 'Listen… nothing! With no air outside there is no rumble. We only feel it through the floor.' },
+    { who: 'mission_control', text: 'The Moon’s rock is cold and dry, so it rings like a bell: a quake can go on for more than 10 minutes. Loose boulders roll down the slopes, and NASA’s LRO has photographed their tracks.' }];
+  sqPush(next => {
+    const cine = !window.JAMT_LITE && window.JAMT3D && JAMT3D.cineStart;
+    if (cine) setTimeout(start, 700);                                        // (phones: it starts when the scene closes, on the live view)
+    playScene({ ic: '〰', kick: `Moonquake · Day ${state.day}`, head: 'A moonquake!', lines, shot: 'quake', lock: true, go: 'Continue ▸' },
+      () => { if (!cine) start(); next(); then(); });
+  });
+}
 // SOLAR STORM SCENE: a storm on the Moon is invisible. No air means no clouds, no wind and no blowing dust; only the
 // sensors and the white specks on the cameras show the fast particles going through everything.
 function stormScene(then) {
   const lines = [
     { who: 'computer', text: 'Warning! Solar particle storm. Radiation outside is rising fast.' },
     { who: 'mission_control', text: 'Outpost, a storm on the Moon is nothing like a storm on Earth. There is no air, so no clouds, no wind and no blowing dust. You cannot see it coming.' },
-    { who: 'ama', text: 'Only our sensors see it, and those white specks on the cameras: fast particles from the Sun, going straight through suits and thin walls.' }];
+    { who: 'medic', text: 'Only our sensors see it, and those white specks on the cameras: fast particles from the Sun, going straight through suits and thin walls.' }];
   sqPush(next => playScene({ ic: '☢', kick: `Solar storm · Day ${state.day}`, head: 'An invisible storm', lines, shot: 'sun', lock: true, go: 'What do we do? ▸' }, () => { next(); then(); }));
 }
 function flareAlert(d) {
@@ -3083,7 +3099,7 @@ function playScene(o, done) {
   const say = l => `<span class="sp" style="color:${PEOPLE[SPK[l.who] || 'earth'].c}">${avatar(SPK[l.who] || 'earth', 24)}${esc(spkName(l.who))}</span>`;
   const card = () => { if (o.card) $('sCard').innerHTML = `<div class="sCard"><b>${esc(o.card.title)}</b><span>${esc(o.card.text)}</span></div>`; };
   const SHOT_NAME = { base: 'Shackleton Base', landing: 'Landing pad', earth: 'Earth over the crater rim', sun: 'The Sun on the horizon', ridge: 'Connecting Ridge', ice: 'Cold Trap Crater',
-    boulders: 'Boulder Field', fresh: 'Fresh Crater', rover: 'Rover MO-01', crater: 'Shackleton crater', impact: 'Meteorite strike' };
+    boulders: 'Boulder Field', fresh: 'Fresh Crater', rover: 'Rover MO-01', crater: 'Shackleton crater', impact: 'Meteorite strike', quake: 'Moonquake' };
   const shoot = sh => { if (!cine) return; JAMT3D.cineShot(sh); const tg = $('cineTag'); if (tg) tg.textContent = `🎥 Live 3D · ${SHOT_NAME[sh] || ''}`; };
   if (cine) { JAMT3D.cineStart($('cineBg')); shoot(o.shot || (lines[0] ? shotFor(lines[0].text, 0) : 'crater')); }
   const end = () => { if (run !== briefRun) return; briefRun++; clearInterval(typer); if ('speechSynthesis' in window) speechSynthesis.cancel(); if (cine) JAMT3D.cineEnd(); el.classList.remove('open', 'cine'); done && done(); };
@@ -3417,7 +3433,7 @@ addEventListener('keydown', e => { if (e.key === 'Enter' && $('title') && $('tit
 // =====================================================================
 function select(id) { if (state.busy || state.view !== 'surface') return; state.selected = id; state.target = null; hud.dismissed = null; render(); }
 function setRoom(id) { if (state.busy || state.view !== 'base') return; state.room = id; render(); }
-window.JAMT = { get cardKey() { return document.body.classList.contains('detailsOpen') ? detailsKey() : null; }, dismissCard() { hud.dismissed = detailsKey(); render(); }, get objective() { return typeof objectiveNow === 'function' ? objectiveNow() : null; }, get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, flareOnFoot, impactScene, log: m => log(m), render: () => render(), radio: (w, t, o) => radio(w, t, o), DOSE_LIMIT, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
+window.JAMT = { get cardKey() { return document.body.classList.contains('detailsOpen') ? detailsKey() : null; }, dismissCard() { hud.dismissed = detailsKey(); render(); }, get objective() { return typeof objectiveNow === 'function' ? objectiveNow() : null; }, get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, flareOnFoot, impactScene, quakeScene, log: m => log(m), render: () => render(), radio: (w, t, o) => radio(w, t, o), DOSE_LIMIT, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
   ready3D() { $('loading3d').remove(); render(); },
   no3D(err) { console.warn('3D unavailable:', err); $('loading3d').textContent = '3D view needs an internet connection the first time. Showing the photo map.'; state.surface = 'photo'; render(); } };
 
@@ -3434,7 +3450,7 @@ $('v3dBtn').onclick = () => { if (!window.JAMT3D) return; state.surface = '3d'; 
 $('vPhotoBtn').onclick = () => { state.surface = 'photo'; render(); };
 $('planBtn').onclick = () => { state.interior = state.interior === 'plan' ? '3d' : 'plan'; render(); };
 $('impactBtn').onclick = () => { if (window.JAMT3D && window.JAMT3D.impact) window.JAMT3D.impact(true); };
-$('quakeBtn').onclick = () => { if (window.JAMT3D && window.JAMT3D.quake) window.JAMT3D.quake(); };
+$('quakeBtn').onclick = () => { if (window.JAMT3D && window.JAMT3D.quake) window.JAMT3D.quake(true); };
 $('stormBtn').onclick = () => { if (!isStorm(state.day)) state.extraStorms.push(state.day); log('⚠ Demo: solar particle storm hitting the Moon today.'); if (roverHome()) stormNow(); else once('stormOut' + state.day, () => radio('leo', 'Outpost, the radiation alarm in MO-01 is going off! We are huddled behind the water tanks.', { replies: [orderHome] })); render(); };
 $('restartBtn').onclick = () => { $('modal').classList.remove('open'); start(); };
 $('againBtn').onclick = () => { $('ending').classList.remove('open'); start(); };
@@ -5565,11 +5581,52 @@ function impactAfter(x, y, z, km) {
 }
 // ---- MOONQUAKES. Apollo's seismometers recorded shallow moonquakes up to about magnitude 5 that rang for 10 minutes
 // or more: the dry, cold rock shakes like a bell. Loose rock slides down the slopes.
-function quake() {
-  const now = performance.now(); shake.until = now + 9000; shake.len = 9000; shake.amp = .18;
+const QUAKE_AT = new THREE.Vector3(), QUAKE_LOOK = new THREE.Vector3(), _rc = new THREE.Vector3();
+let quakeSceneT = -1e9;
+const slopeAt = (x, z) => Math.hypot(H(x + 1, z) - H(x - 1, z), H(x, z + 1) - H(x, z - 1)) / 2;
+// loose boulders roll down the steepest nearby slope, kicking up dust that falls straight back (LRO sees their tracks)
+const ROLL = [];
+function rollRocks(c, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 6.283, d = Math.random() * 7, x = c.x + Math.cos(a) * d, z = c.z + Math.sin(a) * d, r = .35 + Math.random() * .5;
+    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), M.regolith); m.castShadow = true; m.position.set(x, H(x, z) + r * .8, z); scene.add(m);
+    ROLL.push({ m, r, vx: 0, vz: 0, t: 0, delay: Math.random() * 2.5 });
+  }
+}
+function stepRocks(dt) {
+  for (let i = ROLL.length - 1; i >= 0; i--) {
+    const k = ROLL[i]; if ((k.delay -= dt) > 0) continue; k.t += dt; const p = k.m.position;
+    const gx = (H(p.x + .5, p.z) - H(p.x - .5, p.z)), gz = (H(p.x, p.z + .5) - H(p.x, p.z - .5));
+    k.vx = (k.vx - gx * MOON_G * 1.3 * dt) * (1 - .45 * dt); k.vz = (k.vz - gz * MOON_G * 1.3 * dt) * (1 - .45 * dt);
+    p.x += k.vx * dt; p.z += k.vz * dt; p.y = H(p.x, p.z) + k.r * .8;
+    const v = Math.hypot(k.vx, k.vz); k.m.rotation.x += k.vz * dt / k.r; k.m.rotation.z -= k.vx * dt / k.r;
+    if (!reduced() && v > .4 && Math.random() < dt * 12) kick(p.x, p.y - k.r * .6, p.z, (Math.random() - .5) * .8, .4 + Math.random() * v * .5, (Math.random() - .5) * .8, 3);
+    if (k.t > 12 || (k.t > 1.5 && v < .08) || hitSolid(p.x, p.z)) { BOULDERS.push({ x: p.x, z: p.z, r: k.r }); ROLL.splice(i, 1); }   // it stays where it stops
+  }
+}
+function quake(demo) {
   const at = eva.on ? eva.pos : controls.target;
-  if (!reduced()) for (let i = 0; i < 160; i++) { const a = Math.random() * 6.283, d = 4 + Math.random() * 30, x = at.x + Math.cos(a) * d, z = at.z + Math.sin(a) * d;
-    kick(x, H(x, z) + .1, z, (Math.random() - .5) * 1.2, .3 + Math.random() * 1.2, (Math.random() - .5) * 1.2, 3); }
+  let best = null, bs = -1;                                                // the steepest spot nearby (away from the base) for the rolling rocks
+  for (let k = 0; k < 40; k++) { const a = Math.random() * 6.283, d = 14 + Math.random() * 26, x = at.x + Math.cos(a) * d, z = at.z + Math.sin(a) * d;
+    if (Math.abs(x) > EDGE || Math.abs(z) > EDGE || Math.hypot(x - BX, z - BZ) < 16 || hitSolid(x, z)) continue;
+    const sl = slopeAt(x, z); if (sl > bs) { bs = sl; best = [x, z]; } }
+  if (!best) best = [at.x + 20, at.z];
+  const shakeIt = (len) => { const now = performance.now(); shake.until = now + len; shake.len = len; shake.amp = .18;
+    if (!reduced()) for (let i = 0; i < 160; i++) { const a = Math.random() * 6.283, d = 4 + Math.random() * 30, x = at.x + Math.cos(a) * d, z = at.z + Math.sin(a) * d;
+      kick(x, H(x, z) + .1, z, (Math.random() - .5) * 1.2, .3 + Math.random() * 1.2, (Math.random() - .5) * 1.2, 3); }
+    if (!reduced()) for (let i = 0; i < 90; i++) { const a = Math.random() * 6.283, d = Math.random() * 10, x = best[0] + Math.cos(a) * d, z = best[1] + Math.sin(a) * d;
+      kick(x, H(x, z) + .1, z, (Math.random() - .5) * 1, .3 + Math.random() * 1.4, (Math.random() - .5) * 1, 3); }
+    if (bs > .12) rollRocks({ x: best[0], z: best[1] }, 3 + Math.floor(Math.random() * 3)); };
+  const now = performance.now();
+  if (J.quakeScene && (demo || now - quakeSceneT > 300000)) {              // a scene the first time (and from the demo button), then every 5 minutes at most
+    quakeSceneT = now; QUAKE_AT.set(best[0], H(best[0], best[1]), best[1]); QUAKE_LOOK.copy(QUAKE_AT);
+    J.quakeScene({ eva: eva.on }, () => shakeIt(25000), quakeAfter);         // in the film the ground keeps ringing for the whole scene
+    return;
+  }
+  shakeIt(9000); quakeAfter();
+}
+function quakeAfter() {
+  const now = performance.now();
   J.toast('〰 Moonquake! Apollo seismometers felt shallow quakes up to about magnitude 5, ringing for over 10 minutes.');
   if (eva.on && (Math.hypot(eva.vel.x, eva.vel.z) > 1 || Math.random() < .4)) { eva.stumble = now + 1800;
     J.radio('kofi', 'The ground is shaking! I fell over. I’m okay, just dusty.', { ch: 'suit' }); }
@@ -5842,6 +5899,9 @@ const SHOTS = {
   boulders: t => orbitShot(SITE_POS.boulders, 14, 4, BASE_ANG - 1, .05, .8)(t),
   fresh: t => orbitShot(SITE_POS.fresh, 13, 5, BASE_ANG + .4, .05, .3)(t),
   rover: t => { const c = rover.position.clone(); return orbitShot(c, 9, 3, BASE_ANG + 2.6, .07, 1.2)(t); },
+  quake: t => { const a = BASE_ANG + 1.9 + t * .02, d = 34, px = QUAKE_AT.x + Math.cos(a) * d, pz = QUAKE_AT.z + Math.sin(a) * d;
+    if (ROLL.length) { _rc.set(0, 0, 0); ROLL.forEach(k => _rc.add(k.m.position)); _rc.divideScalar(ROLL.length); QUAKE_LOOK.lerp(_rc, .03); }   // follow the rolling rocks
+    return [new THREE.Vector3(px, Math.max(H(px, pz) + 8, QUAKE_AT.y + 11), pz), QUAKE_LOOK.clone().add(new THREE.Vector3(0, -2, 0))]; },
   impact: t => { const a = Math.atan2(IMPACT_FROM.z, IMPACT_FROM.x) + .35 + t * .012, d = 28 + t * .25;
     const px = IMPACT_AT.x + Math.cos(a) * d, pz = IMPACT_AT.z + Math.sin(a) * d;   // above the hills between us, and the strike above the subtitles
     return [new THREE.Vector3(px, Math.max(H(px, pz) + 6, IMPACT_AT.y + 9) + t * .1, pz), IMPACT_AT.clone().add(new THREE.Vector3(0, -2.5, 0))]; },
@@ -5964,12 +6024,12 @@ function frame(now) {
   watchSpeed(FPS_CAP ? (now - lastT) * .6 : now - lastT);       // (judged against 50 fps, so the 30 fps cap isn't mistaken for a slow phone)
   const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
   if (walkWrap.style.display !== 'none') frameWalk(now, dt);
-  if (CINE.on) { stepLander(now); stepFx(now, dt); stepHazards(now, dt); cineFrame(now); return; }
+  if (CINE.on) { stepLander(now); stepFx(now, dt); stepHazards(now, dt); stepRocks(dt); cineFrame(now); return; }
   if (wrap.style.display === 'none') return;
   if (eva.on) stepEVA(dt); else controls.update();
   stepDrive(now); stepAct(now, dt); stepLander(now); stepFx(now, dt);
   crewRover.crew.forEach(c => c.pose('sit', dt));
-  stepObjective(now); stepPickup(dt); stepHazards(now, dt);
+  stepObjective(now); stepPickup(dt); stepHazards(now, dt); stepRocks(dt);
   const sk = shake.until > now && !reduced() ? shake.amp * (shake.until - now) / shake.len : 0;
   const off = V3((Math.random() - .5) * sk, (Math.random() - .5) * sk, (Math.random() - .5) * sk); camera.position.add(off);
   renderer.render(scene, camera);
