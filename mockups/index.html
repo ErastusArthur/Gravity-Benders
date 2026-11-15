@@ -936,7 +936,7 @@ var JT = (function () {
   }
   var once = {}; function first(what) { if (!once[what]) { once[what] = 1; step(what); } }
   step('page opened (' + screen.width + '×' + screen.height + ', ' + (screen.orientation ? screen.orientation.type : '') + ')');
-  addEventListener('error', function (e) { step('error: ' + (e.message || 'unknown')); });
+  addEventListener('error', function (e) { if (!/ResizeObserver loop/.test(e.message || '')) step('error: ' + (e.message || 'unknown')); });   // (that one is a harmless browser notice)
   addEventListener('orientationchange', function () { step('screen turned'); });
   document.addEventListener('fullscreenchange', function () { step(document.fullscreenElement ? 'full screen on' : 'full screen off'); });
   return { step: step, first: first, last: last };
@@ -3970,6 +3970,9 @@ if (new URLSearchParams(location.search).has('ending')) {
      3D VIEW (three.js). Falls back to the photo map if it can't load.
      =================================================================== -->
 <script type="module">
+// building the world takes a few seconds on a phone: take a short breath every so often so the screen keeps
+// moving and the phone never thinks the page has frozen (top-level await: the rest waits, nothing else changes)
+const breath = () => new Promise(r => setTimeout(r, 0));
 let THREE, OrbitControls;
 try {
   THREE = await import('three');
@@ -4016,6 +4019,7 @@ const [IX, IZ] = siteXZ('ice');                                  // cold trap cr
 smalls.push({ x: IX, z: IZ, R: 8, D: 7 });
 const [FX, FZ] = siteXZ('fresh');                                // young crater with bright rays
 smalls.push({ x: FX, z: FZ, R: 3.2, D: 1.5 });
+for (const c of smalls) c.R2 = (2.4 * c.R) ** 2;                // beyond 2.4 radii a crater changes nothing you could see
 function segDist(px, pz, ax, az, bx, bz) {
   const vx = bx - ax, vz = bz - az, t = Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / (vx * vx + vz * vz)));
   return [Math.hypot(px - (ax + t * vx), pz - (az + t * vz)), t];
@@ -4034,7 +4038,7 @@ function lolaH(x, z) {
 const LOLA_B = lolaH(...polar(BASE_ANG, RIM + 4));              // the base's real height becomes 0
 function Hraw(x, z) {
   let h = lolaH(x, z) - LOLA_B + fbm(x * .11, z * .11, 3) * .55 + fbm(x * .5, z * .5, 2) * .12;   // + small bumps finer than the data
-  for (const c of smalls) h += crater(Math.hypot(x - c.x, z - c.z), c.R, c.D, c.R * .14);
+  for (const c of smalls) { const dx = x - c.x, dz = z - c.z, q = dx * dx + dz * dz; if (q < c.R2) h += crater(Math.sqrt(q), c.R, c.D, c.R * .14); }
   return h;
 }
 const BH = Hraw(BX, BZ);
@@ -4098,6 +4102,7 @@ window.JAMTRELIEF = relief;
 setTimeout(() => { if (window.JAMT_MAP_VIEW) relief(window.JAMT_MAP_VIEW, () => { if (document.querySelector('#campaign.open') && window.drawCampaign) window.drawCampaign(); }); }, 1500);
 // The base is dug into a pit and covered with moon soil: the soil is a radiation shield and keeps the
 // temperature steady, while the solar arrays stay up in the sunlight. A ramp leads out to the rover dock.
+await breath();
 const PIT = 2.0;
 function pitDepth(x, z) {
   const dx = x - BX, dz = z - BZ, o = dx * OUTV[0] + dz * OUTV[1], s = dx * SIDEV[0] + dz * SIDEV[1], d = Math.hypot(dx, dz);
@@ -4162,11 +4167,12 @@ const geo = new THREE.PlaneGeometry(SIZE, SIZE, SEG, SEG);
 geo.rotateX(-Math.PI / 2);
 const P = geo.attributes.position, col = new Float32Array(P.count * 3);
 for (let i = 0; i < P.count; i++) {
+  if ((i & 4095) === 4095) await breath();                      // (a breath every 4,096 ground points)
   const x = P.getX(i), z = P.getZ(i);
   P.setY(i, H(x, z));
   const mo = Math.max(0, Math.min(1, (fbm(x * .03, z * .03, 4) + .5 - .38) * 1.6));   // light and dark patches
   let n = .62 - mo * .2 + fbm(x * .25, z * .25, 3) * .1;
-  for (const c of smalls) { const t = Math.hypot(x - c.x, z - c.z) / c.R; if (t < 2.4) n += t < 1 ? -.05 : .07 * Math.exp(-(((t - 1.1) / .45) ** 2)); }   // shaded bowls, bright rims
+  for (const c of smalls) { const dx = x - c.x, dz = z - c.z, q = dx * dx + dz * dz; if (q >= c.R2) continue; const t = Math.sqrt(q) / c.R; if (t < 2.4) n += t < 1 ? -.05 : .07 * Math.exp(-(((t - 1.1) / .45) ** 2)); }   // shaded bowls, bright rims
   const fd = Math.hypot(x - FX, z - FZ);                          // bright fresh ejecta rays
   if (fd < 14) n += (fd < 3.4 ? .22 : .3 * Math.max(0, Math.cos(Math.atan2(z - FZ, x - FX) * 7)) ** 3 * (1 - fd / 14));
   col[i * 3] = n; col[i * 3 + 1] = n * .985; col[i * 3 + 2] = n * .955;
@@ -4180,9 +4186,9 @@ const tc = document.createElement('canvas'); tc.width = tc.height = 512;
       u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), h = (i, j) => hash(((i % P) + P) % P + k * 31, ((j % P) + P) % P),
       A = h(xi, yi), B = h(xi + 1, yi), C = h(xi, yi + 1), D = h(xi + 1, yi + 1);
     f += a * (A + (B - A) * u + (C - A) * v + (A - B - C + D) * u * v); a *= .5; fr *= 2; } return f; };
-  for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
+  for (let y = 0; y < 512; y++) { if ((y & 31) === 31) await breath(); for (let x = 0; x < 512; x++) {
     const v = Math.max(0, Math.min(255, 196 + (tn(x / 64, y / 64, 5) - .48) * 110 + (Math.random() - .5) * 16));
-    img.data.set([v, v, v, 255], (y * 512 + x) * 4); }
+    img.data.set([v, v, v, 255], (y * 512 + x) * 4); } }
   g.putImageData(img, 0, 0);
   for (let i = 0; i < 1100; i++) { const r = .5 + Math.random() * Math.random() * 3, c = 70 + Math.random() * 110, x = Math.random() * 512, y = Math.random() * 512;
     g.fillStyle = `rgba(${c},${c},${c},${.35 + Math.random() * .4})`; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
@@ -4219,6 +4225,7 @@ earthshine.position.set(-Math.cos(BASE_ANG) * 100, 30, -Math.sin(BASE_ANG) * 100
 scene.add(earthshine);
 
 // stars
+await breath();
 { const n = 5000, p = new Float32Array(n * 3), c = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) { const u = Math.random() * 2 - 1, t = Math.random() * Math.PI * 2, r = 3000;
     p.set([Math.sqrt(1 - u * u) * Math.cos(t) * r, Math.abs(u) * r * .9 + 20, Math.sqrt(1 - u * u) * Math.sin(t) * r], i * 3);
@@ -4344,6 +4351,7 @@ for (const [x, z] of [[15, 10], [19, -3], [5, -18.5], [-7, -17.5], [9, 16]]) {
   for (let i = 1; i < 4; i++) add(new THREE.Mesh(new THREE.BoxGeometry(.04, 6.4, .12), M.grey), -1.8 + i * .9, 7.4, .14, g);   // cell strips
   arrays.push(g);
 }
+await breath();
 const sunFlat = new THREE.Vector3(Math.cos(SUN_AZ), 0, Math.sin(SUN_AZ));
 // drop a group (child of the base) onto the real terrain: use the lowest ground under its footprint
 // and sink it slightly, so nothing floats where the ground slopes away from the flattened pad
@@ -4468,6 +4476,7 @@ const SUITTEX = (() => {
   h.strokeStyle = 'rgba(60,25,22,.7)'; h.lineWidth = 1.6; h.beginPath(); h.moveTo(116, 160); h.quadraticCurveTo(128, 163, 140, 160); h.stroke();
   return { cloth: tex(base, true), clothBump: tex(base), dust: tex(dust, true), dustBump: tex(dust), face: tex(face, true) };
 })();
+await breath();
 const clothMat = (col, dusty) => new THREE.MeshStandardMaterial({ color: col, map: dusty ? SUITTEX.dust : SUITTEX.cloth, bumpMap: dusty ? SUITTEX.dustBump : SUITTEX.clothBump, bumpScale: 1.1, roughness: .93 });
 SM.eva = clothMat(0xf4f2ec); SM.evaDust = clothMat(0xf4f2ec, true);
 SM.under = clothMat(0xe6e9ee); SM.under.bumpScale = .7;                          // the cooling undersuit is cloth too
@@ -4824,6 +4833,7 @@ function makeRover() {
 }
 
 // rover (crew rover, or the helper robot on robotic trips)
+await breath();
 const rover = new THREE.Group();
 const crewRover = makeRover(); rover.add(crewRover.g);
 const surfBot = makeRobot(); surfBot.g.scale.setScalar(1.6); surfBot.g.visible = false; rover.add(surfBot.g);
@@ -4946,6 +4956,7 @@ const tgt = new THREE.Group(); tgt.visible = false; scene.add(tgt);
 { const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.6, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x7aa2ff, transparent: true, opacity: .9, side: THREE.DoubleSide, depthWrite: false }));
   ring.position.y = .3; tgt.add(ring);
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 7, 6), new THREE.MeshBasicMaterial({ color: 0x7aa2ff, transparent: true, opacity: .7 })); beam.position.y = 3.5; tgt.add(beam); }
+await breath();
 const groundPts = (a, b, up = 0) => {
   const n = Math.max(12, Math.ceil(a.distanceTo(b) / 1.2)), pts = [];
   for (let i = 0; i <= n; i++) { const x = a.x + (b.x - a.x) * i / n, z = a.z + (b.z - a.z) * i / n; pts.push(new THREE.Vector3(x, H(x, z) + up, z)); }
@@ -5107,6 +5118,7 @@ function stepAct(now, dt) {
   }
 }
 // tap the ground to choose where to drive (a tap, not a drag to look around)
+await breath();
 { let down = null; const rc = new THREE.Raycaster(), nd = new THREE.Vector2();
   renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
   renderer.domElement.addEventListener('pointerup', e => {
@@ -5285,6 +5297,7 @@ function evaOptions() {
   }
   return o;
 }
+await breath();
 const fmtO2 = h => `${Math.floor(h)} h ${String(Math.floor((h % 1) * 60)).padStart(2, '0')} min`;
 // ===================== SURVIVAL ON FOOT (ages 13+) =====================
 // A suit carries its own air and battery (NASA's xEMU: about 8 hours of each). The battery runs the fans that move air
@@ -5414,6 +5427,7 @@ function stepPickup(dt) {
 // ---- METEORITE STRIKES. The Moon has no air to burn them up, so even pebbles hit at ~20 km/s. NASA's cameras on
 // Earth see the flashes on the Moon's night side, and LRO has found hundreds of brand-new craters. Real hits near you
 // are very rare; the game speeds that up.
+await breath();
 const craterTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
   for (let i = 0; i < 70; i++) {                                         // bright rays of fresh, unweathered ejecta
     const a = Math.random() * 6.283, l = 60 + Math.random() * 68, w = .02 + Math.random() * .05;
@@ -5641,6 +5655,7 @@ addEventListener('pointerup', () => { eva.drag = null; });
 renderer.domElement.addEventListener('wheel', e => { if (!eva.on) return; e.preventDefault(); eva.camDist = Math.min(14, Math.max(3, eva.camDist * (e.deltaY > 0 ? 1.1 : .9))); }, { passive: false });
 
 // ---------- ROCK SAMPLES: small rocks around the base and the places, the walking astronaut can pick them up ----------
+await breath();
 const rockG = new THREE.Group(); scene.add(rockG);
 const sampleRocks = [];
 { let sd = 77; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
@@ -5781,6 +5796,7 @@ function cineEnd() {
 }
 
 // ---------- loop ----------
+await breath();
 const tmp = new THREE.Vector3();
 let lastT = performance.now();
 // AUTO QUALITY: watch how long frames take. Slower than ~40 frames a second for 3 seconds = drop one level.
@@ -5881,7 +5897,7 @@ function frame(now) {
     if (vis) l.el.style.transform = `translate(${(tmp.x * .5 + .5) * w}px, ${(-tmp.y * .5 + .5) * h}px) translate(-50%, -100%)`;
   }
 }
-requestAnimationFrame(frame);
+// (the drawing loop starts at the very end, once the base is built too)
 
 // MAP: a top-down shaded-relief picture of this terrain (the same heights as the 3D Moon), drawn once for the minimap.
 // It covers 6.2 km around the base in the minimap's own frame: up = away from the pole, the crater is down (south).
@@ -5910,6 +5926,7 @@ window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get 
 // =====================================================================
 //  INSIDE THE BASE: first-person walk-through
 // =====================================================================
+await breath();
 const walkWrap = document.getElementById('walk3d');
 const walkLabelLayer = document.getElementById('walkLabels');
 const wr = new THREE.WebGLRenderer({ antialias: !LITE, powerPreference: LITE ? 'default' : 'high-performance' });
@@ -6030,6 +6047,7 @@ function screen(w, h, x, y, z, ry) {
 const PROF = [[-1.8, 0], [1.8, 0], [2.4, .5], [2.4, 1.8], [1.6, 3], [-1.6, 3], [-2.4, 1.8], [-2.4, .5]];
 const SEG_KEY = ['floor', 'wall', 'wall', 'ceil', 'ceil', 'ceil', 'wall', 'wall'];
 const SEG_SIDE = [0, 1, 1, 1, 0, -1, -1, -1];
+await breath();
 const DOORS = [
   { id: 'greenhouse', s: -1, z: -8, label: 'GRN-1  GREENHOUSE', color: '#3fae6a' },
   { id: 'power', s: 1, z: -8, label: 'PWR-1  POWER & AIR', color: '#e0b83a' },
@@ -6168,6 +6186,7 @@ rack(-5.7, -10.9, 3.8, true, [.45, 1.05, 1.65], 'mix', .3, -1, 0, [['LETTUCE', '
 rack(-5.7, -5.1, 3.8, true, [.45, 1.05, 1.65], 'mix', .3, 1, Math.PI, [['LETTUCE', '#5ec26a'], ['RED ROMAINE', '#c0506e'], ['LETTUCE', '#5ec26a']]);
 rack(-7.95, -8, 3.4, false, [.35, 1.1], 'tomato', .45, -1, Math.PI / 2, [['DWARF TOMATO', '#e0533a'], ['DWARF TOMATO', '#e0533a']]);
 // plants are instanced leaves so they can grow smoothly with the days of steady power
+await breath();
 const leafDefs = [], fruitDefs = [], tomatoes = plantSpots.filter(p => p.kind === 'tomato');
 for (const p of plantSpots) {
   if (p.kind === 'tomato') {
@@ -6306,6 +6325,7 @@ C(.05, 3.2, PWM.yellow, 6.2, .05, -8, 'x');
 // OGA: water is split into oxygen and hydrogen; you can see the bubbles rising
 B(1.1, 1.9, .75, PWM.white, 4.3, .95, -11.55);
 C(.18, 1.1, PWM.glass, 4.3, 1.15, -11.12, 'y', 20); C(.15, .95, PWM.water, 4.3, 1.1, -11.12, 'y', 20);
+await breath();
 const bubbles = [];
 for (let i = 0; i < 14; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(.018 + (i % 3) * .008, 8, 6), PWM.bubble); b.userData = { ph: i / 14, dx: ((i * 37) % 10 - 5) / 60, dz: ((i * 53) % 10 - 5) / 80 }; ws.add(b); bubbles.push(b); }
 C(.04, .8, PWM.green, 4.65, 2.3, -11.4); sign('O₂ OUT', '#5ee08a', 4.65, 2.78, -11.35, 0, .5, .14);
@@ -6430,6 +6450,7 @@ const crates = ['WHEEL', 'PUMP', 'SEAL', 'FAN', 'CHIP'].map((name, i) => {
   const lab = sign(name, '#e0b83a', 0, 0, 0, Math.PI, .44, .12); ws.remove(lab); lab.position.set(0, .2, -.231); g.add(lab);
   return g;
 });
+await breath();
 { const bagGeo = new THREE.SphereGeometry(1, 12, 8);
   instanced(bagGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 }),
     [[-7.7, .13, -16.6], [-7.7, .13, -17.2], [-7.7, .37, -16.9], [-7.2, .13, -16.6]].map(p => ({ p, s: [.32, .13, .2], c: 0x9a907c })));
@@ -6554,6 +6575,7 @@ for (const z of [-31.4, -32.4]) { B(.5, .32, .7, WM.metal, -4.2, 1.15, z); B(.02
 B(.7, .78, 5.0, WARM.body, 4.15, .39, -34); B(.8, .05, 5.1, WM.dark, 4.1, .8, -34);
 for (const z of [-32.6, -35.4]) { B(.02, .08, .5, new THREE.MeshStandardMaterial({ color: 0x0a2010, emissive: 0x3cff7a, emissiveIntensity: 1.2 }), 3.72, .84, z); }
 for (const z of [-32.8, -35.2]) zChair(3.35, z, Math.PI / 2);
+await breath();
 const habScreen = screen(2.4, 1.0, 4.47, 1.75, -34, -Math.PI / 2);
 const camScreen = screen(1.0, .55, 4.47, 1.6, -31.7, -Math.PI / 2);
 const ctlScreen = screen(1.0, .55, 4.47, 1.6, -36.3, -Math.PI / 2);
@@ -6683,6 +6705,7 @@ sign('SPARE GLOVES · VISORS', '#c9d1e6', -2.07, 2.1, 2.08, Math.PI / 2, 1.2, .1
   const m = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.05), new THREE.MeshStandardMaterial({ map: t, roughness: .7 }));
   m.position.set(2.58, 1.55, 5.45); m.rotation.y = -Math.PI / 2; ws.add(m); }
 // EVA checklist poster by the inner door
+await breath();
 { const t = canvasTex(400, 520, (g, W, H) => {
     g.fillStyle = '#0d1420'; g.fillRect(0, 0, W, H);
     g.fillStyle = '#ffd34d'; g.font = 'bold 36px Consolas, monospace'; g.fillText('EVA CHECKLIST', 26, 52);
@@ -6825,6 +6848,7 @@ function travel(id) {
   walk.path = { pts, total, d: 0, to: id };
   walk.node = id; walk.yaw = walk.pitch = 0; walk.base = baseEuler(id);
 }
+await breath();
 const tq = new THREE.Quaternion(), tm = new THREE.Matrix4();
 function stepWalk(dt) {
   const P = walk.path;
@@ -6946,6 +6970,7 @@ function stepUses(w, h) {
   }
 }
 // keyboard inside the base: WASD / arrows walk, Shift jogs, E uses the thing in front of you
+await breath();
 const inBase = () => { const s = J.state; return s && s.view === 'base' && s.interior === '3d' && walkWrap.offsetParent !== null; };
 addEventListener('keydown', e => {
   if (!inBase() || (e.target.closest && e.target.closest('input, textarea, select'))) return;
@@ -7070,6 +7095,7 @@ function buildNav() {
   NAV.nx = Math.ceil(18 / NAV.st); NAV.nz = Math.ceil(56 / NAV.st); NAV.free = new Uint8Array(NAV.nx * NAV.nz);
   for (let j = 0; j < NAV.nz; j++) for (let i = 0; i < NAV.nx; i++) NAV.free[j * NAV.nx + i] = navFree(NAV.x0 + (i + .5) * NAV.st, NAV.z0 + (j + .5) * NAV.st) ? 1 : 0;
 }
+await breath();
 const navCell = (x, z) => [Math.floor((x - NAV.x0) / NAV.st), Math.floor((z - NAV.z0) / NAV.st)];
 const navOk = (i, j) => i >= 0 && j >= 0 && i < NAV.nx && j < NAV.nz && NAV.free[j * NAV.nx + i] === 1;
 const navXZ = (i, j) => [NAV.x0 + (i + .5) * NAV.st, NAV.z0 + (j + .5) * NAV.st];
@@ -7215,6 +7241,7 @@ function doJob(k, key) {
   sendTo(c, key, 'On my way! 🏃', null, 2.6);
 }
 // ---- chats: when two or more people work in the room you are in, they talk (often in the control room) ----
+await breath();
 const chat = { on: false, next: 0 };
 function stepChat(now) {
   const room = walk.here;
@@ -7362,6 +7389,7 @@ function updateWalk(s) {
 
 function resizeWalk() { const w = walkWrap.clientWidth, h = walkWrap.clientHeight; if (!w || !h) return; wr.setSize(w, h, false); wcam.aspect = w / h; wcam.updateProjectionMatrix(); }
 new ResizeObserver(resizeWalk).observe(walkWrap); resizeWalk();
+await breath();
 const tmpW = new THREE.Vector3(), tagPos = new THREE.Vector3();
 function project(el, pos, w, h, show) {
   tmpW.copy(pos).project(wcam);
@@ -7474,6 +7502,14 @@ function portrait(id, L) {
   } catch (e) { return null; }
 }
 window.JAMTWALK = { setLook, preview, portrait, navPath, navFree, sendTo, SPOT, setPR: pr => { wr.setPixelRatio(pr); resizeWalk(); }, get solids() { return SOLIDS; }, canStand, onFloor, buildInSolids, update: updateWalk, sleep, suitUp, crew: CREW, me, walk, uses: USES };
+// prepare the 3D surfaces (shaders) in the background now, while the title screen shows, instead of freezing for
+// seconds on the first frame of a mission or the base. Give up waiting after 8 s; anything left is made when needed.
+if (renderer.compileAsync) {
+  window.JT && JT.step('preparing 3D surfaces');
+  try { await Promise.race([Promise.all([renderer.compileAsync(scene, camera), wr.compileAsync(ws, wcam)]), new Promise(r => setTimeout(r, 8000))]); } catch (e) {}
+  window.JT && JT.step('3D surfaces ready');
+}
+requestAnimationFrame(frame);                                    // everything is built: start drawing
 J.ready3D();
 </script>
 </body>
