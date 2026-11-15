@@ -827,6 +827,11 @@
 /* PHONES PLAY SIDEWAYS: held upright, a phone asks you to turn it; held sideways, the Moon fills the screen
    and the panels float on top of it, small, like a console game. */
 #turnPhone { display: none; }
+/* a flare's light: one soft warm flash over the whole screen (once, never a flicker) */
+body.flareFlash::after { content: ''; position: fixed; inset: 0; z-index: 99990; pointer-events: none;
+  background: radial-gradient(circle at 78% 22%, rgba(255,244,214,.95), rgba(255,190,90,.45) 38%, rgba(255,150,60,0) 72%); animation: flareFlash 1.8s ease-out forwards; }
+@keyframes flareFlash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { body.flareFlash::after { animation-duration: 2.4s; opacity: .5; } }
 #crashTrail { position: fixed; z-index: 100001; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto;
   background: #0b1222; color: #e8edf6; border: 1px solid #5ec8ff; border-radius: 14px; padding: 14px 16px; font: 14px/1.4 system-ui, sans-serif; box-shadow: 0 12px 40px rgba(0,0,0,.6); }
 #crashTrail small { display: block; color: #9fb0cf; margin: 4px 0 6px; }
@@ -1899,7 +1904,7 @@ function avatar(id, size = 38) {
 }
 // queue a radio call; replies are the Commander's orders back
 function radio(who, text, o = {}) {
-  const m = { id: Math.random().toString(36).slice(2), who, text, ch: o.ch || chanFor(who), day: state.day, replies: o.replies || [], answered: null, timer: o.timer || null };
+  const m = { id: Math.random().toString(36).slice(2), who, text, ch: o.ch || chanFor(who), day: state.day, replies: o.replies || [], answered: null, timer: o.timer || null, urgent: !!o.urgent };
   if (DEMO && DEMO.on && !o.demo && m.ch !== 'suit') { state.radio.unshift(m); trimRadio(); return; }   // keep the demo scene clean (still in the radio log)
   if (who === 'earth' && o.delay) {                         // a reply from Earth arrives after the round trip
     state.radioWait = true; renderRadio();
@@ -2096,14 +2101,33 @@ function breakdown(d) {
     { label: 'Take the loss', say: 'Save the part. We will manage.', then: () => { log(`⚠ ${b.what} We chose to save the part: ${b.loss}.`); lose(); } }],
     timer: { late: { say: 'Commander? … No order. I could not fix it in time.', log: b.loss, then: lose } } });
 }
+// FLARE SCENE: when a flare goes off, a short cutscene first: the camera turns to the Sun on the horizon, the screen
+// flashes once (the flare's light, which arrives first), and Mission Control explains. Then the choice: take cover or not.
+// If NASA's live DONKI data has a real big flare from this month, the scene names it.
+function flareScene(onFoot, then) {
+  const big = SUN.src === 'live' && SUN.big ? SUN.big.classType : null;
+  const lines = [
+    { who: 'computer', text: 'Warning! X-ray burst detected. A solar flare has just erupted on the Sun.' },
+    { who: 'mission_control', text: big ? `Outpost, NASA’s space weather team sees a big flare. This month the real Sun has already made one as strong as ${big}.`
+                                        : 'Outpost, NASA’s space weather team sees a big flare. Its light took just over 8 minutes to reach you.' },
+    { who: 'mission_control', text: onFoot ? 'Its radiation, fast particles, is right behind the light, and a spacesuit stops almost none of it. Get under cover!'
+                                           : 'Its radiation, fast particles, is right behind the light. Thick walls and water stop it. Open ground does not.' }];
+  flareFlashAt = performance.now();
+  document.body.classList.remove('flareFlash'); void document.body.offsetWidth; document.body.classList.add('flareFlash');
+  setTimeout(() => document.body.classList.remove('flareFlash'), 2000);
+  sqPush(next => playScene({ ic: '☀', kick: `Flare alert · Day ${state.day}`, head: 'A solar flare!', lines, shot: 'sun', go: 'What do we do? ▸' }, () => { next(); then(); }));
+}
 function flareAlert(d) {
+  flareScene(!roverHome() || evaOn(), () => flareAlertRadio(d));
+}
+function flareAlertRadio(d) {
   flareFlashAt = performance.now(); flareFxAt = flareFlashAt + 6000;      // light first, particles a few seconds later
   flareLen = 45000;
   const out = !roverHome() || evaOn(), r = state.rover;
   const text = out ? `Flare alert! NASA's space weather team just saw a big flare on the Sun. Fast particles reach the Moon in minutes. MO-01 is out at ${r.at ? placeOf(r.at).name : 'open ground'}. Stop work and hide behind the water tanks, or keep working?`
                    : 'Flare alert! NASA’s space weather team just saw a big flare on the Sun. Fast particles reach the Moon in minutes. Move everyone into the storm shelter, or keep working?';
   const hit = (mSv, why) => { state.R += mSv; log(`☢ ${why}: +${mSv} mSv of radiation.`); render(); };
-  radio('earth', text, { delay: true, replies: [
+  radio('earth', text, { delay: true, urgent: true, replies: [
     { label: out ? 'Hide behind the tanks' : 'Everyone to the shelter', say: out ? 'MO-01, stop and get behind the water tanks!' : 'All crew to the storm shelter, now!',
       then: () => { if (evaOn()) window.JAMT3D.stopEVA(); state.hours = Math.max(0, state.hours - 3); hit(out ? 4 : 1, 'The crew took cover. They lost 3 hours of work but stayed safe'); } },
     { label: 'Keep working', say: 'Keep working. It might be a small one.', then: () => hit(out ? 35 : 12, 'The crew kept working through the flare') }],
@@ -2114,9 +2138,10 @@ function flareAlert(d) {
 // particles follow some minutes later and keep coming for hours. A suit stops almost none of them: get under cover.
 function flareOnFoot(km, near, o = {}) {
   if (MISSION.calm && !o.demo) return false;
+  if (!o.demo && !o.after) { flareScene(true, () => flareOnFoot(km, near, Object.assign({}, o, { after: true }))); return true; }   // the scene first
   flareFlashAt = performance.now(); flareFxAt = flareFlashAt + (o.warn || 30000); flareLen = 150000;    // 30 game-minutes of warning, a long storm
   radio('earth', `Flare alert! A big flare just went off on the Sun. Fast particles reach the Moon in about 30 minutes, and your suit can't stop them. Kofi, you are ${km.toFixed(1)} km from ${near}. Get under cover!`,
-    { delay: !o.demo, demo: o.demo, replies: [
+    { delay: !o.demo, demo: o.demo, urgent: true, replies: [
       { label: '📻 Send MO-01 to Kofi', say: 'Leo, drive out and pick Kofi up. Fast!', then: () => window.JAMT3D && window.JAMT3D.callPickup() },
       { label: 'Kofi, run back', say: 'Kofi, head back to cover. Lope!' }] });
   log('☀ A flare caught Kofi out on foot. Particles arrive about 30 minutes after the flash.');
@@ -3411,7 +3436,10 @@ const clockOf = () => { const h = 6 + (DAY_HOURS - state.hours); const hh = Math
 const DECIDE_S = 10;
 function showDialog(m) {
   const cur = hud.dlg;
-  if (cur && cur !== m && !cur.answered && cur.replies.length && m.who !== 'you') { (hud.queue = hud.queue || []).push(m); return; }   // a question stays on screen until it is answered
+  if (cur && cur !== m && !cur.answered && cur.replies.length && m.who !== 'you') {   // a question stays on screen until it is answered,
+    if (!m.urgent) { (hud.queue = hud.queue || []).push(m); return; }
+    (hud.queue = hud.queue || []).unshift(cur);                    // unless this one is urgent (a flare): it goes first, the other waits
+  }
   if (m.timer && !m.read) { m.read = performance.now() + Math.min(7000, 1000 + m.text.length * 30); m.deadline = m.read + decideS() * 1000; }
   hud.dlg = m; hud.dlgShown = null; clearTimeout(hud.dlgTimer);
   renderDialog();
@@ -4138,7 +4166,7 @@ const SAFE = (() => { try {
   if (q.get('safe') === '1' || (LITE && crashed)) localStorage.setItem('jamt_safe', '1');
   localStorage.removeItem('jamt_beat');
   const on = localStorage.getItem('jamt_safe') === '1';
-  if (crashed && window.JT && JT.last && JT.last.length) setTimeout(() => {
+  if (crashed && LITE && window.JT && JT.last && JT.last.length) setTimeout(() => {   // (phones only: that's where it helps)
     const d = document.createElement('div'); d.id = 'crashTrail'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'What happened last time');
     d.innerHTML = '<b>📱 Chrome closed the game last time.</b><small>These were its last steps. Please take a screenshot and send it to the team.</small><ol></ol><button type="button">OK, carry on</button>';
     JT.last.slice(-9).forEach(t => { const li = document.createElement('li'); li.textContent = t; d.querySelector('ol').appendChild(li); });
@@ -5231,8 +5259,8 @@ function stepFx(now, dt) {
   // the Sun, and a flare's flash of light
   _sd.copy(sun.position).normalize();
   sunGlare.visible = _sd.y > -.01;
-  const fl = Math.max(0, 1 - (now - J.flareFlashAt) / 7000), flick = fl > 0 ? fl * (.75 + .25 * Math.sin(now / 90)) : 0;
-  sunGlare.position.copy(camera.position).addScaledVector(_sd, 2500); sunGlare.scale.setScalar(110 * (1 + 1.4 * flick));
+  const fl = Math.max(0, 1 - (now - J.flareFlashAt) / 12000), flick = fl > 0 ? fl * (.75 + .25 * Math.sin(now / 90)) : 0;   // (a slow shimmer, under 2 a second)
+  sunGlare.position.copy((CINE.on ? CINE.cam : camera).position).addScaledVector(_sd, 2500); sunGlare.scale.setScalar(110 * (1 + (CINE.on ? 4 : 1.4) * flick));   // (in a cutscene, the film camera sees it too)
   sun.intensity = SUN_BASE * (1 + .5 * flick);
 }
 let solids = [], solidsT = 0;
@@ -5767,8 +5795,8 @@ const SHOTS = {
     return [cv(PX + Math.cos(a) * 26, PZ + Math.sin(a) * 26, 4 + t * .2), new THREE.Vector3(PX, PH + 3 + lander.position.y * .8, PZ)]; },
   earth: t => { const e = EARTH.mesh.position, d = e.clone().sub(B0()).setY(0).normalize(), c = B0().addScaledVector(d, -34 - t * .6);
     const p = cv(c.x, c.z, 6); return [p, p.clone().lerp(e, .02).add(new THREE.Vector3(0, -.6, 0))]; },
-  sun: t => { const d = sun.position.clone().setY(0).normalize(), c = B0().addScaledVector(d, -30 - t * .5);
-    const p = cv(c.x, c.z, 5); return [p, B0().addScaledVector(sun.position.clone().normalize(), 600)]; },
+  sun: t => { const d = sun.position.clone().setY(0).normalize(), c = B0().addScaledVector(d, -18 - t * .4);   // high over the rim: at the pole the Sun sits
+    const p = cv(c.x, c.z, 26 + t * .3); return [p, p.clone().addScaledVector(sun.position.clone().normalize(), 600).add(new THREE.Vector3(0, -75, 0))]; },   // just above the hills
   ridge: t => orbitShot(SITE_POS.ridge, 18, 7, RIDGE_ANG + 1.2, .04, 2.5)(t),
   ice: t => orbitShot(SITE_POS.ice, 26, 16, BASE_ANG + 2.4, .03, -3)(t),
   boulders: t => orbitShot(SITE_POS.boulders, 14, 4, BASE_ANG - 1, .05, .8)(t),
