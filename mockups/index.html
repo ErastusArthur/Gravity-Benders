@@ -2139,8 +2139,8 @@ function quakeScene(o, start, then) {
   const lines = [
     { who: 'computer', text: 'Seismic alert! A moonquake is shaking the ground.' },
     { who: 'mission_control', text: 'Apollo astronauts left seismometers on the Moon. They recorded shallow moonquakes up to about magnitude 5.' },
-    { who: o.eva ? 'scientist' : 'medic', text: o.eva ? 'Listen… nothing! With no air there is no rumble at all. I only feel it through my boots.'
-                                              : 'Listen… nothing! With no air outside there is no rumble. We only feel it through the floor.' },
+    { who: o.eva ? 'scientist' : 'medic', text: o.eva ? 'Listen… no rumble at all! With no air, sound can’t reach me across the ground. I feel it through my boots, and hear my suit creak.'
+                                              : 'Listen… no rumble from outside! With no air, sound can’t travel to us. We feel it through the floor, and hear the walls creak.' },
     { who: 'mission_control', text: 'The Moon’s rock is cold and dry, so it rings like a bell: a quake can go on for more than 10 minutes. Loose boulders roll down the slopes, and NASA’s LRO has photographed their tracks.' }];
   sqPush(next => {
     const cine = !window.JAMT_LITE && window.JAMT3D && JAMT3D.cineStart;
