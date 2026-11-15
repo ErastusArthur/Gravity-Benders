@@ -502,8 +502,14 @@
 
   .ending { position: fixed; inset: 0; z-index: 20; display: none; overflow: auto; background: radial-gradient(ellipse at top, #1b2550, #05070d 70%); }
   .ending.open { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 520px); justify-content: center; align-items: center; gap: 32px; padding: 24px 16px; }
-  .ending .art { position: relative; }
-  .ending img { display: block; width: 100%; max-height: calc(100vh - 48px); object-fit: contain; border-radius: 14px; border: 1px solid var(--line); }
+  .ending .art { position: relative; overflow: hidden; border-radius: 14px; border: 1px solid var(--line); }
+  .ending img { display: block; width: 100%; max-height: calc(100vh - 48px); object-fit: cover; transform-origin: 50% 40%; }
+  /* Slow film-style camera move over the still picture: push in, drift across the town, back out */
+  .ending.open img { animation: endFilm 36s ease-in-out infinite alternate; }
+  .ending .art::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 30%, rgba(255,214,140,.10), transparent 60%); animation: endGlow 6s ease-in-out infinite alternate; }
+  @keyframes endFilm { 0% { transform: scale(1.02) translate(0, 0); } 50% { transform: scale(1.14) translate(-3%, -2%); } 100% { transform: scale(1.10) translate(3%, 1%); } }
+  @keyframes endGlow { from { opacity: .35; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .ending.open img, .ending .art::after { animation: none; } }
   .ending .tag { position: absolute; left: 10px; bottom: 10px; background: rgba(5,7,13,.85); font-size: 12px; padding: 4px 8px; border-radius: 6px; color: #c9d1e6; }
   .ending .fallback { display: none; min-height: 300px; align-items: center; justify-content: center; text-align: center; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); padding: 16px; }
   .ending .art.missing img { display: none; }
