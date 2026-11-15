@@ -5931,7 +5931,8 @@ function cineFrame(now) {
   CINE.cam.position.copy(p); CINE.cam.lookAt(l);
   const sk = shake.until > now && !reduced() ? shake.amp * .6 * (shake.until - now) / shake.len : 0;
   if (sk) CINE.cam.position.add(V3((Math.random() - .5) * sk, (Math.random() - .5) * sk, (Math.random() - .5) * sk));
-  renderer.render(scene, CINE.cam);
+  const ov = OBJ.g.visible; OBJ.g.visible = false;                          // no yellow mission marker in the films
+  renderer.render(scene, CINE.cam); OBJ.g.visible = ov;
 }
 function cineEnd() {
   if (!CINE.on) return; CINE.on = false; CINE.shot = '';
