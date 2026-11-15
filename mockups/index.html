@@ -2287,17 +2287,33 @@ function radLevel() {
 const radFx = ['view3d', 'walk3d'].map(id => { const host = $(id); if (!host) return null;
   const c = document.createElement('canvas'); c.className = 'radFx'; c.setAttribute('aria-hidden', 'true'); host.appendChild(c); return c; }).filter(Boolean);
 let radTold = false;
+// HELMET FLASHES: Apollo astronauts saw brief flashes of light, even with their eyes shut: single fast particles
+// passing through the eye. On foot during a flare Kofi sees them too (small spots only, never the whole screen).
+const PHOS = []; let phosTold = false;
+// THE DOSIMETER: the suit's radiation counter clicks for each burst of particles it counts. The faster the dose
+// climbs, the faster it clicks (only with sound on).
+let clickBuf = null, clickT = performance.now();
+function dosimeter(L) {
+  const now = performance.now(), dt = Math.min(.1, (now - clickT) / 1000); clickT = now;
+  if (!(L > 0) || !voiceOn || !actx || actx.state !== 'running' || document.hidden) return;
+  if (!clickBuf) { const n = Math.ceil(actx.sampleRate * .004); clickBuf = actx.createBuffer(1, n, actx.sampleRate);
+    const d = clickBuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (n / 5)); }
+  const want = Math.min(30, L * 10) * dt, m = Math.floor(want) + (Math.random() < want % 1 ? 1 : 0);   // random gaps, like a real counter
+  for (let i = 0; i < m; i++) { const src = actx.createBufferSource(), g = actx.createGain(); g.gain.value = .28; src.buffer = clickBuf;
+    src.connect(g).connect(actx.destination); src.start(actx.currentTime + Math.random() * dt); }
+}
 requestAnimationFrame(function radLoop() {
   requestAnimationFrame(radLoop);
   const lv = radLevel(), calm = matchMedia('(prefers-reduced-motion: reduce)').matches, cb = $('cineBg'), list = radFx.slice();
+  const T = window.JAMT3D, foot = !!(T && T.evaOn && T.evaOn()); let maxL = 0;
   if (cb) { let c = cb.querySelector('.radFx'); if (!c) { c = document.createElement('canvas'); c.className = 'radFx'; c.setAttribute('aria-hidden', 'true'); cb.appendChild(c); } list.push(c); }
   for (const c of list) {
     const host = c.parentElement, inside = host.id === 'walk3d';
-    const L = lv * (inside ? (window.JAMTWALK && window.JAMTWALK.walk.here === 'shelter' ? 0 : .25) : 1);
+    const L = lv * (inside ? (window.JAMTWALK && window.JAMTWALK.walk.here === 'shelter' ? 0 : .25) : host.id === 'view3d' && foot ? 1.6 : 1);   // on foot the suit stops almost nothing
     const g = c.getContext('2d');
     if (!host.clientWidth || L <= 0) { if (c.dataset.on) { g.clearRect(0, 0, c.width, c.height); c.dataset.on = ''; } continue; }
     const w = host.clientWidth, h = host.clientHeight; if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
-    g.clearRect(0, 0, w, h); c.dataset.on = '1';
+    g.clearRect(0, 0, w, h); c.dataset.on = '1'; maxL = Math.max(maxL, L);
     if (!radTold && !inside) { radTold = true; toast('⚡ See the white specks? They are real: fast particles from the Sun hitting the camera. Get under shielding!'); }
     const n = Math.round(L * w * h / 12000 * (calm ? .25 : 1));
     g.fillStyle = g.strokeStyle = '#fff'; g.lineWidth = 1.3;
@@ -2307,7 +2323,20 @@ requestAnimationFrame(function radLoop() {
       else { const r = 1 + Math.random() * 1.8; g.fillRect(x, y, r, r); }
     }
     g.globalAlpha = 1;
+    if (foot && host.id === 'view3d' && !calm) {                             // helmet flashes, about 1-2 a second
+      if (Math.random() < L * .018) { PHOS.push({ x: w * (.15 + Math.random() * .7), y: h * (.15 + Math.random() * .7), r: 6 + Math.random() * 8, life: 3,
+        streak: Math.random() < .35 ? Math.random() * 6.283 : null });
+        if (!phosTold) { phosTold = true; toast('✨ Kofi sees flashes of light, even with his eyes shut. Apollo astronauts saw them too: single particles passing through the eye.'); } }
+      for (let i = PHOS.length - 1; i >= 0; i--) { const f = PHOS[i], a = f.life / 3;
+        const gr = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r); gr.addColorStop(0, `rgba(255,255,255,${.95 * a})`); gr.addColorStop(.4, `rgba(220,235,255,${.5 * a})`); gr.addColorStop(1, 'rgba(220,235,255,0)');
+        g.fillStyle = gr; g.beginPath(); g.arc(f.x, f.y, f.r, 0, 6.283); g.fill();
+        if (f.streak !== null) { g.strokeStyle = `rgba(255,255,255,${.85 * a})`; g.lineWidth = 2; g.beginPath();
+          g.moveTo(f.x - Math.cos(f.streak) * f.r * 3, f.y - Math.sin(f.streak) * f.r * 3); g.lineTo(f.x + Math.cos(f.streak) * f.r * 3, f.y + Math.sin(f.streak) * f.r * 3); g.stroke(); }
+        if (--f.life <= 0) PHOS.splice(i, 1); }
+    }
   }
+  if (!foot) PHOS.length = 0;
+  dosimeter(maxL);
 });
 function radioDay() {
   const d = state.day, r = state.rover;
@@ -4890,6 +4919,9 @@ function makeCrew(i, outfit = 'base') {
       const b = Math.sin(Math.min(1, Math.max(0, dt)) * Math.PI);
       hip = [-1.0 * b, -.25 * b]; knee = [1.5 * b, .5 * b]; sh = [-.2 - 1.0 * b, -.15 - .3 * b]; el = [-.3, -.3];
       body.rotation.x = .45 * b; body.position.y = -.42 * b; ph -= dt * 2;
+    } else if (kind === 'sick') {                     // doubled over, arms across the stomach (radiation sickness)
+      hip = [-.35, -.35]; knee = [.55, .55]; sh = [-.75 + s * .04, -.75 - s * .04]; el = [-1.6, -1.6];
+      body.rotation.x = .55 + s * .03; body.position.y = -.12;
     } else { sh = [.05 + s * .02, .05 - s * .02]; }
     legs.forEach((l, k) => { l.pivot.rotation.x = hip[k]; l.joint.rotation.x = knee[k]; });
     arms.forEach((a, k) => { a.pivot.rotation.x = sh[k]; a.joint.rotation.x = el[k]; a.pivot.rotation.z = (k ? 1 : -1) * (root.userData.outfit === 'eva' ? .18 : .06); });
@@ -5617,7 +5649,7 @@ function survive(dt) {
     if (eva.dose > 50 && eva.doseTold < 1) { eva.doseTold = 1; J.toast('☢ Kofi has taken 50 mSv on this walk, more than a year of natural radiation on Earth (about 3 mSv) many times over. Get under cover!'); }
     if (eva.dose > J.DOSE_LIMIT && eva.doseTold < 2) { eva.doseTold = 2; J.log(`☢ Kofi passed NASA’s 30-day limit (${J.DOSE_LIMIT} mSv) on one walk.`);
       J.radio('kofi', 'My dosimeter is screaming. I’m past the 30-day limit. I need to get inside!', { ch: 'suit' }); }
-    if (eva.dose > 700 && !eva.sick) { eva.sick = true;
+    if (eva.dose > 700 && !eva.sick) { eva.sick = true; eva.sickNext = performance.now() + 3000;
       J.log('🤢 Radiation sickness: after about 0.7–1 Sv in a short time, people get sick to their stomach, weak and tired. Kofi can only walk slowly now.');
       J.radio('kofi', 'I feel sick… my stomach, my head. I’m so tired I can barely walk. Please come and get me.', { ch: 'suit', replies: [{ label: '📻 Send MO-01', say: 'Leo, go get Kofi now!', then: () => callPickup() }] }); }
   }
@@ -5860,7 +5892,10 @@ function stepEVA(dt) {
   // MOON MOVEMENT. In 1/6 gravity your boots press down with only 1/6 of the weight, so there is very little grip:
   // you speed up slowly, skid when you stop, can't turn sharply and can't steer in the air. Apollo crews walked about
   // 1 m/s, bounded at about 2 m/s ("kangaroo hop") and still fell over now and then.
-  const now = performance.now(), down = now < eva.stumble, M = MOVE;
+  const now = performance.now(), M = MOVE;
+  // radiation sickness: every so often Kofi has to stop, doubled over, holding his stomach
+  if (eva.sick && !eva.air && now > (eva.sickNext || 0)) { eva.sickNext = now + 9000 + Math.random() * 7000; eva.sickStop = now + 2600; }
+  const retch = !!eva.sick && now < (eva.sickStop || 0), down = now < eva.stumble || retch;
   const dir = mv.lengthSq() > 0 ? mv.normalize() : null, bound = !!(dir && k.shift && !eva.sick);
   const vel = eva.vel, speed0 = Math.hypot(vel.x, vel.z);
   let maxV = (bound ? M.bound : M.walk) * (eva.sick ? .7 : 1);
@@ -5938,13 +5973,15 @@ function stepEVA(dt) {
   walker.root.position.copy(eva.pos); walker.root.rotation.y = eva.yaw;
   if (eva.pick) stepPick(performance.now());
   else if (!actAnim) {
-    if (down) walker.pose('pick', .85);                                      // on your knees after a trip
+    if (retch) walker.pose('sick', dt);                                      // doubled over, sick
+    else if (down) walker.pose('pick', .85);                                 // on your knees after a trip
     else if (eva.air) walker.pose('walk', dt * .25);                          // legs drift slowly in the long float
     else walker.pose(moving ? 'walk' : 'stand', moving ? dt * Math.max(.35, speed * .5) : dt);
     if (eva.charge) { const pw = chargePower(now); walker.body.position.y = -.16 * pw; walker.body.rotation.x = .18 * pw; }   // crouching to push off
     else if (now - eva.landT < 250) walker.body.position.y = -.1 * (1 - (now - eva.landT) / 250);                           // soaking up a landing
   }
   if (eva.air) walker.body.rotation.x = -.15;
+  else if (eva.sick && !retch && !down && !eva.pick && !actAnim) { walker.body.rotation.x += .22; walker.body.rotation.z = Math.sin(now / 260) * .1; }   // hunched, staggering
   // over-the-shoulder follow camera
   const cf = fwdOf(eva.camYaw), cr = new THREE.Vector3(-cf.z, 0, cf.x);
   const look = eva.pos.clone().add(V3(0, 1.6, 0)).addScaledVector(cr, .7);
@@ -5964,7 +6001,7 @@ function stepEVA(dt) {
     doseTxt = free && eva.dose >= 1 ? ` · <span class="${eva.dose > 100 ? 'warn' : ''}">☢ ${Math.round(eva.dose)} mSv</span>` : '',
     leakTxt = free && eva.leak ? ' · <span class="warn">💨 suit leak</span>' : '',
     lim = free ? `<span class="${km > WALK_LIMIT_KM ? 'warn' : ''}">(walk-back ${WALK_LIMIT_KM} km)</span>` : `<span class="${km > WALK_LIMIT_KM * .8 ? 'warn' : ''}">(limit ${WALK_LIMIT_KM} km)</span>`;
-  document.getElementById('evaBar').innerHTML = `🧑‍🚀 <b>Kofi on foot</b> · ${gait} · ${tank}${batTxt}${leakTxt}${doseTxt} · ${km < .1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`} from safety ${lim} · 🎒 ${J.state.bag.length}/${J.BAG_MAX} rocks${lope ? ' · loping' : ''}`;
+  document.getElementById('evaBar').innerHTML = `🧑‍🚀 <b>Kofi on foot</b> · ${retch ? '🤢 doubled over, sick' : (eva.sick && !down ? '🤢 sick · ' : '') + gait} · ${tank}${batTxt}${leakTxt}${doseTxt} · ${km < .1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`} from safety ${lim} · 🎒 ${J.state.bag.length}/${J.BAG_MAX} rocks${lope ? ' · loping' : ''}`;
   callBtn.hidden = !free || !!pickup || driveAnim || p0.distanceTo(rover.position) < 6;
   if (pickup) callBtn.hidden = true;
 }
