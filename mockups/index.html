@@ -1970,6 +1970,7 @@ function utter(who, text) {
   const v = VOICE[who] || VOICE.earth, voice = voiceFor(who);
   const u = new SpeechSynthesisUtterance(text.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{FE0F}]/gu, '').replace(/−/g, 'minus ').replace(/CO₂/g, 'C O 2').replace(/O₂/g, 'oxygen').replace(/°C/g, ' degrees'));
   if (voice) u.voice = voice;
+  if (window.JT) { u.addEventListener('start', () => JT.first('voice started (' + (voice ? voice.name : 'default') + ')')); u.addEventListener('error', e => { if (!/interrupted|canceled/.test(e.error || '')) JT.step('voice error: ' + (e.error || 'unknown')); }); }
   const nat = voice && NATURAL.test(voice.name);
   // natural voices already sound human: don't bend them. Basic computer voices get a little pitch so people sound different.
   u.pitch = nat && who !== 'comp' ? 1 : v.pitch;   // the base computer always sounds a bit robotic u.rate = nat ? (who === 'mira' ? 1.04 : who === 'leo' ? .97 : 1) : v.rate; u.volume = .95;
@@ -3009,7 +3010,7 @@ const shotFor = (txt, k) => { for (const [re, s] of SHOT_WORDS) if (re.test(txt)
 // a cutscene: each line in the speaker's own voice, with subtitles over a live 3D shot of the Moon. Skippable.
 function playScene(o, done) {
   const el = ovl('brief'), run = ++briefRun, lines = o.lines || [], voice = voiceOn && 'speechSynthesis' in window;
-  const cine = o.cine !== false && !!(window.JAMT3D && JAMT3D.cineStart);
+  const cine = o.cine !== false && !window.JAMT_LITE && !!(window.JAMT3D && JAMT3D.cineStart);   // (phones: no live 3D film)
   el.setAttribute('aria-label', o.head || (o.chap && o.chap.t) || 'Story'); el.classList.toggle('quiet', !voice); el.classList.toggle('cine', cine);
   el.innerHTML = `${cine ? '<div class="cineBg" id="cineBg" aria-hidden="true"></div><div class="cineTag" id="cineTag"></div>' : ''}<div class="in"><div class="panel">
     <div class="bTop"><div class="patch" aria-hidden="true">${o.ic || '📖'}</div>
@@ -4145,6 +4146,7 @@ try {
   document.addEventListener('visibilitychange', () => { try { if (document.visibilityState === 'hidden') localStorage.removeItem('jamt_beat'); else beat(); } catch (e) {} });
 } catch (e) {}
 const PR_MAX = SAFE ? .75 : LITE ? 1 : 1.5;
+window.JAMT_LITE = LITE;
 const FPS_CAP = LITE ? 1000 / 31 : 0;                            // phones: 30 frames a second is plenty, and keeps them cool
 const renderer = new THREE.WebGLRenderer({ antialias: !LITE, powerPreference: LITE ? 'default' : 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, PR_MAX));
