@@ -518,6 +518,16 @@
 
   /* ---------- spacewalk ---------- */
   .evaUI { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 2; }
+  .manUI { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 2; }
+  body.manDrive .manUI { display: block; }
+  /* phone driving: steer with the left thumb, pedals under the right thumb */
+  .drivePad { position: absolute; bottom: 112px; display: none; gap: 6px; pointer-events: auto; }
+  .drivePad.steer { left: 14px; grid-template-columns: repeat(2, 56px); grid-template-rows: 56px; }
+  .drivePad.pedals { right: 14px; grid-template-columns: 56px; grid-template-rows: repeat(3, 50px); }
+  .drivePad button { padding: 0; font-size: 20px; border-radius: 12px; background: rgba(13,20,32,.85); touch-action: none; user-select: none; -webkit-user-select: none; }
+  .drivePad .park { font-size: 16px; font-weight: 800; color: #ffd08a; }
+  @media (pointer: coarse) { body.manDrive .drivePad { display: grid; } }
+  @media (max-width: 900px) { .drivePad { bottom: 44px; } }
   body.eva .evaUI { display: block; }
   .evaBar { position: absolute; left: 50%; bottom: 112px; transform: translateX(-50%); padding: 5px 14px; border-radius: 999px; font-size: 13px; white-space: nowrap;
     background: rgba(9,14,27,.85); border: 1px solid rgba(94,200,255,.35); color: #dfe8f8; }
@@ -897,7 +907,7 @@ body.flareFlash::after { content: ''; position: fixed; inset: 0; z-index: 99990;
   .dialog .portrait .ava { width: 36px !important; height: 36px !important; }
   #toasts { position: fixed !important; top: 44px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); width: min(360px, 46%) !important; }
   #walkNav { bottom: 56px !important; }
-  .walkPad, .evaPad { bottom: 58px !important; }
+  .walkPad, .evaPad, .drivePad { bottom: 58px !important; }
   #planBtn { top: 46px !important; }
 }
 </style>
@@ -1567,6 +1577,49 @@ function drive() {
     radioArrive(t);
     after();
   });
+}
+// MANUAL DRIVING: you steer MO-01 yourself (WASD / arrow keys, or the on-screen pad). Same rules as an automatic
+// drive: every km costs battery, the clock moves at the carrier's speed, and the cabin uses air while you're out.
+// Stop at a place and you have arrived there (park by the base dock to plug in and charge).
+function manualWhy() {
+  if (state.busy) return 'Wait until the crew have finished what they are doing.';
+  if (state.view !== 'surface' || state.surface !== '3d') return 'Switch to the 3D surface view to drive.';
+  if (fhOut()) return '❄ The drill robot is still out in the crater. Bring it back aboard first.';
+  if (state.rover.bat <= 0) return '🔋 MO-01’s battery is flat.';
+  if (state.hours <= 0) return '🌙 No work hours left today. End the day (or camp) first.';
+  return '';
+}
+function manualMoved(km) {
+  const r = state.rover, h = km / ROVER.kmh, dark = isDark(state.day);
+  r.bat = Math.max(0, r.bat - (km * ROVER.kWhPerKm + h * (ROVER.lifeKW + (dark ? ROVER.darkKW : 0))) * (perk('pilot') ? .85 : 1));
+  r.o2 = Math.max(0, r.o2 - h * ROVER.airPerH); state.hours = Math.max(0, state.hours - h);
+  manualKm += km;
+}
+let manualKm = 0;
+function manualAt(pos) {                                                   // where the carrier is now: which place, if any
+  state.rover.pos = pos;
+  const p = [BASE_SITE, ...SITES].find(q => kmBetween(pos, q.at) < (q.stop || .3) + .35);   // (the base: anywhere around it, like an automatic drive home)
+  return p ? p.id : null;
+}
+function manualArrive(id) {
+  const r = state.rover; if (r.at === id) return;
+  const lk = id !== 'base' && siteLocked(id);
+  if (lk) { once('manLock' + id, () => log(`🔒 ${placeOf(id).name} opens in Chapter ${lk}. Mission Control wants the base running smoothly first.`)); return; }
+  const t = { id, name: placeOf(id).name, place: placeOf(id), pos: r.pos.slice() };
+  r.at = id; state.target = null; state.selected = id === 'base' ? null : id;
+  if (id !== 'base') state.today.out = true;
+  if (manualKm > .05) log(`🚙 You drove MO-01 ${manualKm.toFixed(1)} km to ${t.name}.`); manualKm = 0;
+  if (id === 'base') { const d = dock(); log(`🔌 Carrier docked at the base: +${Math.round(d.kWh)} kWh charged from the base battery, air tanks refilled.`); deliverWater(); deliverRocks(); }
+  if (id === 'ice') { const f = state.fh; if (f.ok[6]) f.ok = FH_STEPS.map(() => false); f.ok[0] = true; }
+  if (id !== 'base' && state.story) state.story.arrived = { id, first: !state.visits[id] };
+  radioArrive(t);
+  after();
+}
+function manualLeave() { const r = state.rover; if (r.at) { r.at = null; if (state.selected === 'base') state.selected = null; render(); } }
+function manualChanged(on) {
+  if (on) { manualKm = 0; log('🕹 You took the wheel of MO-01. W / ▲ to drive, S / ▼ to brake and reverse, A and D to steer, Q to park.'); }
+  else if (manualKm > .05) { log(`🚙 You drove MO-01 ${manualKm.toFixed(1)} km.`); manualKm = 0; }
+  render();
 }
 // the drill robot is out in the crater (steps 2-5): the carrier can't leave it behind
 const fhOut = () => state.rover.at === 'ice' && state.fh.stage > 0;
@@ -3467,7 +3520,7 @@ addEventListener('keydown', e => { if (e.key === 'Enter' && $('title') && $('tit
 // =====================================================================
 function select(id) { if (state.busy || state.view !== 'surface') return; state.selected = id; state.target = null; hud.dismissed = null; render(); }
 function setRoom(id) { if (state.busy || state.view !== 'base') return; state.room = id; render(); }
-window.JAMT = { get cardKey() { return document.body.classList.contains('detailsOpen') ? detailsKey() : null; }, dismissCard() { hud.dismissed = detailsKey(); render(); }, get objective() { return typeof objectiveNow === 'function' ? objectiveNow() : null; }, get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, flareOnFoot, impactScene, quakeScene, log: m => log(m), render: () => render(), radio: (w, t, o) => radio(w, t, o), DOSE_LIMIT, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
+window.JAMT = { get cardKey() { return document.body.classList.contains('detailsOpen') ? detailsKey() : null; }, dismissCard() { hud.dismissed = detailsKey(); render(); }, get objective() { return typeof objectiveNow === 'function' ? objectiveNow() : null; }, get pilotLook() { return typeof pilotLook === 'function' ? pilotLook() : null; }, get callsign() { return typeof callsign === 'function' ? callsign() : 'Commander'; }, get SCI_GOAL() { return SCI_GOAL; }, get state() { return state; }, get MISSION_DAYS() { return MISSION_DAYS; }, get MISSION() { return MISSION; }, radLevel, flareOnFoot, impactScene, quakeScene, manualWhy, manualMoved, manualAt, manualArrive, manualLeave, manualChanged, placeName: id => placeOf(id).name, log: m => log(m), render: () => render(), radio: (w, t, o) => radio(w, t, o), DOSE_LIMIT, get flareFlashAt() { return flareFlashAt; }, solidsIn, inFoot, get CRATER() { return CRATER; }, get OSDR() { return OSDR; }, showOSDR, sickDay, get SUN() { return SUN; }, flareAlert, solarKW, SUIT_O2, suitAlarm, SITES, SUPPLY, HEAT, ROCK, BAG_MAX, pickRock, roomUse, crewChat, speakLine, crewTalk, roverHome, walkAct, walkActInfo, evaChanged, toast: m => toast(m), ROVER, CRATER, pickPoint, target, kmBetween, select, enterBase, isDark, isStorm, setRoom, netKW, GH, BAT_MAX, KW,
   ready3D() { $('loading3d').remove(); render(); },
   no3D(err) { console.warn('3D unavailable:', err); $('loading3d').textContent = '3D view needs an internet connection the first time. Showing the photo map.'; state.surface = 'photo'; render(); } };
 
@@ -3781,7 +3834,10 @@ function hotbarItems() {
   const canDrive = !inside && t && kmBetween(t.pos, r.pos) > .02 && (() => { const c = driveCost(t.pos); return c.h <= state.hours + 1e-6 && c.kWh <= r.bat && c.o2 <= r.o2 && !fhOut(); })();
   const work = !inside && firstAct();
   return [
-    { k: '1', ic: '🚙', l: 'Drive', on: !B && canDrive, hot: canDrive, tip: t ? `Drive to ${t.name}` : 'Pick a place or tap the ground first', f: drive },
+    (() => { const T = window.JAMT3D, man = !!(T && T.manualOn), can3d = !inside && state.surface === '3d' && !!(T && T.startManual) && !evaOn();
+      return man ? { k: '1', ic: '🅿', l: 'Park', on: true, sel: true, tip: 'Stop driving and park here (Q)', f: () => T.stopManual() }
+        : canDrive ? { k: '1', ic: '🚙', l: 'Drive', on: !B, hot: true, tip: `Drive to ${t.name} (or press T to drive yourself)`, f: drive }
+        : { k: '1', ic: '🕹', l: 'Drive', on: !B && can3d, hot: false, tip: 'Take the wheel and drive MO-01 yourself (T)', f: () => T.startManual() }; })(),
     { k: '2', ic: work && work.here.mission ? '⛏' : '🛠', l: work && work.here.mission ? 'Drill' : 'Work', on: !B && !!work, hot: !!work,
       tip: work ? work.a.name : 'Drive to a place to work there',
       f: () => { const w = firstAct(); if (!w) return; if (w.a.heat || w.here.acts.length > 1 && !w.here.mission) { hud.dismissed = null; render(); } else doAct(w.here, w.a); } },
@@ -3870,6 +3926,7 @@ hud.keysT = setTimeout(() => $('keys').classList.add('fade'), 15000);
 document.addEventListener('keydown', e => {
   if ((e.target.closest && e.target.closest('input, textarea, select')) || e.ctrlKey || e.metaKey || e.altKey) return;
   if (evaOn() && (e.key === 'q' || e.key === 'Q')) { window.JAMT3D.stopEVA(); return; }
+  if ((e.key === 't' || e.key === 'T') && !evaOn() && window.JAMT3D && window.JAMT3D.startManual) { e.preventDefault(); window.JAMT3D.manualOn ? window.JAMT3D.stopManual() : window.JAMT3D.startManual(); return; }
   const i = hotItems.findIndex(h => h.k && h.k === e.key);
   if (i >= 0) { const h = hotItems[i]; if (h.on) { e.preventDefault(); h.f(); } return; }
   if (e.key === 'c' || e.key === 'C') { hud.comm = !hud.comm; render(); }
@@ -5116,6 +5173,7 @@ let driveAnim = null, actAnim = null; const _wp = new THREE.Vector3();
 function placeRover(pos) { const [x, z] = kmToXZ(pos); rover.position.set(x, H(x, z), z); }
 function faceRover(p) { if (p.distanceTo(rover.position) > .3) { rover.lookAt(p.x, rover.position.y, p.z); rover.rotateY(Math.PI / 2); } }
 function drive(from, to, done) {
+  if (man.on) stopManual();
   const a = v3(...kmToXZ(from)), b = v3(...kmToXZ(to));
   routeLine.visible = tgt.visible = false;
   driveAnim = { pts: groundPts(a, b), t0: performance.now(), dur: reduced() ? 1 : Math.min(7000, Math.max(1600, a.distanceTo(b) * 110)), done };
@@ -5139,6 +5197,116 @@ function stepDrive(now) {
   const d = rover.position.clone().sub(prev); camera.position.add(d); controls.target.add(d);   // the camera follows the rover
   if (t >= 1) { driveAnim = null; A.done(); }
 }
+// ---------- MANUAL DRIVING: steer MO-01 yourself ----------
+// Throttle and brakes (W/S or ▲/▼), steering (A/D or ◀/▶). Like a real rover it speeds up gently, brakes harder,
+// can only turn while rolling, stops dead against rocks and buildings, and won't drive over Shackleton's rim.
+const man = { on: false, v: 0, yaw: 0, keys: {}, camOff: 0, camDist: 13, camPitch: .38, renderT: 0, stillT: 0, warnT: 0, told: {} };
+const MAN_V = 2.6, MAN_REV = .9, R_ROVER = 1.3;                         // world units a second; the carrier's size for bumps
+let manSolids = [];
+const solidAtR = (x, z, r) => manSolids.some(f => J.inFoot(f, x, z, r)) || BOULDERS.some(b => (x - b.x) ** 2 + (z - b.z) ** 2 < (b.r + r) ** 2);
+function startManual() {
+  if (man.on || eva.on || driveAnim || actAnim || pickup) return;
+  const why = J.manualWhy(); if (why) { J.toast(why); return; }
+  const skip = new Set([ground, walker.root, rockG, tgt, EARTH.mesh, rover].filter(Boolean));          // everything solid except the carrier itself
+  manSolids = J.solidsIn(scene, skip, f => { const g = H(f.cx, f.cz); return f.hu < 25 && f.hw < 25 && f.y1 > g + .45 && f.y0 < g + 1.7; }, _sv);
+  const f = new THREE.Vector3(-1, 0, 0).applyQuaternion(rover.quaternion);   // the carrier's nose (see faceRover)
+  Object.assign(man, { on: true, v: 0, yaw: Math.atan2(f.x, f.z), keys: {}, camOff: 0, stillT: 0, told: {} });
+  const p0 = rover.position, clear = a => { for (let d = 2.3; d < 9; d += .5) if (solidAtR(p0.x + Math.sin(a) * d, p0.z + Math.cos(a) * d, R_ROVER * .6)) return false; return true; };
+  if (J.state.rover.at === 'base') man.yaw = Math.atan2(p0.x - BX, p0.z - BZ);           // at the dock: face out, away from the base
+  if (!clear(man.yaw)) {                                                  // nose up against something? turn to open ground
+    let best = man.yaw, bd = -1;
+    for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283; let d = 0; while (d < 12 && !solidAtR(p0.x + Math.sin(a) * (2.6 + d), p0.z + Math.cos(a) * (2.6 + d), R_ROVER * .6)) d += 1;
+      const away = Math.cos(a) * (p0.z - BZ) + Math.sin(a) * (p0.x - BX) > 0 ? 3 : 0; if (d + away > bd) { bd = d + away; best = a; } }
+    man.yaw = best; faceRover(p0.clone().addScaledVector(fwdOf(best), 5));
+  }
+  routeLine.visible = tgt.visible = false; controls.enabled = false;
+  document.body.classList.add('manDrive'); J.manualChanged(true);
+}
+function stopManual() {
+  if (!man.on) return;
+  man.on = false; man.v = 0; man.keys = {};
+  controls.target.copy(rover.position).add(V3(0, 1, 0)); controls.enabled = true; controls.update();
+  document.body.classList.remove('manDrive'); J.manualChanged(false);
+}
+function stepManual(now, dt) {
+  if (!man.on) return;
+  const k = man.keys, s = J.state, r = s.rover;
+  if (s.view !== 'surface') { stopManual(); return; }
+  const thr = (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0), st = (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0);
+  const flat = r.bat <= 0, late = s.hours <= 0, can = !flat && !late && !s.busy;
+  if (thr && !can && now > man.warnT) { man.warnT = now + 4000;
+    J.toast(flat ? '🔋 MO-01’s battery is flat. Call for help or wait for the Sun: it can’t move any more.' : late ? '🌙 No work hours left today. Park (Q) and end the day, or camp out here.' : 'Wait a moment: the crew are busy.'); }
+  const want = can ? (thr > 0 ? MAN_V : thr < 0 ? -MAN_REV : 0) : 0;
+  const acc = !thr || Math.sign(want) !== Math.sign(man.v) ? 2.4 : 1.1;    // brakes harder than it speeds up
+  man.v += Math.max(-acc * dt, Math.min(acc * dt, want - man.v));
+  if (Math.abs(man.v) < .02 && !thr) man.v = 0;
+  if (man.v) man.yaw += st * dt * 1.15 * Math.min(1, Math.abs(man.v) / 1.2) * Math.sign(man.v);   // no turning on the spot
+  const f = fwdOf(man.yaw), p = rover.position, step = man.v * dt;
+  if (step) {
+    const nx = p.x + f.x * step, nz = p.z + f.z * step, lead = Math.sign(step) * 2.3, cx = nx + f.x * lead, cz = nz + f.z * lead, kp = xzToKm(cx, cz);
+    const why = J.kmBetween(kp, J.CRATER.at) < J.CRATER.r + .1 ? 'crater' : Math.abs(cx) > EDGE - 4 || Math.abs(cz) > EDGE - 4 || J.kmBetween(kp, [0, 0]) > 8 ? 'far'
+      : solidAtR(cx, cz, R_ROVER * .6) ? 'bump' : null;
+    if (why) {
+      if (Math.abs(man.v) > 1.2) { shake.until = now + 500; shake.len = 500; shake.amp = .12; }
+      man.v = 0;
+      if (!man.told[why] || now > man.warnT) { man.told[why] = true; man.warnT = now + 5000;
+        J.toast(why === 'crater' ? '⛔ That’s Shackleton’s rim: the walls are far too steep and it’s always dark down there.'
+          : why === 'far' ? '⛔ MO-01 only explores within 8 km of the base: any further and help could not reach you.'
+          : '💥 Bump! Big rocks and buildings stop the carrier. Back up (S) and steer around.'); }
+    } else {
+      rover.position.set(nx, H(nx, nz), nz);
+      J.manualMoved(Math.abs(step) / KM);
+      for (const w of crewRover.wheels) w.rotation.z += step * 1.6;
+      if (!reduced() && Math.abs(man.v) > .6) for (const w of crewRover.wheels) if (Math.random() < .5) {   // rooster tails of dust
+        w.getWorldPosition(_wp); kick(_wp.x, rover.position.y + .12, _wp.z, -f.x * man.v * .25 + (Math.random() - .5), .8 + Math.random() * 1.2 * Math.abs(man.v) / MAN_V, -f.z * man.v * .25 + (Math.random() - .5), 3); }
+    }
+  }
+  faceRover(rover.position.clone().addScaledVector(f, 5));
+  // arriving: stop (let go of the pedals) at a place
+  const here = J.manualAt(xzToKm(rover.position.x, rover.position.z));
+  if (!here) { if (r.at) J.manualLeave(); man.stillT = 0; }
+  else if (!man.v && !thr && r.at !== here) { man.stillT += dt; if (man.stillT > .5) { man.stillT = 0; J.manualArrive(here); } }
+  // chase camera behind the carrier (drag to look around, wheel to zoom)
+  if (!man.drag) man.camOff *= Math.exp(-dt * (Math.abs(man.v) > .3 ? 1.2 : .15));
+  const cy = man.yaw + man.camOff, cf = fwdOf(cy), look = rover.position.clone().add(V3(0, 1.6, 0));
+  const wantC = look.clone().addScaledVector(cf, -man.camDist * Math.cos(man.camPitch)).add(V3(0, man.camDist * Math.sin(man.camPitch), 0));
+  wantC.y = Math.max(wantC.y, H(wantC.x, wantC.z) + 1);
+  camera.position.lerp(wantC, 1 - Math.exp(-dt * 5)); camera.lookAt(look);
+  // status strip
+  const kmh = J.ROVER.kmh * Math.abs(man.v) / MAN_V, bat = Math.round(r.bat / J.ROVER.batMax * 100);
+  document.getElementById('manBar').innerHTML = `🕹 <b>Driving MO-01</b> · ${man.v < -.05 ? '◀ reversing' : '🚙'} ${kmh.toFixed(1)} km/h · <span class="${bat < 20 ? 'warn' : ''}">🔋 ${bat}%</span> · ${here ? `📍 ${here === 'base' ? 'Base dock' : J.placeName(here)}${r.at === here ? ' ✓' : ' (stop to arrive)'}` : `${J.kmBetween(r.pos, [0, 0]).toFixed(1)} km from base`} · <kbd>Q</kbd> park`;
+  if (now - man.renderT > 500) { man.renderT = now; J.render(); }
+}
+const manUI = document.createElement('div'); manUI.className = 'manUI'; manUI.innerHTML = `
+  <div class="evaBar" id="manBar"></div>
+  <div class="drivePad steer" aria-label="Steering"><button data-k="a" aria-label="Steer left">◀</button><button data-k="d" aria-label="Steer right">▶</button></div>
+  <div class="drivePad pedals" aria-label="Pedals"><button data-k="q" class="park" aria-label="Park">🅿</button><button data-k="w" aria-label="Drive forward">▲</button><button data-k="s" aria-label="Brake and reverse">▼</button></div>`;
+wrap.appendChild(manUI);
+manUI.querySelectorAll('[data-k]').forEach(b => {
+  const k = b.dataset.k, on = e => { e.preventDefault(); if (k === 'q') stopManual(); else man.keys[k] = true; }, off = () => { man.keys[k] = false; };
+  b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
+});
+addEventListener('keydown', e => {
+  if (!man.on || (e.target.closest && e.target.closest('input, textarea, select'))) return;
+  const key = e.key.toLowerCase();
+  if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) { man.keys[key] = true; e.preventDefault(); }
+  else if (key === 'q') { e.preventDefault(); stopManual(); }
+});
+addEventListener('keyup', e => { man.keys[e.key.toLowerCase()] = false; });
+addEventListener('blur', () => { man.keys = {}; });
+addEventListener('pointerdown', e => {
+  if (!man.on) return; const rc = wrap.getBoundingClientRect();
+  if (e.clientX < rc.left || e.clientX > rc.right || e.clientY < rc.top || e.clientY > rc.bottom) return;
+  if (e.target.closest && e.target.closest('button, a, input, select, textarea, label, [role="button"], .dialog.show, #details, .comm, .drivePad')) return;
+  man.drag = { x: e.clientX, y: e.clientY };
+}, true);
+addEventListener('pointermove', e => {
+  if (!man.on || !man.drag) return;
+  man.camOff -= (e.clientX - man.drag.x) * .006; man.camPitch = Math.min(1.1, Math.max(.08, man.camPitch + (e.clientY - man.drag.y) * .004));
+  man.drag = { x: e.clientX, y: e.clientY };
+});
+addEventListener('pointerup', () => { man.drag = null; });
+renderer.domElement.addEventListener('wheel', e => { if (!man.on) return; e.preventDefault(); man.camDist = Math.min(30, Math.max(6, man.camDist * (e.deltaY > 0 ? 1.1 : .9))); }, { passive: false });
 // ---------- Operation Frozen Harvest: drill rig + extraction chamber on the cold-trap floor ----------
 const rigPos = (() => { const c = SITE_POS.ice, d = V3(BX - c.x, 0, BZ - c.z).normalize(); const x = c.x + d.x * 2.2, z = c.z + d.z * 2.2; return new THREE.Vector3(x, H(x, z), z); })();
 const rigFace = Math.atan2(BX - rigPos.x, BZ - rigPos.z);
@@ -5356,6 +5524,7 @@ function buildSolids() {
 }
 const hitSolid = (x, z) => solids.some(f => J.inFoot(f, x, z, R_KOFI)) || BOULDERS.some(b => (x - b.x) ** 2 + (z - b.z) ** 2 < (b.r + R_KOFI) ** 2);
 function startEVA() {
+  if (man.on) stopManual();
   if (eva.on || driveAnim || actAnim) return;
   const s = J.state; if (s.busy || s.view !== 'surface') return;
   eva.on = true; eva.saved = { pos: camera.position.clone(), tgt: controls.target.clone() };
@@ -6061,7 +6230,7 @@ function frame(now) {
   if (walkWrap.style.display !== 'none') frameWalk(now, dt);
   if (CINE.on) { stepLander(now); stepFx(now, dt); stepHazards(now, dt); stepRocks(dt); cineFrame(now); return; }
   if (wrap.style.display === 'none') return;
-  if (eva.on) stepEVA(dt); else controls.update();
+  if (eva.on) stepEVA(dt); else if (man.on) stepManual(now, dt); else controls.update();
   stepDrive(now); stepAct(now, dt); stepLander(now); stepFx(now, dt);
   crewRover.crew.forEach(c => c.pose('sit', dt));
   stepObjective(now); stepPickup(dt); stepHazards(now, dt); stepRocks(dt);
@@ -6101,7 +6270,7 @@ setTimeout(function drawMap() {
   }
   g.putImageData(im, 0, 0); MAP_IMG = cv.toDataURL();
 }, 1200);
-window.JAMT3D = { camera, controls, scene, H, cineStart, cineShot, cineEnd, get cineOn() { return CINE.on; }, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, boulders: BOULDERS, hitSolid, callPickup, impact, quake, demoPlace, roverPos: () => rover.position, get eva() { return eva; }, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
+window.JAMT3D = { startManual, stopManual, get manualOn() { return man.on; }, camera, controls, scene, H, cineStart, cineShot, cineEnd, get cineOn() { return CINE.on; }, get quality() { return QUAL.lvl; }, setQuality, drive, act, update, startEVA, stopEVA, evaOn: () => eva.on, get solids() { return solids; }, boulders: BOULDERS, hitSolid, callPickup, impact, quake, demoPlace, roverPos: () => rover.position, get eva() { return eva; }, eva, get dustLive() { return fxLive; }, evaInteract, evaHop,
   get mapImg() { return MAP_IMG; }, evaKm: () => eva.on ? xzToKm(eva.pos.x, eva.pos.z) : null };
 // =====================================================================
 //  INSIDE THE BASE: first-person walk-through
